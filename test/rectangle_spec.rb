@@ -36,35 +36,6 @@ RSpec.describe Ruby2D::Rectangle do
       rectangle = Rectangle.new(color: [0.1, 0.3, 0.5, 0.7])
       expect(rectangle.color).to be_a(Ruby2D::Color)
     end
-
-    it 'creates a new rectangle with 4 colors via array of 4 strings' do
-      rectangle = Rectangle.new(color: %w[red green blue black])
-      expect(rectangle.color).to be_a(Ruby2D::Color::Set)
-    end
-
-    it 'creates a new rectangle with 4 colors via array of 4 arrays of arrays of numbers' do
-      rectangle = Rectangle.new(
-        color: [
-          [0.1, 0.3, 0.5, 0.7],
-          [0.2, 0.4, 0.6, 0.8],
-          [0.3, 0.5, 0.7, 0.9],
-          [0.4, 0.6, 0.8, 1.0]
-        ]
-      )
-      expect(rectangle.color).to be_a(Ruby2D::Color::Set)
-    end
-
-    it 'throws an error when array of 3 strings is passed' do
-      expect do
-        Rectangle.new(color: %w[red green blue])
-      end.to raise_error('`Ruby2D::Rectangle` requires 4 colors, one for each vertex. 3 were given.')
-    end
-
-    it 'throws an error when array of 5 strings is passed' do
-      expect do
-        Rectangle.new(color: %w[red green blue black fuchsia])
-      end.to raise_error('`Ruby2D::Rectangle` requires 4 colors, one for each vertex. 5 were given.')
-    end
   end
 
   describe 'attributes' do

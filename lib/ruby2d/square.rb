@@ -15,9 +15,9 @@ module Ruby2D
     # @param [String, Array] color A single colour or an array of exactly 4 colours
     # @param [Numeric] opacity Opacity of the image when rendering
     # @raise [ArgumentError] if an array of colours does not have 4 entries
-    def initialize(x: 0, y: 0, size: 100, z: 0, color: nil, colour: nil, opacity: nil)
+    def initialize(x: 0, y: 0, size: 100, z: 0, round: 0, color: nil, colour: nil, opacity: nil)
       @size = size
-      super(x: x, y: y, width: size, height: size, z: z,
+      super(x: x, y: y, width: size, height: size, z: z, round: round,
             color: color, colour: colour, opacity: opacity)
     end
 
@@ -28,7 +28,7 @@ module Ruby2D
 
     def self.draw(x:, y:, size:, color:)
       super(x: x, y: y,
-            width: size, height: size,
+            width: size, height: size, round: round,
             color: color)
     end
 

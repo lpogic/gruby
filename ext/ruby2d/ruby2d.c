@@ -328,26 +328,12 @@ static R_VAL ruby2d_line_ext_draw(R_VAL self, R_VAL a) {
     NUM2DBL(r_ary_entry(a,  2)),  // x2
     NUM2DBL(r_ary_entry(a,  3)),  // y2
     NUM2DBL(r_ary_entry(a,  4)),  // width
+    NUM2DBL(r_ary_entry(a,  5)),  // round
 
-    NUM2DBL(r_ary_entry(a,  5)),  // c1 red
-    NUM2DBL(r_ary_entry(a,  6)),  // c1 green
-    NUM2DBL(r_ary_entry(a,  7)),  // c1 blue
-    NUM2DBL(r_ary_entry(a,  8)),  // c1 alpha
-
-    NUM2DBL(r_ary_entry(a,  9)),  // c2 red
-    NUM2DBL(r_ary_entry(a, 10)),  // c2 green
-    NUM2DBL(r_ary_entry(a, 11)),  // c2 blue
-    NUM2DBL(r_ary_entry(a, 12)),  // c2 alpha
-
-    NUM2DBL(r_ary_entry(a, 13)),  // c3 red
-    NUM2DBL(r_ary_entry(a, 14)),  // c3 green
-    NUM2DBL(r_ary_entry(a, 15)),  // c3 blue
-    NUM2DBL(r_ary_entry(a, 16)),  // c3 alpha
-
-    NUM2DBL(r_ary_entry(a, 17)),  // c4 red
-    NUM2DBL(r_ary_entry(a, 18)),  // c4 green
-    NUM2DBL(r_ary_entry(a, 19)),  // c4 blue
-    NUM2DBL(r_ary_entry(a, 20))   // c4 alpha
+    NUM2DBL(r_ary_entry(a,  6)),  // red
+    NUM2DBL(r_ary_entry(a,  7)),  // green
+    NUM2DBL(r_ary_entry(a,  8)),  // blue
+    NUM2DBL(r_ary_entry(a,  9))  // alpha
   );
 
   return R_NIL;

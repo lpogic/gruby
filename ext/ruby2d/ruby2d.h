@@ -416,19 +416,16 @@ void R2D_DrawQuad(
 );
 
 /*
- * Draw a line from a quad
+ * Draw a line
  */
 void R2D_DrawLine(
   GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
-  GLfloat width,
-  GLfloat r1, GLfloat g1, GLfloat b1, GLfloat a1,
-  GLfloat r2, GLfloat g2, GLfloat b2, GLfloat a2,
-  GLfloat r3, GLfloat g3, GLfloat b3, GLfloat a3,
-  GLfloat r4, GLfloat g4, GLfloat b4, GLfloat a4
+  GLfloat width, GLfloat round,
+  GLfloat r, GLfloat g, GLfloat b, GLfloat a
 );
 
 /*
- * Draw a circle from triangles
+ * Draw a circle
  */
 void R2D_DrawCircle(
   GLfloat x, GLfloat y, GLfloat radius, int sectors,
@@ -706,6 +703,18 @@ void R2D_GL_DrawTriangle(
   GLfloat r2, GLfloat g2, GLfloat b2, GLfloat a2,
   GLfloat x3, GLfloat y3,
   GLfloat r3, GLfloat g3, GLfloat b3, GLfloat a3);
+void R2D_GL_DrawQuad(GLfloat x1, GLfloat y1,
+  GLfloat r1, GLfloat g1, GLfloat b1, GLfloat a1,
+  GLfloat x2, GLfloat y2,
+  GLfloat r2, GLfloat g2, GLfloat b2, GLfloat a2,
+  GLfloat x3, GLfloat y3,
+  GLfloat r3, GLfloat g3, GLfloat b3, GLfloat a3,
+  GLfloat x4, GLfloat y4,
+  GLfloat r4, GLfloat g4, GLfloat b4, GLfloat a4);
+void R2D_GL_DrawLine(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
+  GLfloat width, GLfloat round, GLfloat r, GLfloat g, GLfloat b, GLfloat a);
+void R2D_GL_DrawLineQuad(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
+  GLfloat width, GLfloat r, GLfloat g, GLfloat b, GLfloat a);
 void R2D_GL_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], GLfloat color[], int texture_id);
 void R2D_GL_FreeTexture(GLuint *id);
 void R2D_GL_DrawCircle(GLfloat x, GLfloat y, GLfloat radius, int sectors,
@@ -732,7 +741,8 @@ void R2D_GL_FlushBuffers();
 #else
   int R2D_GL2_Init();
   int R2D_GL3_Init();
-  int R2D_GL3_Init_Smooth();
+  int R2D_GL3_Load_Triangles_Textures();
+  int R2D_GL3_Load_Pins();
   void R2D_GL2_ApplyProjection(int w, int h);
   void R2D_GL3_ApplyProjection(GLfloat orthoMatrix[16], int w, int h);
   void R2D_GL2_DrawTriangle(

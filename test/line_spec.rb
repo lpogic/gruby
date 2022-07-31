@@ -38,35 +38,6 @@ RSpec.describe Ruby2D::Line do
       line = Quad.new(color: [0.1, 0.3, 0.5, 0.7])
       expect(line.color).to be_a(Ruby2D::Color)
     end
-
-    it "creates a new line with 4 colors via array of 4 strings" do
-      line = Line.new(color: ['red', 'green', 'blue', 'black'])
-      expect(line.color).to be_a(Ruby2D::Color::Set)
-    end
-
-    it "creates a new line with 4 colors via array of 4 arrays of arrays of numbers" do
-      line = Line.new(
-        color: [
-          [0.1, 0.3, 0.5, 0.7],
-          [0.2, 0.4, 0.6, 0.8],
-          [0.3, 0.5, 0.7, 0.9],
-          [0.4, 0.6, 0.8, 1.0]
-        ]
-      )
-      expect(line.color).to be_a(Ruby2D::Color::Set)
-    end
-
-    it "throws an error when array of 3 strings is passed" do
-      expect do
-        Line.new(color: ['red', 'green', 'blue'])
-      end.to raise_error("`Ruby2D::Line` requires 4 colors, one for each vertex. 3 were given.")
-    end
-
-    it "throws an error when array of 5 strings is passed" do
-      expect do
-        Line.new(color: ['red', 'green', 'blue', 'black', 'fuchsia'])
-      end.to raise_error("`Ruby2D::Line` requires 4 colors, one for each vertex. 5 were given.")
-    end
   end
 
   describe "attributes" do
@@ -95,7 +66,7 @@ RSpec.describe Ruby2D::Line do
 
   # TODO: This test should be more precise, like `Renderable#contains?`
   describe "#contains?" do
-    line = Line.new(x1: 0, y1: 0, x2: 100, y2: 100)
+    line = Line.new(x1: 0, y1: 0, x2: 100, y2: 100, width: 2)
 
     it "returns true if point is inside the line" do
       expect(line.contains?(  0,   1)).to be true

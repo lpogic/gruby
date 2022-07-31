@@ -359,6 +359,62 @@ void R2D_GL_DrawTriangle(GLfloat x1, GLfloat y1,
   #endif
 }
 
+/*
+ * Draw a quad, using two triangles
+ */
+void R2D_GL_DrawQuad(GLfloat x1, GLfloat y1,
+                  GLfloat r1, GLfloat g1, GLfloat b1, GLfloat a1,
+                  GLfloat x2, GLfloat y2,
+                  GLfloat r2, GLfloat g2, GLfloat b2, GLfloat a2,
+                  GLfloat x3, GLfloat y3,
+                  GLfloat r3, GLfloat g3, GLfloat b3, GLfloat a3,
+                  GLfloat x4, GLfloat y4,
+                  GLfloat r4, GLfloat g4, GLfloat b4, GLfloat a4) {
+
+  R2D_GL_DrawTriangle(x1, y1, r1, g1, b1, a1,
+                      x2, y2, r2, g2, b2, a2,
+                      x3, y3, r3, g3, b3, a3);
+
+  R2D_GL_DrawTriangle(x3, y3, r3, g3, b3, a3,
+                      x4, y4, r4, g4, b4, a4,
+                      x1, y1, r1, g1, b1, a1);
+};
+
+
+/*
+ * Draw a line
+ */
+void R2D_GL_DrawLine(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
+                  GLfloat width, GLfloat round,
+                  GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
+  #if GLES
+    R2D_GL_DrawLineQuad(x1, y1, x2, y2, width, r, g, b, a);
+  #else
+    if (R2D_GL2) {
+      R2D_GL_DrawLineQuad(x1, y1, x2, y2, width, r, g, b, a);
+    } else {
+      R2D_GL3_DrawPin(x1, y1, x2, y2, width, round, r, g, b, a);
+    }
+  #endif
+};
+
+/*
+ * Draw a line from a quad
+ */
+void R2D_GL_DrawLineQuad(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
+                  GLfloat width, GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
+
+  double length = sqrt(powf(x1 - x2, 2) + powf(y1 - y2, 2));
+  double x = ((x2 - x1) / length) * width / 2;
+  double y = ((y2 - y1) / length) * width / 2;
+
+  R2D_DrawQuad(
+    x1 - y, y1 + x, r, g, b, a,
+    x1 + y, y1 - x, r, g, b, a,
+    x2 + y, y2 - x, r, g, b, a,
+    x2 - y, y2 + x, r, g, b, a
+  );
+};
 
 /*
  * Draw a texture

@@ -132,23 +132,9 @@ void R2D_DrawLine(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
 
 
 /*
- * Draw a circle from triangles
+ * Draw a circle
  */
 void R2D_DrawCircle(GLfloat x, GLfloat y, GLfloat radius, int sectors,
                     GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
-
-  double angle = 2 * M_PI / sectors;
-
-  for (int i = 0; i < sectors; i++) {
-
-    GLfloat x1 = x + radius * cos(i * angle);
-    GLfloat y1 = y + radius * sin(i * angle);
-
-    GLfloat x2 = x + radius * cos((i - 1) * angle);
-    GLfloat y2 = y + radius * sin((i - 1) * angle);
-
-    R2D_GL_DrawTriangle( x,  y, r, g, b, a,
-                        x1, y1, r, g, b, a,
-                        x2, y2, r, g, b, a);
-  }
+  R2D_GL_DrawCircle(x, y, radius, sectors, r, g, b, a);
 }

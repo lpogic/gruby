@@ -199,7 +199,7 @@ void R2D_GL_SetViewport(R2D_Window *window) {
     if (R2D_GL2) {
       R2D_GL2_ApplyProjection(ortho_w, ortho_h);
     } else {
-      R2D_GL3_ApplyProjection(orthoMatrix);
+      R2D_GL3_ApplyProjection(orthoMatrix, ortho_w, ortho_h);
     }
   #endif
 }
@@ -373,6 +373,47 @@ void R2D_GL_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], GL
       R2D_GL3_DrawTexture(coordinates, texture_coordinates, color, texture_id);
     }
   #endif
+}
+
+
+/*
+ * Draw a circle
+ */
+void R2D_GL_DrawCircle(GLfloat x, GLfloat y, GLfloat radius, int sectors,
+                    GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
+
+  #if GLES
+    R2D_GL_DrawCircleTriangles(x, y, radius, sectors, r, g, b, a);
+  #else
+    if (R2D_GL2) {
+      R2D_GL_DrawCircleTriangles(x, y, radius, sectors, r, g, b, a);
+    } else {
+      R2D_GL3_DrawPin(x, y, x, y, 0, radius, r, g, b, a);
+    }
+  #endif
+}
+
+
+/*
+ * Draw a circle from triangles
+ */
+void R2D_GL_DrawCircleTriangles(GLfloat x, GLfloat y, GLfloat radius, int sectors,
+                    GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
+
+  double angle = 2 * M_PI / sectors;
+
+  for (int i = 0; i < sectors; i++) {
+
+    GLfloat x1 = x + radius * cos(i * angle);
+    GLfloat y1 = y + radius * sin(i * angle);
+
+    GLfloat x2 = x + radius * cos((i - 1) * angle);
+    GLfloat y2 = y + radius * sin((i - 1) * angle);
+
+    R2D_GL_DrawTriangle( x,  y, r, g, b, a,
+                        x1, y1, r, g, b, a,
+                        x2, y2, r, g, b, a);
+  }
 }
 
 

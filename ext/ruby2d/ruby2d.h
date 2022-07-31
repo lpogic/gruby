@@ -708,6 +708,10 @@ void R2D_GL_DrawTriangle(
   GLfloat r3, GLfloat g3, GLfloat b3, GLfloat a3);
 void R2D_GL_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], GLfloat color[], int texture_id);
 void R2D_GL_FreeTexture(GLuint *id);
+void R2D_GL_DrawCircle(GLfloat x, GLfloat y, GLfloat radius, int sectors,
+                    GLfloat r, GLfloat g, GLfloat b, GLfloat a);
+void R2D_GL_DrawCircleTriangles(GLfloat x, GLfloat y, GLfloat radius, int sectors,
+                    GLfloat r, GLfloat g, GLfloat b, GLfloat a);
 void R2D_GL_Clear(R2D_Color clr);
 void R2D_GL_FlushBuffers();
 
@@ -728,8 +732,9 @@ void R2D_GL_FlushBuffers();
 #else
   int R2D_GL2_Init();
   int R2D_GL3_Init();
+  int R2D_GL3_Init_Smooth();
   void R2D_GL2_ApplyProjection(int w, int h);
-  void R2D_GL3_ApplyProjection(GLfloat orthoMatrix[16]);
+  void R2D_GL3_ApplyProjection(GLfloat orthoMatrix[16], int w, int h);
   void R2D_GL2_DrawTriangle(
     GLfloat x1, GLfloat y1,
     GLfloat r1, GLfloat g1, GLfloat b1, GLfloat a1,
@@ -746,6 +751,9 @@ void R2D_GL_FlushBuffers();
     GLfloat r3, GLfloat g3, GLfloat b3, GLfloat a3);
   void R2D_GL2_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], GLfloat color[], int texture_id);
   void R2D_GL3_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], GLfloat color[], int texture_id);
+  void R2D_GL3_DrawPin(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
+                    GLfloat width, GLfloat round,
+                    GLfloat r, GLfloat g, GLfloat b, GLfloat a);
   void R2D_GL3_FlushBuffers();
 #endif
 

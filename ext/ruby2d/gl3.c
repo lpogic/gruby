@@ -4,38 +4,62 @@
 
 #if !GLES
 
-static GLuint vbo;  // our primary vertex buffer object (VBO)
-static GLuint vboSize;  // size of the VBO in bytes
-static GLfloat *vboData;  // pointer to the VBO data
-static GLfloat *vboDataCurrent;  // pointer to the data for the current vertices
-static GLuint vboDataIndex = 0;  // index of the current object being rendered
-static GLuint vboObjCapacity = 7500;  // number of objects the VBO can store
-static GLuint verticesTextureIds[7500]; // store the texture_id of each vertices
-static GLuint shaderProgram;  // triangle shader program
-static GLuint texShaderProgram;  // texture shader program
+#define R2D_GL3_ELEMENTS_CAPACITY 7500
+#define R2D_GL3_TRIANGLES_VBO_CAPACITY 5000
+#define R2D_GL3_PINS_VBO_CAPACITY 5000
+#define R2D_GL3_TRIANGLE_ID 0
+#define R2D_GL3_PIN_ID 0xFFFFFFFF
+
+static GLuint vertices[R2D_GL3_ELEMENTS_CAPACITY]; // store the texture_id of each vertices
+static GLuint verticesIndex = 0;  // index of the current object being rendered
+
+static GLuint trianglesVao;  // our primary vertex array object (VAO)
+static GLuint trianglesVbo;  // our primary vertex buffer object (VBO)
+static GLfloat *trianglesVboData;  // pointer to the VBO data
+static GLfloat *trianglesVboCurrent;  // pointer to the data for the current vertices
+static GLuint trianglesVboIndex = 0;  // index of the current object being rendered
+static GLuint trianglesShaderProgram;  // triangle shader program
+static GLuint texturesShaderProgram;  // texture shader program
+
+static GLuint pinsVao;
+static GLuint pinsVbo;
+static GLfloat *pinsVboData;  // pointer to the VBO data
+static GLfloat *pinsVboCurrent;  // pointer to the data for the current vertices
+static GLuint pinsVboIndex = 0;  // index of the current object being rendered
+static GLuint pinsShaderProgram; 
+static GLfloat vertex[10];
 
 
 /*
  * Applies the projection matrix
  */
-void R2D_GL3_ApplyProjection(GLfloat orthoMatrix[16]) {
+void R2D_GL3_ApplyProjection(GLfloat orthoMatrix[16], int w, int h) {
 
-  // Use the program object
-  glUseProgram(shaderProgram);
+  // Use the triangles program object
+  glUseProgram(trianglesShaderProgram);
 
-  // Apply the projection matrix to the triangle shader
+  // Apply the projection matrix to the triangles shader
   glUniformMatrix4fv(
-    glGetUniformLocation(shaderProgram, "u_mvpMatrix"),
+    glGetUniformLocation(trianglesShaderProgram, "u_mvpMatrix"),
     1, GL_FALSE, orthoMatrix
   );
 
-  // Use the texture program object
-  glUseProgram(texShaderProgram);
+  // Use the textures program object
+  glUseProgram(texturesShaderProgram);
 
-  // Apply the projection matrix to the texture shader
+  // Apply the projection matrix to the textures shader
   glUniformMatrix4fv(
-    glGetUniformLocation(texShaderProgram, "u_mvpMatrix"),
+    glGetUniformLocation(texturesShaderProgram, "u_mvpMatrix"),
     1, GL_FALSE, orthoMatrix
+  );
+
+  // Use the pins program object
+  glUseProgram(pinsShaderProgram);
+
+  // Apply window dimensions to the pins shader
+  glUniform2f(
+    glGetUniformLocation(pinsShaderProgram, "winSize"),
+    w, h
   );
 }
 
@@ -48,6 +72,18 @@ int R2D_GL3_Init() {
   // Enable transparency
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  int loadResult = R2D_GL3_Load_Triangles_Textures();
+  if(loadResult != GL_TRUE) {
+    return loadResult;
+  }
+  return R2D_GL3_Load_Pins();
+}
+
+/*
+ * Initalize OpenGL
+ */
+int R2D_GL3_Load_Triangles_Textures() {
 
   // Vertex shader source string
   GLchar vertexSource[] =
@@ -96,21 +132,15 @@ int R2D_GL3_Init() {
     "}";
 
   // Create a vertex array object
-  GLuint vao;
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
+  glGenVertexArrays(1, &trianglesVao);
+  glBindVertexArray(trianglesVao);
 
   // Create a vertex buffer object and allocate data
-  glGenBuffers(1, &vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  vboSize = vboObjCapacity * sizeof(GLfloat) * 8;
-  vboData = (GLfloat *) malloc(vboSize);
-  vboDataCurrent = vboData;
-
-  // Create an element buffer object
-  GLuint ebo;
-  glGenBuffers(1, &ebo);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+  glGenBuffers(1, &trianglesVbo);
+  glBindBuffer(GL_ARRAY_BUFFER, trianglesVbo);
+  trianglesVboData = (GLfloat *) malloc(R2D_GL3_TRIANGLES_VBO_CAPACITY * sizeof(GLfloat) * 8);
+  trianglesVboCurrent = trianglesVboData;
+  glBufferData(GL_ARRAY_BUFFER, R2D_GL3_TRIANGLES_VBO_CAPACITY * sizeof(GLfloat) * 8, NULL, GL_DYNAMIC_DRAW);
 
   // Load the vertex and fragment shaders
   GLuint vertexShader      = R2D_GL_LoadShader(  GL_VERTEX_SHADER,      vertexSource, "GL3 Vertex");
@@ -120,73 +150,73 @@ int R2D_GL3_Init() {
   // Triangle Shader //
 
   // Create the shader program object
-  shaderProgram = glCreateProgram();
+  trianglesShaderProgram = glCreateProgram();
 
   // Check if program was created successfully
-  if (shaderProgram == 0) {
+  if (trianglesShaderProgram == 0) {
     R2D_GL_PrintError("Failed to create shader program");
     return GL_FALSE;
   }
 
   // Attach the shader objects to the program object
-  glAttachShader(shaderProgram, vertexShader);
-  glAttachShader(shaderProgram, fragmentShader);
+  glAttachShader(trianglesShaderProgram, vertexShader);
+  glAttachShader(trianglesShaderProgram, fragmentShader);
 
   // Bind the output color variable to the fragment shader color number
-  glBindFragDataLocation(shaderProgram, 0, "outColor");
+  glBindFragDataLocation(trianglesShaderProgram, 0, "outColor");
 
   // Link the shader program
-  glLinkProgram(shaderProgram);
+  glLinkProgram(trianglesShaderProgram);
 
   // Check if linked
-  R2D_GL_CheckLinked(shaderProgram, "GL3 shader");
+  R2D_GL_CheckLinked(trianglesShaderProgram, "GL3 shader");
 
   // Specify the layout of the position vertex data...
-  GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+  GLint posAttrib = glGetAttribLocation(trianglesShaderProgram, "position");
   glEnableVertexAttribArray(posAttrib);
   glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), 0);
 
   // ...and the color vertex data
-  GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
+  GLint colAttrib = glGetAttribLocation(trianglesShaderProgram, "color");
   glEnableVertexAttribArray(colAttrib);
   glVertexAttribPointer(colAttrib, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
 
   // Texture Shader //
 
   // Create the texture shader program object
-  texShaderProgram = glCreateProgram();
+  texturesShaderProgram = glCreateProgram();
 
   // Check if program was created successfully
-  if (texShaderProgram == 0) {
+  if (texturesShaderProgram == 0) {
     R2D_GL_PrintError("Failed to create shader program");
     return GL_FALSE;
   }
 
   // Attach the shader objects to the program object
-  glAttachShader(texShaderProgram, vertexShader);
-  glAttachShader(texShaderProgram, texFragmentShader);
+  glAttachShader(texturesShaderProgram, vertexShader);
+  glAttachShader(texturesShaderProgram, texFragmentShader);
 
   // Bind the output color variable to the fragment shader color number
-  glBindFragDataLocation(texShaderProgram, 0, "outColor");
+  glBindFragDataLocation(texturesShaderProgram, 0, "outColor");
 
   // Link the shader program
-  glLinkProgram(texShaderProgram);
+  glLinkProgram(texturesShaderProgram);
 
   // Check if linked
-  R2D_GL_CheckLinked(texShaderProgram, "GL3 texture shader");
+  R2D_GL_CheckLinked(texturesShaderProgram, "GL3 texture shader");
 
   // Specify the layout of the position vertex data...
-  posAttrib = glGetAttribLocation(texShaderProgram, "position");
+  posAttrib = glGetAttribLocation(texturesShaderProgram, "position");
   glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), 0);
   glEnableVertexAttribArray(posAttrib);
 
   // ...and the color vertex data...
-  colAttrib = glGetAttribLocation(texShaderProgram, "color");
+  colAttrib = glGetAttribLocation(texturesShaderProgram, "color");
   glVertexAttribPointer(colAttrib, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
   glEnableVertexAttribArray(colAttrib);
 
   // ...and the texture coordinates
-  GLint texAttrib = glGetAttribLocation(texShaderProgram, "texcoord");
+  GLint texAttrib = glGetAttribLocation(texturesShaderProgram, "texcoord");
   glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
   glEnableVertexAttribArray(texAttrib);
 
@@ -194,6 +224,264 @@ int R2D_GL3_Init() {
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
   glDeleteShader(texFragmentShader);
+
+  return GL_TRUE;
+}
+
+/*
+ * Initalize Pins Shader
+ */
+int R2D_GL3_Load_Pins() {
+
+  GLchar vertexSource[] =
+    "#version 330 core\n"
+    "layout (location = 0) in vec2 pos0;"
+    "layout (location = 1) in vec2 pos1;"
+    "layout (location = 2) in float thick;"
+    "layout (location = 3) in float rad;"
+    "layout (location = 4) in vec4 col;"
+
+    "uniform vec2 winSize;"
+
+    "out VS_OUT {"
+        "mat2 rot;"
+        "float width;"
+        "float height;"
+        "vec4 color;"
+    "} vs_out;"
+
+    "void main()"
+    "{"
+        "float ar = winSize.x / winSize.y;"
+        "float x = (pos1.x + pos0.x) / winSize.x - 1;"
+        "float y = -(pos1.y + pos0.y) / winSize.y + 1;"
+        "float length = sqrt(pow(pos1.x - pos0.x, 2.0) + pow(pos1.y - pos0.y, 2.0));"
+        "if(thick > 0 && length > 0) {"
+        "  float c = (pos1.x - pos0.x) / length;"
+        "  float s = (pos1.y - pos0.y) / length;"
+        "  gl_Position = vec4(x, y, rad, 1);"
+        "  vs_out.rot = mat2(c, -s * ar, s / ar, c);"
+        "  vs_out.width = (length + thick) / winSize.x;"
+        "  vs_out.height = thick / winSize.y;"
+        "} else {"
+        "  gl_Position = vec4(x, y, rad, 0);"
+        "  vs_out.rot = mat2(1, 0, 0, 1);"
+        "  vs_out.width = rad / winSize.x;"
+        "  vs_out.height = rad / winSize.y;"
+        "}"
+        "vs_out.color = col;"
+    "}";
+
+  GLchar geometrySource[] =
+    "#version 330 core\n"
+    "layout (points) in;"
+    "layout (triangle_strip, max_vertices = 36) out;"
+
+    "in VS_OUT {"
+    "    mat2 rot;"
+    "    float width;"
+    "    float height;"
+    "    vec4 color;"
+    "} gs_in[];"
+
+    "uniform vec2 winSize;"
+
+    "out vec4 c;"
+    "out vec4 p;"
+
+    "void emit(vec4 pos)"
+    "{"
+    "  vec4 position = vec4(pos.xy, 0, 1);"
+    "  vec2 r = vec2(pos.z / winSize.x, pos.z / winSize.y);"
+    "  vec4 c1 = gs_in[0].color;"
+    "  float smr = 1.5;"
+    "  if(pos.a > 0) {"
+    "    vec4 c0 = vec4(gs_in[0].color.rgb, 0);"
+    "    vec2 sm = vec2(3.0 / winSize.x, 3.0 / winSize.y);"
+    "    p = vec4(0,0,0,0);"
+    "    c = c0;"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, -gs_in[0].height), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, -gs_in[0].height), 0 ,0);"
+    "    EmitVertex();"
+    "    c = c1;"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, -gs_in[0].height + sm.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, -gs_in[0].height + sm.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, gs_in[0].height - sm.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, gs_in[0].height - sm.y), 0 ,0);"
+    "    EmitVertex();"
+    "    c = c0;"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, gs_in[0].height), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, gs_in[0].height), 0 ,0);"
+    "    EmitVertex();"
+    "    EndPrimitive();"
+
+    "    c = c0;"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width,  gs_in[0].height - r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width, -gs_in[0].height + r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    c = c1;"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + sm.x,  gs_in[0].height - r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + sm.x, -gs_in[0].height + r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x,  gs_in[0].height - r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, -gs_in[0].height + r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    EndPrimitive();"
+
+    "    c = c0;"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width,  gs_in[0].height - r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width, -gs_in[0].height + r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    c = c1;"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - sm.x,  gs_in[0].height - r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - sm.x, -gs_in[0].height + r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x,  gs_in[0].height - r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, -gs_in[0].height + r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    EndPrimitive();"
+    "  }"
+
+    "  if(pos.z > 0) {"
+    "    vec4 p0;"
+    "    c = c1;"
+    "    p0 = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x,  gs_in[0].height - r.y), 0, 0);"
+    "    p = vec4((p0.x + 1) / 2 * winSize.x,  (p0.y + 1) / 2 * winSize.y, pos.z / 2, smr);"
+    "    gl_Position = p0;"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x,  gs_in[0].height), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width,  gs_in[0].height - r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width,  gs_in[0].height), 0 ,0);"
+    "    EmitVertex();"
+    "    EndPrimitive();"
+
+    "    p0 = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, -gs_in[0].height + r.y), 0 ,0);"
+    "    p = vec4((p0.x + 1) / 2 * winSize.x,  (p0.y + 1) / 2 * winSize.y, pos.z / 2, smr);"
+    "    gl_Position = p0;"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, -gs_in[0].height), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width, -gs_in[0].height + r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width, -gs_in[0].height), 0 ,0);"
+    "    EmitVertex();"
+    "    EndPrimitive();"
+
+    "    p0 = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x,  gs_in[0].height - r.y), 0 ,0);"
+    "    p = vec4((p0.x + 1) / 2 * winSize.x,  (p0.y + 1) / 2 * winSize.y, pos.z / 2, smr);"
+    "    gl_Position = p0;"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x,  gs_in[0].height), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width,  gs_in[0].height - r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width,  gs_in[0].height), 0 ,0);"
+    "    EmitVertex();"
+    "    EndPrimitive();"
+
+    "    p0 = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, -gs_in[0].height + r.y), 0 ,0);"
+    "    p = vec4((p0.x + 1) / 2 * winSize.x,  (p0.y + 1) / 2 * winSize.y, pos.z / 2, smr);"
+    "    gl_Position = p0;"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, -gs_in[0].height), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width, -gs_in[0].height + r.y), 0 ,0);"
+    "    EmitVertex();"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width, -gs_in[0].height), 0 ,0);"
+    "    EmitVertex();"
+    "    EndPrimitive();"
+    "  }"
+    "}"
+
+    "void main() {"
+    "    emit(gl_in[0].gl_Position);"
+    "}";
+
+  GLchar fragmentSource[] =
+    "#version 330 core\n"
+    "in vec4 c;"
+    "  in vec4 p;"
+    "  out vec4 color;"
+
+    "void main()"
+    "{"
+    "    if(p.z > 0) {"
+    "        float x = p.x - gl_FragCoord.x;"
+    "        float y = p.y - gl_FragCoord.y;"
+    "        float d = p.z - sqrt(x * x + y * y);"
+    "        if(d < 0) color = vec4(0,0,0,0);"
+    "        else if(d < p.a) color = vec4(c.rgb, c.a * d / p.a);"
+    "        else color = c;"
+    "    } else color = c;"
+    "}";
+
+  // Create a vertex array object
+  glGenVertexArrays(1, &pinsVao);
+  glBindVertexArray(pinsVao);
+  glGenBuffers(1, &pinsVbo);
+  glBindBuffer(GL_ARRAY_BUFFER, pinsVbo);
+
+
+  pinsVboData = (GLfloat *) malloc(R2D_GL3_PINS_VBO_CAPACITY * sizeof(GLfloat) * 10);
+  pinsVboCurrent = pinsVboData;
+  glBufferData(GL_ARRAY_BUFFER, R2D_GL3_PINS_VBO_CAPACITY * sizeof(GLfloat) * 10, NULL, GL_DYNAMIC_DRAW);
+
+  // Load the vertex, geometry and fragment shaders
+  GLuint vertexShader      = R2D_GL_LoadShader(  GL_VERTEX_SHADER, vertexSource, "GL3 Pin Vertex");
+  GLuint geometryShader = R2D_GL_LoadShader(GL_GEOMETRY_SHADER, geometrySource, "GL3 Pin Geometry");
+  GLuint fragmentShader    = R2D_GL_LoadShader(GL_FRAGMENT_SHADER, fragmentSource, "GL3 Pin Fragment");
+  
+  // Create the shader program object
+  pinsShaderProgram = glCreateProgram();
+
+  // Check if program was created successfully
+  if (pinsShaderProgram == 0) {
+    R2D_GL_PrintError("Failed to create shader program");
+    return GL_FALSE;
+  }
+
+  // Attach the shader objects to the program object
+  glAttachShader(pinsShaderProgram, vertexShader);
+  glAttachShader(pinsShaderProgram, geometryShader);
+  glAttachShader(pinsShaderProgram, fragmentShader);
+
+  // Link the shader program
+  glLinkProgram(pinsShaderProgram);
+
+  // Check if linked
+  R2D_GL_CheckLinked(pinsShaderProgram, "GL3 pin shader");
+
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 10 * sizeof(GLfloat), (void*)0);
+  glEnableVertexAttribArray(0);
+
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 10 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+  glEnableVertexAttribArray(1);
+
+  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 10 * sizeof(GLfloat), (void*)(4 * sizeof(GLfloat)));
+  glEnableVertexAttribArray(2);
+
+  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 10 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
+  glEnableVertexAttribArray(3);
+
+  glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 10 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
+  glEnableVertexAttribArray(4);
+
+  glDeleteShader(vertexShader);
+  glDeleteShader(geometryShader);
+  glDeleteShader(fragmentShader);    
 
   // If successful, return true
   return GL_TRUE;
@@ -204,43 +492,54 @@ int R2D_GL3_Init() {
  * Render the vertex buffer and reset it
  */
 void R2D_GL3_FlushBuffers() {
-  // Bind to the vertex buffer object and update its data
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  // Bind to the vertex buffer object and update its dat
+  glBindVertexArray(trianglesVao);
+  glBindBuffer(GL_ARRAY_BUFFER, trianglesVbo);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, trianglesVboIndex * sizeof(GLfloat) * 8, trianglesVboData);
 
-  glBufferData(GL_ARRAY_BUFFER, vboSize, NULL, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * vboDataIndex * 8, vboData);
+  glBindVertexArray(pinsVao);
+  glBindBuffer(GL_ARRAY_BUFFER, pinsVbo);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, pinsVboIndex * sizeof(GLfloat) * 10, pinsVboData);
 
-  GLuint verticesOffset = 0;
-  GLuint lastTextureId = verticesTextureIds[0];
+  GLuint trianglesOffset = 0, ti = 0, pinsOffset = 0, pi = 0;
+  GLuint lastVertex = vertices[0];
 
-  for (GLuint i = 0; i <= vboDataIndex; i++) {
-    if(lastTextureId != verticesTextureIds[i] || i == vboDataIndex) {
-      // A texture ID of 0 represents no texture (render a triangle)
-      if(lastTextureId == 0) {
-
-        // Use the triangle shader program
-        glUseProgram(shaderProgram);
-
-      // A number other than 0 represents a texture_id
+  for (GLuint i = 0; i <= verticesIndex; i++) {
+    if(lastVertex == R2D_GL3_PIN_ID) {
+      ++pi;
+    } else {
+      ++ti;
+    }
+    if(lastVertex != vertices[i] || i == verticesIndex) {
+      if(lastVertex == R2D_GL3_PIN_ID) {
+        glBindVertexArray(pinsVao);
+        glUseProgram(pinsShaderProgram);
+        glBindBuffer(GL_ARRAY_BUFFER, pinsVbo);
+        glDrawArrays(GL_POINTS, pinsOffset, pi - pinsOffset);
+        pinsOffset = pi;
+      } else if(lastVertex == R2D_GL3_TRIANGLE_ID) {
+        glBindVertexArray(trianglesVao);
+        glUseProgram(trianglesShaderProgram);
+        glBindBuffer(GL_ARRAY_BUFFER, trianglesVbo);
+        glDrawArrays(GL_TRIANGLES, trianglesOffset, ti - trianglesOffset);
+        trianglesOffset = ti;
       } else {
-
-        // Use the texture shader program
-        glUseProgram(texShaderProgram);
-
-        // Bind the texture using the provided ID
-        glBindTexture(GL_TEXTURE_2D, lastTextureId);
+        glBindVertexArray(trianglesVao);
+        glUseProgram(texturesShaderProgram);
+        glBindBuffer(GL_ARRAY_BUFFER, trianglesVbo);
+        glBindTexture(GL_TEXTURE_2D, lastVertex);
+        glDrawArrays(GL_TRIANGLES, trianglesOffset, ti - trianglesOffset);
+        trianglesOffset = ti;
       }
 
-      glDrawArrays(GL_TRIANGLES, verticesOffset, i - verticesOffset);
-
-      lastTextureId = verticesTextureIds[i];
-      verticesOffset = i;
+      lastVertex = vertices[i];
     }
   }
 
   // Reset the buffer object index and data pointer
-  vboDataIndex = 0;
-  vboDataCurrent = vboData;
+  verticesIndex = trianglesVboIndex = pinsVboIndex = 0;
+  trianglesVboCurrent = trianglesVboData;
+  pinsVboCurrent = pinsVboData;
 }
 
 
@@ -255,21 +554,22 @@ void R2D_GL3_DrawTriangle(GLfloat x1, GLfloat y1,
                           GLfloat r3, GLfloat g3, GLfloat b3, GLfloat a3) {
 
   // If buffer is full, flush it
-  if (vboDataIndex + 3 >= vboObjCapacity) R2D_GL3_FlushBuffers();
+  if (trianglesVboIndex + 3 >= R2D_GL3_TRIANGLES_VBO_CAPACITY) R2D_GL3_FlushBuffers();
 
   // Set the triangle data into a formatted array
-  GLfloat vertices[24] =
+  GLfloat v[24] =
     { x1, y1, r1, g1, b1, a1, 0, 0,
       x2, y2, r2, g2, b2, a2, 0, 0,
       x3, y3, r3, g3, b3, a3, 0, 0 };
 
   // Copy the vertex data into the current position of the buffer
-  memcpy(vboDataCurrent, vertices, sizeof(vertices));
+  memcpy(trianglesVboCurrent, v, sizeof(v));
 
   // Increment the buffer object index and the vertex data pointer for next use
-  verticesTextureIds[vboDataIndex] = verticesTextureIds[vboDataIndex + 1] = verticesTextureIds[vboDataIndex + 2] = 0;
-  vboDataIndex += 3;
-  vboDataCurrent = (GLfloat *)((char *)vboDataCurrent + (sizeof(GLfloat) * 24));
+  vertices[verticesIndex] = vertices[verticesIndex + 1] = vertices[verticesIndex + 2] = R2D_GL3_TRIANGLE_ID;
+  verticesIndex += 3;
+  trianglesVboIndex += 3;
+  trianglesVboCurrent = (GLfloat *)((char *)trianglesVboCurrent + (sizeof(GLfloat) * 24));
 }
 
 
@@ -278,12 +578,12 @@ void R2D_GL3_DrawTriangle(GLfloat x1, GLfloat y1,
  */
 void R2D_GL3_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], GLfloat color[], int texture_id) {
   // If buffer is full, flush it
-  if (vboDataIndex + 6 >= vboObjCapacity) R2D_GL3_FlushBuffers();
+  if (trianglesVboIndex + 6 >= R2D_GL3_TRIANGLES_VBO_CAPACITY) R2D_GL3_FlushBuffers();
 
   // There are 6 vertices for a square as we are rendering two Triangles to make up our square:
   // Triangle one: Top left, Top right, Bottom right
   // Triangle two: Bottom right, Bottom left, Top left
-  GLfloat vertices[48] = {
+  GLfloat v[48] = {
     coordinates[0], coordinates[1], color[0], color[1], color[2], color[3], texture_coordinates[0], texture_coordinates[1],
     coordinates[2], coordinates[3], color[0], color[1], color[2], color[3], texture_coordinates[2], texture_coordinates[3],
     coordinates[4], coordinates[5], color[0], color[1], color[2], color[3], texture_coordinates[4], texture_coordinates[5],
@@ -293,11 +593,33 @@ void R2D_GL3_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], G
   };
 
   // Copy the vertex data into the current position of the buffer
-  memcpy(vboDataCurrent, vertices, sizeof(vertices));
+  memcpy(trianglesVboCurrent, v, sizeof(v));
 
-  verticesTextureIds[vboDataIndex] = verticesTextureIds[vboDataIndex + 1] = verticesTextureIds[vboDataIndex + 2] = verticesTextureIds[vboDataIndex + 3] = verticesTextureIds[vboDataIndex + 4] = verticesTextureIds[vboDataIndex + 5] = texture_id;
-  vboDataIndex += 6;
-  vboDataCurrent = (GLfloat *)((char *)vboDataCurrent + (sizeof(GLfloat) * 48));
+  vertices[verticesIndex] = vertices[verticesIndex + 1] = vertices[verticesIndex + 2] = 
+    vertices[verticesIndex + 3] = vertices[verticesIndex + 4] = vertices[verticesIndex + 5] = texture_id;
+  verticesIndex += 6;
+  trianglesVboIndex += 6;
+  trianglesVboCurrent = (GLfloat *)((char *)trianglesVboCurrent + (sizeof(GLfloat) * 48));
+}
+
+/*
+ * Draw a pin
+ */
+void R2D_GL3_DrawPin(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
+                    GLfloat width, GLfloat round,
+                    GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
+  // If buffer is full, flush it
+  if (pinsVboIndex + 1 >= R2D_GL3_PINS_VBO_CAPACITY) R2D_GL3_FlushBuffers();
+
+  GLfloat v[10] = { x1, y1, x2, y2, width, round, r, g, b, a};
+
+  // Copy the vertex data into the current position of the buffer
+  memcpy(pinsVboCurrent, v, sizeof(v));
+
+  vertices[verticesIndex] = R2D_GL3_PIN_ID;
+  verticesIndex += 1;
+  pinsVboIndex += 1;
+  pinsVboCurrent = (GLfloat *)((char *)pinsVboCurrent + (sizeof(GLfloat) * 10));
 }
 
 

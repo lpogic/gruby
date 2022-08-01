@@ -13,19 +13,23 @@ module Ruby2D
     # @param [Numeric] round
     # @param [Numeric] z
     # @param [String, Array] color
+    # @param [String | Color] border_color
     # @param [Numeric] opacity Opacity of the image when rendering
-    def initialize(x: 0, y: 0, width: 200, height: 100, round: 0, z: 0, color: nil, colour: nil, opacity: nil)
+    def initialize(x: 0, y: 0, width: 200, height: 100, round: 0, border: 0, z: 0, 
+      color: nil, colour: nil, border_color: nil, opacity: nil)
       @rect_width = width
       @rect_height = height
       d = (width - height) / 2
       if d < 0
         super(x1: x, y1: y - d,
           x2: x, y2: y + d,
-          z: z, width: height, round: round, color: color, colour: colour, opacity: opacity)  
+          z: z, width: height, round: round, border: border, 
+          color: color, colour: colour, border_color: border_color, opacity: opacity)  
       else
         super(x1: x - d, y1: y,
           x2: x + d, y2: y,
-          z: z, width: width, round: round, color: color, colour: colour, opacity: opacity)
+          z: z, width: width, round: round, border: border,
+          color: color, colour: colour, border_color: border_color, opacity: opacity)
       end
     end
 
@@ -95,16 +99,16 @@ module Ruby2D
       end
     end
 
-    def self.draw(x:, y:, width:, height:, round:, color:)
+    def self.draw(x:, y:, width:, height:, round:, border:, color:, border_color:)
       d = (width - height) / 2
       if d < 0
         super(x1: x, y1: y - d,
           x2: x, y2: y + d,
-          z: z, width: height, round: round, color: color)  
+          z: z, width: height, round: round, border: border, color: color, border_color: border_color)  
       else
         super(x1: x - d, y1: y,
           x2: x + d, y2: y,
-          z: z, width: width, round: round, color: color)
+          z: z, width: width, round: round, border: border, color: color, border_color: border_color,)
       end
     end
 

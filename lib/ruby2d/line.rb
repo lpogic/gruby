@@ -7,7 +7,7 @@ module Ruby2D
   class Line
     include Renderable
 
-    attr_accessor :x1, :x2, :y1, :y2, :width, :round
+    attr_accessor :x1, :x2, :y1, :y2, :width, :round, :border
 
     # Create an Line
     # @param [Numeric] x1
@@ -17,10 +17,11 @@ module Ruby2D
     # @param [Numeric] width The +width+ or thickness of the line
     # @param [Numeric] z
     # @param [String, Array] color
+    # @param [String | Color] border_color
     # @param [Numeric] opacity Opacity of the image when rendering
-    # @raise [ArgumentError] if an array of colours does not have 4 entries
     def initialize(x1: 0, y1: 0, x2: 100, y2: 100, z: 0,
-                   width: 6, round: 2, color: nil, colour: nil, opacity: nil)
+                   width: 6, round: 2, border: 0, 
+                   color: nil, colour: nil, border_color: nil, opacity: nil)
       @x1 = x1
       @y1 = y1
       @x2 = x2
@@ -28,18 +29,15 @@ module Ruby2D
       @z = z
       @width = width
       @round = round
+      @border = border
       self.color = color || colour || 'white'
+      self.border_color = border_color || 'black'
       self.color.opacity = opacity unless opacity.nil?
       add
     end
 
-    # Change the colour of the line
-    # @param [String, Array] color
-    def color=(color)
-      # convert to Color or Color::Set
-      color = Color.set(color)
-
-      @color = color
+    def border_color=(color)
+      @border_color = Color.set(color)
     end
 
     # Return the length of the line
@@ -66,11 +64,11 @@ module Ruby2D
     # @param [Numeric] width The +width+ or thickness of the line
     # @param [Numeric] round The roundness of the line
     # @param [Color] color
-    def self.draw(x1:, y1:, x2:, y2:, width:, round:, color:)
+    def self.draw(x1:, y1:, x2:, y2:, width:, round:, border:, color:, border_color:)
       Window.render_ready_check
 
       ext_draw([
-                 x1, y1, x2, y2, width, round, *color
+                 x1, y1, x2, y2, width, round, border, *color, *border_color
                ])
     end
 
@@ -78,7 +76,7 @@ module Ruby2D
 
     def render
       self.class.ext_draw([
-                            @x1, @y1, @x2, @y2, @width, @round, *@color
+                            @x1, @y1, @x2, @y2, @width, @round, @border, *@color, *@border_color
                           ])
     end
 

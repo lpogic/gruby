@@ -329,11 +329,16 @@ static R_VAL ruby2d_line_ext_draw(R_VAL self, R_VAL a) {
     NUM2DBL(r_ary_entry(a,  3)),  // y2
     NUM2DBL(r_ary_entry(a,  4)),  // width
     NUM2DBL(r_ary_entry(a,  5)),  // round
+    NUM2DBL(r_ary_entry(a,  6)),  // border
 
-    NUM2DBL(r_ary_entry(a,  6)),  // red
-    NUM2DBL(r_ary_entry(a,  7)),  // green
-    NUM2DBL(r_ary_entry(a,  8)),  // blue
-    NUM2DBL(r_ary_entry(a,  9))  // alpha
+    NUM2DBL(r_ary_entry(a,  7)),  // red
+    NUM2DBL(r_ary_entry(a,  8)),  // green
+    NUM2DBL(r_ary_entry(a,  9)),  // blue
+    NUM2DBL(r_ary_entry(a, 10)),  // alpha
+    NUM2DBL(r_ary_entry(a, 11)),  // border red
+    NUM2DBL(r_ary_entry(a, 12)),  // border green
+    NUM2DBL(r_ary_entry(a, 13)),  // border blue
+    NUM2DBL(r_ary_entry(a, 14))   // border alpha
   );
 
   return R_NIL;
@@ -353,14 +358,19 @@ static R_VAL ruby2d_circle_ext_draw(R_VAL self, R_VAL a) {
   // `a` is the array representing the circle
 
   R2D_DrawCircle(
-    NUM2DBL(r_ary_entry(a, 0)),  // x
-    NUM2DBL(r_ary_entry(a, 1)),  // y
-    NUM2DBL(r_ary_entry(a, 2)),  // radius
-    NUM2DBL(r_ary_entry(a, 3)),  // sectors
-    NUM2DBL(r_ary_entry(a, 4)),  // red
-    NUM2DBL(r_ary_entry(a, 5)),  // green
-    NUM2DBL(r_ary_entry(a, 6)),  // blue
-    NUM2DBL(r_ary_entry(a, 7))   // alpha
+    NUM2DBL(r_ary_entry(a,  0)),  // x
+    NUM2DBL(r_ary_entry(a,  1)),  // y
+    NUM2DBL(r_ary_entry(a,  2)),  // radius
+    NUM2DBL(r_ary_entry(a,  3)),  // border
+    NUM2DBL(r_ary_entry(a,  4)),  // sectors
+    NUM2DBL(r_ary_entry(a,  5)),  // red
+    NUM2DBL(r_ary_entry(a,  6)),  // green
+    NUM2DBL(r_ary_entry(a,  7)),  // blue
+    NUM2DBL(r_ary_entry(a,  8)),  // alpha
+    NUM2DBL(r_ary_entry(a,  9)),  // border red
+    NUM2DBL(r_ary_entry(a, 10)),  // border green
+    NUM2DBL(r_ary_entry(a, 11)),  // border blue
+    NUM2DBL(r_ary_entry(a, 12))   // border alpha
   );
 
   return R_NIL;

@@ -12,13 +12,13 @@ module Ruby2D
     # @param [Numeric] y
     # @param [Numeric] size is width and height
     # @param [Numeric] z
-    # @param [String, Array] color A single colour or an array of exactly 4 colours
+    # @param [String, Array] color
+    # @param [String | Color] border_color
     # @param [Numeric] opacity Opacity of the image when rendering
-    # @raise [ArgumentError] if an array of colours does not have 4 entries
-    def initialize(x: 0, y: 0, size: 100, z: 0, round: 0, color: nil, colour: nil, opacity: nil)
+    def initialize(x: 0, y: 0, size: 100, z: 0, round: 0, border: 0, color: nil, colour: nil, border_color: nil, opacity: nil)
       @size = size
-      super(x: x, y: y, width: size, height: size, z: z, round: round,
-            color: color, colour: colour, opacity: opacity)
+      super(x: x, y: y, width: size, height: size, z: z, round: round, border: border,
+            color: color, colour: colour, border_color: border_color, opacity: opacity)
     end
 
     # Set the size of the square
@@ -26,9 +26,9 @@ module Ruby2D
       self.width = self.height = @size = size
     end
 
-    def self.draw(x:, y:, size:, color:)
+    def self.draw(x:, y:, size:, round:, border:, color:)
       super(x: x, y: y,
-            width: size, height: size, round: round,
+            width: size, height: size, round: round, border: border,
             color: color)
     end
 

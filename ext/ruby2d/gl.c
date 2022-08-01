@@ -385,15 +385,16 @@ void R2D_GL_DrawQuad(GLfloat x1, GLfloat y1,
  * Draw a line
  */
 void R2D_GL_DrawLine(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
-                  GLfloat width, GLfloat round,
-                  GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
+                  GLfloat width, GLfloat round, GLfloat border,
+                    GLfloat r, GLfloat g, GLfloat b, GLfloat a,
+                    GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba) {
   #if GLES
     R2D_GL_DrawLineQuad(x1, y1, x2, y2, width, r, g, b, a);
   #else
     if (R2D_GL2) {
       R2D_GL_DrawLineQuad(x1, y1, x2, y2, width, r, g, b, a);
     } else {
-      R2D_GL3_DrawPin(x1, y1, x2, y2, width, round, r, g, b, a);
+      R2D_GL3_DrawPin(x1, y1, x2, y2, width, round, border, r, g, b, a, br, bg, bb, ba);
     }
   #endif
 };
@@ -435,8 +436,9 @@ void R2D_GL_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], GL
 /*
  * Draw a circle
  */
-void R2D_GL_DrawCircle(GLfloat x, GLfloat y, GLfloat radius, int sectors,
-                    GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
+void R2D_GL_DrawCircle(GLfloat x, GLfloat y, GLfloat radius, GLfloat border, int sectors,
+                    GLfloat r, GLfloat g, GLfloat b, GLfloat a,
+                    GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba) {
 
   #if GLES
     R2D_GL_DrawCircleTriangles(x, y, radius, sectors, r, g, b, a);
@@ -444,7 +446,7 @@ void R2D_GL_DrawCircle(GLfloat x, GLfloat y, GLfloat radius, int sectors,
     if (R2D_GL2) {
       R2D_GL_DrawCircleTriangles(x, y, radius, sectors, r, g, b, a);
     } else {
-      R2D_GL3_DrawPin(x, y, x, y, 0, radius, r, g, b, a);
+      R2D_GL3_DrawPin(x, y, x, y, 0, radius, border, r, g, b, a, br, bg, bb, ba);
     }
   #endif
 }

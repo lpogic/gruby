@@ -9,7 +9,7 @@ module Ruby2D
   class Circle
     include Renderable
 
-    attr_accessor :x, :y, :radius, :sectors
+    attr_accessor :x, :y, :radius, :border, :sectors
 
     # Create a circle
     #
@@ -19,15 +19,18 @@ module Ruby2D
     # @param [Numeric] radius
     # @param [Numeric] sectors Smoothness of the circle is better when more +sectors+ are used.
     # @param [String | Color] color Or +colour+
+    # @param [String | Color] border_color
     # @param [Float] opacity
-    def initialize(x: 25, y: 25, z: 0, radius: 50, sectors: 30,
-                   color: nil, colour: nil, opacity: nil)
+    def initialize(x: 25, y: 25, z: 0, radius: 50, border: 0, sectors: 30,
+                   color: nil, colour: nil, border_color: nil, opacity: nil)
       @x = x
       @y = y
       @z = z
       @radius = radius
+      @border = border
       @sectors = sectors
       self.color = color || colour || 'white'
+      self.border_color = border_color || 'black'
       self.color.opacity = opacity unless opacity.nil?
       add
     end
@@ -37,12 +40,17 @@ module Ruby2D
       Math.sqrt((x - @x)**2 + (y - @y)**2) <= @radius
     end
 
+    def border_color=(color)
+      @border_color = Color.set(color)
+    end
+
     def self.draw(opts = {})
       Window.render_ready_check
 
       ext_draw([
-                 opts[:x], opts[:y], opts[:radius], opts[:sectors],
-                 opts[:color][0], opts[:color][1], opts[:color][2], opts[:color][3]
+                 opts[:x], opts[:y], opts[:radius], opts[:border], opts[:sectors],
+                 opts[:color][0], opts[:color][1], opts[:color][2], opts[:color][3],
+                 opts[:border_color][0], opts[:border_color][1], opts[:border_color][2], opts[:border_color][3],
                ])
     end
 
@@ -50,8 +58,9 @@ module Ruby2D
 
     def render
       self.class.ext_draw([
-                            @x, @y, @radius, @sectors,
-                            @color.r, @color.g, @color.b, @color.a
+                            @x, @y, @radius, @border, @sectors,
+                            @color.r, @color.g, @color.b, @color.a,
+                            @border_color.r, @border_color.g, @border_color.b, @border_color.a
                           ])
     end
   end

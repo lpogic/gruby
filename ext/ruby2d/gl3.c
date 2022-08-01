@@ -26,9 +26,7 @@ static GLuint pinsVbo;
 static GLfloat *pinsVboData;  // pointer to the VBO data
 static GLfloat *pinsVboCurrent;  // pointer to the data for the current vertices
 static GLuint pinsVboIndex = 0;  // index of the current object being rendered
-static GLuint pinsShaderProgram; 
-static GLfloat vertex[10];
-
+static GLuint pinsShaderProgram;
 
 /*
  * Applies the projection matrix
@@ -240,6 +238,8 @@ int R2D_GL3_Load_Pins() {
     "layout (location = 2) in float thick;"
     "layout (location = 3) in float rad;"
     "layout (location = 4) in vec4 col;"
+    "layout (location = 5) in float border;"
+    "layout (location = 6) in vec4 borderCol;"
 
     "uniform vec2 winSize;"
 
@@ -248,6 +248,8 @@ int R2D_GL3_Load_Pins() {
         "float width;"
         "float height;"
         "vec4 color;"
+        "float border;"
+        "vec4 borderColor;"
     "} vs_out;"
 
     "void main()"
@@ -274,30 +276,40 @@ int R2D_GL3_Load_Pins() {
         "  vs_out.height = rad / winSize.y;"
         "}"
         "vs_out.color = col;"
+        "vs_out.border = border;"
+        "vs_out.borderColor = borderCol;"
     "}";
 
   GLchar geometrySource[] =
     "#version 330 core\n"
     "layout (points) in;"
-    "layout (triangle_strip, max_vertices = 36) out;"
+    "layout (triangle_strip, max_vertices = 52) out;"
 
     "in VS_OUT {"
     "    mat2 rot;"
     "    float width;"
     "    float height;"
     "    vec4 color;"
+    "    float border;"
+    "    vec4 borderColor;"
     "} gs_in[];"
 
     "uniform vec2 winSize;"
 
     "out vec4 c;"
     "out vec4 p;"
+    "out vec4 bc;"
+    "out float bw;"
 
     "void emit(vec4 pos)"
     "{"
     "  vec4 position = vec4(pos.xy, 0, 1);"
     "  vec2 r = vec2(pos.z / winSize.x, pos.z / winSize.y);"
     "  vec4 c1 = gs_in[0].color;"
+    "  bw = -gs_in[0].border / 2;"
+    "  bc = gs_in[0].borderColor;"
+    "  vec2 b = vec2(gs_in[0].border / winSize.x, gs_in[0].border / winSize.y);"
+    "  vec4 cb = gs_in[0].borderColor;"
     "  float smr = 1.5;"
     "  if(pos.a > 0) {"
     "    vec4 c0 = vec4(gs_in[0].color.rgb, 0);"
@@ -307,6 +319,18 @@ int R2D_GL3_Load_Pins() {
     "    }"
     "    p = vec4(0,0,0,0);"
     "    c = c0;"
+    // TOP, CENTER, BOTTOM
+    "    if(b.y > 0) {"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, -gs_in[0].height - b.y), 0 ,0);"
+    "      EmitVertex();"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, -gs_in[0].height - b.y), 0 ,0);"
+    "      EmitVertex();"
+    "      c = cb;"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, -gs_in[0].height - b.y + sm.y), 0 ,0);"
+    "      EmitVertex();"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, -gs_in[0].height - b.y + sm.y), 0 ,0);"
+    "      EmitVertex();"
+    "    }"
     "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, -gs_in[0].height), 0 ,0);"
     "    EmitVertex();"
     "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, -gs_in[0].height), 0 ,0);"
@@ -320,14 +344,41 @@ int R2D_GL3_Load_Pins() {
     "    EmitVertex();"
     "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, gs_in[0].height - sm.y), 0 ,0);"
     "    EmitVertex();"
-    "    c = c0;"
+    "    if(b.y > 0) {"
+    "      c = cb;"
+    "    } else {"
+    "      c = c0;"
+    "    }"
     "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, gs_in[0].height), 0 ,0);"
     "    EmitVertex();"
     "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, gs_in[0].height), 0 ,0);"
     "    EmitVertex();"
+    "    if(b.y > 0) {"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, gs_in[0].height + b.y - sm.y), 0 ,0);"
+    "      EmitVertex();"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, gs_in[0].height + b.y - sm.y), 0 ,0);"
+    "      EmitVertex();"
+    "      c = c0;"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, gs_in[0].height + b.y), 0 ,0);"
+    "      EmitVertex();"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, gs_in[0].height + b.y), 0 ,0);"
+    "      EmitVertex();"
+    "    }"
     "    EndPrimitive();"
 
+    // LEFT
     "    c = c0;"
+    "    if(b.x > 0) {"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width - b.x,  gs_in[0].height - r.y), 0 ,0);"
+    "      EmitVertex();"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width - b.x, -gs_in[0].height + r.y), 0 ,0);"
+    "      EmitVertex();"
+    "      c = cb;"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width - b.x + sm.x,  gs_in[0].height - r.y), 0 ,0);"
+    "      EmitVertex();"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width - b.x + sm.x, -gs_in[0].height + r.y), 0 ,0);"
+    "      EmitVertex();"
+    "    }"
     "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width,  gs_in[0].height - r.y), 0 ,0);"
     "    EmitVertex();"
     "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width, -gs_in[0].height + r.y), 0 ,0);"
@@ -345,7 +396,19 @@ int R2D_GL3_Load_Pins() {
     "    }"
     "    EndPrimitive();"
 
+    // RIGHT
     "    c = c0;"
+    "    if(b.x > 0) {"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width + b.x,  gs_in[0].height - r.y), 0 ,0);"
+    "      EmitVertex();"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width + b.x, -gs_in[0].height + r.y), 0 ,0);"
+    "      EmitVertex();"
+    "      c = cb;"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width + b.x - sm.x,  gs_in[0].height - r.y), 0 ,0);"
+    "      EmitVertex();"
+    "      gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width + b.x - sm.x, -gs_in[0].height + r.y), 0 ,0);"
+    "      EmitVertex();"
+    "    }"
     "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width,  gs_in[0].height - r.y), 0 ,0);"
     "    EmitVertex();"
     "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width, -gs_in[0].height + r.y), 0 ,0);"
@@ -364,61 +427,63 @@ int R2D_GL3_Load_Pins() {
     "    EndPrimitive();"
     "  }"
 
-    // "  if(pos.z > 0) {"
     "    vec4 p0;"
     "    c = c1;"
     "    float rad = pos.z / 2;"
     "    if(rad < smr) {"
     "      rad = smr;"
     "    }"
+    // BOTTOM-RIGHT
     "    p0 = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x,  gs_in[0].height - r.y), 0, 0);"
     "    p = vec4((p0.x + 1) / 2 * winSize.x,  (p0.y + 1) / 2 * winSize.y, rad, smr);"
     "    gl_Position = p0;"
     "    EmitVertex();"
-    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x,  gs_in[0].height), 0 ,0);"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x,  gs_in[0].height + b.y), 0 ,0);"
     "    EmitVertex();"
-    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width,  gs_in[0].height - r.y), 0 ,0);"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width + b.x,  gs_in[0].height - r.y), 0 ,0);"
     "    EmitVertex();"
-    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width,  gs_in[0].height), 0 ,0);"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width + b.x,  gs_in[0].height + b.y), 0 ,0);"
     "    EmitVertex();"
     "    EndPrimitive();"
 
+    // TOP-RIGHT
     "    p0 = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, -gs_in[0].height + r.y), 0 ,0);"
     "    p = vec4((p0.x + 1) / 2 * winSize.x,  (p0.y + 1) / 2 * winSize.y, rad, smr);"
     "    gl_Position = p0;"
     "    EmitVertex();"
-    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, -gs_in[0].height), 0 ,0);"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width - r.x, -gs_in[0].height - b.y), 0 ,0);"
     "    EmitVertex();"
-    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width, -gs_in[0].height + r.y), 0 ,0);"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width + b.x, -gs_in[0].height + r.y), 0 ,0);"
     "    EmitVertex();"
-    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width, -gs_in[0].height), 0 ,0);"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2( gs_in[0].width + b.x, -gs_in[0].height - b.y), 0 ,0);"
     "    EmitVertex();"
     "    EndPrimitive();"
 
+    // BOTTOM-LEFT
     "    p0 = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x,  gs_in[0].height - r.y), 0 ,0);"
     "    p = vec4((p0.x + 1) / 2 * winSize.x,  (p0.y + 1) / 2 * winSize.y, rad, smr);"
     "    gl_Position = p0;"
     "    EmitVertex();"
-    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x,  gs_in[0].height), 0 ,0);"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x,  gs_in[0].height + b.y), 0 ,0);"
     "    EmitVertex();"
-    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width,  gs_in[0].height - r.y), 0 ,0);"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width - b.x,  gs_in[0].height - r.y), 0 ,0);"
     "    EmitVertex();"
-    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width,  gs_in[0].height), 0 ,0);"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width - b.x,  gs_in[0].height + b.y), 0 ,0);"
     "    EmitVertex();"
     "    EndPrimitive();"
 
+    // TOP-LEFT
     "    p0 = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, -gs_in[0].height + r.y), 0 ,0);"
     "    p = vec4((p0.x + 1) / 2 * winSize.x,  (p0.y + 1) / 2 * winSize.y, rad, smr);"
     "    gl_Position = p0;"
     "    EmitVertex();"
-    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, -gs_in[0].height), 0 ,0);"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width + r.x, -gs_in[0].height - b.y), 0 ,0);"
     "    EmitVertex();"
-    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width, -gs_in[0].height + r.y), 0 ,0);"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width - b.x, -gs_in[0].height + r.y), 0 ,0);"
     "    EmitVertex();"
-    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width, -gs_in[0].height), 0 ,0);"
+    "    gl_Position = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width - b.x, -gs_in[0].height - b.y), 0 ,0);"
     "    EmitVertex();"
     "    EndPrimitive();"
-    // "  }"
     "}"
 
     "void main() {"
@@ -429,6 +494,8 @@ int R2D_GL3_Load_Pins() {
     "#version 330 core\n"
     "in vec4 c;"
     "in vec4 p;"
+    "in vec4 bc;"
+    "in float bw;"
     "out vec4 color;"
 
     "void main()"
@@ -437,12 +504,18 @@ int R2D_GL3_Load_Pins() {
     "        float x = p.x - gl_FragCoord.x;"
     "        float y = p.y - gl_FragCoord.y;"
     "        float d = p.z - sqrt(x * x + y * y);"
-    "        if(d < 0) {"
-    //"          if(d < -4) color = vec4(0,0,0,0);"
-    // "          else color = vec4(0,0,0,1);"
-    "          color = vec4(0,0,0,0);"
-    "        } else if(d <= p.a) color = vec4(c.rgb, c.a * d / p.a);"
-    "        else color = c;"
+    "        if(d > p.a) color = c;"
+    "        else if(bw < 0) {"
+    "          if(d > 0) color = vec4("
+    "           (c.r * d + bc.r * (p.a - d)) / p.a,"
+    "           (c.g * d + bc.g * (p.a - d)) / p.a,"
+    "           (c.b * d + bc.b * (p.a - d)) / p.a,"
+    "           (c.a * d + bc.a * (p.a - d)) / p.a);"
+    "          else if(d > bw + p.a) color = bc;"
+    "          else if(d > bw) color = vec4(bc.rgb, bc.a * (d - bw) / p.a);"
+    "          else color = vec4(0,0,0,0);"
+    "        } else if(d > 0) color = vec4(c.rgb, c.a * d / p.a);"
+    "        else color = vec4(0,0,0,0);"
     "    } else color = c;"
     "}";
 
@@ -453,9 +526,9 @@ int R2D_GL3_Load_Pins() {
   glBindBuffer(GL_ARRAY_BUFFER, pinsVbo);
 
 
-  pinsVboData = (GLfloat *) malloc(R2D_GL3_PINS_VBO_CAPACITY * sizeof(GLfloat) * 10);
+  pinsVboData = (GLfloat *) malloc(R2D_GL3_PINS_VBO_CAPACITY * sizeof(GLfloat) * 15);
   pinsVboCurrent = pinsVboData;
-  glBufferData(GL_ARRAY_BUFFER, R2D_GL3_PINS_VBO_CAPACITY * sizeof(GLfloat) * 10, NULL, GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, R2D_GL3_PINS_VBO_CAPACITY * sizeof(GLfloat) * 15, NULL, GL_DYNAMIC_DRAW);
 
   // Load the vertex, geometry and fragment shaders
   GLuint vertexShader      = R2D_GL_LoadShader(  GL_VERTEX_SHADER, vertexSource, "GL3 Pin Vertex");
@@ -482,20 +555,26 @@ int R2D_GL3_Load_Pins() {
   // Check if linked
   R2D_GL_CheckLinked(pinsShaderProgram, "GL3 pin shader");
 
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 10 * sizeof(GLfloat), (void*)0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)0);
   glEnableVertexAttribArray(0);
 
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 10 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
   glEnableVertexAttribArray(1);
 
-  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 10 * sizeof(GLfloat), (void*)(4 * sizeof(GLfloat)));
+  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)(4 * sizeof(GLfloat)));
   glEnableVertexAttribArray(2);
 
-  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 10 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
+  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
   glEnableVertexAttribArray(3);
 
-  glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 10 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
+  glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
   glEnableVertexAttribArray(4);
+
+  glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)(10 * sizeof(GLfloat)));
+  glEnableVertexAttribArray(5);
+
+  glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)(11 * sizeof(GLfloat)));
+  glEnableVertexAttribArray(6);
 
   glDeleteShader(vertexShader);
   glDeleteShader(geometryShader);
@@ -517,7 +596,7 @@ void R2D_GL3_FlushBuffers() {
 
   glBindVertexArray(pinsVao);
   glBindBuffer(GL_ARRAY_BUFFER, pinsVbo);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, pinsVboIndex * sizeof(GLfloat) * 10, pinsVboData);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, pinsVboIndex * sizeof(GLfloat) * 15, pinsVboData);
 
   GLuint trianglesOffset = 0, ti = 0, pinsOffset = 0, pi = 0;
   GLuint lastVertex = vertices[0];
@@ -624,12 +703,13 @@ void R2D_GL3_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], G
  * Draw a pin
  */
 void R2D_GL3_DrawPin(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
-                    GLfloat width, GLfloat round,
-                    GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
+                    GLfloat width, GLfloat round, GLfloat border,
+                    GLfloat r, GLfloat g, GLfloat b, GLfloat a,
+                    GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba) {
   // If buffer is full, flush it
   if (pinsVboIndex + 1 >= R2D_GL3_PINS_VBO_CAPACITY) R2D_GL3_FlushBuffers();
 
-  GLfloat v[10] = { x1, y1, x2, y2, width, round, r, g, b, a};
+  GLfloat v[15] = { x1, y1, x2, y2, width, round, r, g, b, a, border, br, bg, bb, ba};
 
   // Copy the vertex data into the current position of the buffer
   memcpy(pinsVboCurrent, v, sizeof(v));
@@ -637,7 +717,7 @@ void R2D_GL3_DrawPin(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
   vertices[verticesIndex] = R2D_GL3_PIN_ID;
   verticesIndex += 1;
   pinsVboIndex += 1;
-  pinsVboCurrent = (GLfloat *)((char *)pinsVboCurrent + (sizeof(GLfloat) * 10));
+  pinsVboCurrent = (GLfloat *)((char *)pinsVboCurrent + (sizeof(GLfloat) * 15));
 }
 
 

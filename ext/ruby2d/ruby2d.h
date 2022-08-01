@@ -420,16 +420,18 @@ void R2D_DrawQuad(
  */
 void R2D_DrawLine(
   GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
-  GLfloat width, GLfloat round,
-  GLfloat r, GLfloat g, GLfloat b, GLfloat a
+  GLfloat width, GLfloat round, GLfloat border,
+  GLfloat r, GLfloat g, GLfloat b, GLfloat a,
+  GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba
 );
 
 /*
  * Draw a circle
  */
 void R2D_DrawCircle(
-  GLfloat x, GLfloat y, GLfloat radius, int sectors,
-  GLfloat r, GLfloat g, GLfloat b, GLfloat a
+  GLfloat x, GLfloat y, GLfloat radius, GLfloat border, int sectors,
+  GLfloat r, GLfloat g, GLfloat b, GLfloat a,
+  GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba
 );
 
 // Image ///////////////////////////////////////////////////////////////////////
@@ -711,14 +713,19 @@ void R2D_GL_DrawQuad(GLfloat x1, GLfloat y1,
   GLfloat r3, GLfloat g3, GLfloat b3, GLfloat a3,
   GLfloat x4, GLfloat y4,
   GLfloat r4, GLfloat g4, GLfloat b4, GLfloat a4);
-void R2D_GL_DrawLine(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
-  GLfloat width, GLfloat round, GLfloat r, GLfloat g, GLfloat b, GLfloat a);
+void R2D_GL_DrawLine(
+  GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
+  GLfloat width, GLfloat round, GLfloat border,
+  GLfloat r, GLfloat g, GLfloat b, GLfloat a,
+  GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba);
 void R2D_GL_DrawLineQuad(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
   GLfloat width, GLfloat r, GLfloat g, GLfloat b, GLfloat a);
 void R2D_GL_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], GLfloat color[], int texture_id);
 void R2D_GL_FreeTexture(GLuint *id);
-void R2D_GL_DrawCircle(GLfloat x, GLfloat y, GLfloat radius, int sectors,
-                    GLfloat r, GLfloat g, GLfloat b, GLfloat a);
+void R2D_GL_DrawCircle(
+  GLfloat x, GLfloat y, GLfloat radius, GLfloat border, int sectors,
+  GLfloat r, GLfloat g, GLfloat b, GLfloat a,
+  GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba);
 void R2D_GL_DrawCircleTriangles(GLfloat x, GLfloat y, GLfloat radius, int sectors,
                     GLfloat r, GLfloat g, GLfloat b, GLfloat a);
 void R2D_GL_Clear(R2D_Color clr);
@@ -761,9 +768,11 @@ void R2D_GL_FlushBuffers();
     GLfloat r3, GLfloat g3, GLfloat b3, GLfloat a3);
   void R2D_GL2_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], GLfloat color[], int texture_id);
   void R2D_GL3_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], GLfloat color[], int texture_id);
-  void R2D_GL3_DrawPin(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
-                    GLfloat width, GLfloat round,
-                    GLfloat r, GLfloat g, GLfloat b, GLfloat a);
+  void R2D_GL3_DrawPin(
+    GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
+    GLfloat width, GLfloat round, GLfloat border,
+    GLfloat r, GLfloat g, GLfloat b, GLfloat a,
+    GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba);
   void R2D_GL3_FlushBuffers();
 #endif
 

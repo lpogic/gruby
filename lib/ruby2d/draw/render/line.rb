@@ -7,7 +7,7 @@ module Ruby2D
   class Line
     include Renderable
 
-    attr_accessor :x1, :x2, :y1, :y2, :width, :round, :border
+    let_accessor :x1, :x2, :y1, :y2, :width, :round, :border, :z
 
     # Create an Line
     # @param [Numeric] x1
@@ -22,18 +22,17 @@ module Ruby2D
     def initialize(x1: 0, y1: 0, x2: 100, y2: 100, z: 0,
                    width: 6, round: 2, border: 0, 
                    color: nil, colour: nil, border_color: nil, opacity: nil)
-      @x1 = x1
-      @y1 = y1
-      @x2 = x2
-      @y2 = y2
-      @z = z
-      @width = width
-      @round = round
-      @border = border
+      @x1 = Let.new x1
+      @y1 = Let.new y1
+      @x2 = Let.new x2
+      @y2 = Let.new y2
+      @z = Let.new z
+      @width = Let.new width
+      @round = Let.new round
+      @border = Let.new border
       self.color = color || colour || 'white'
       self.border_color = border_color || 'black'
       self.color.opacity = opacity unless opacity.nil?
-      add
     end
 
     def border_color=(color)
@@ -42,7 +41,7 @@ module Ruby2D
 
     # Return the length of the line
     def length
-      points_distance(@x1, @y1, @x2, @y2)
+      points_distance(@x1.get, @y1.get, @x2.get, @y2.get)
     end
 
     # Line contains a point if the point is closer than the length of line from
@@ -50,10 +49,14 @@ module Ruby2D
     # the width. For reference:
     #   https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
     def contains?(x, y)
-      line_len = length
-      points_distance(@x1, @y1, x, y) <= line_len &&
-        points_distance(@x2, @y2, x, y) <= line_len &&
-        (((@y2 - @y1) * x - (@x2 - @x1) * y + @x2 * @y1 - @y2 * @x1).abs / line_len) <= 0.5 * @width
+      x1 = @x1.get
+      x2 = @x2.get
+      y1 = @y1.get
+      y2 = @y2.get
+      line_len = points_distance(x1, y1, x2, y2)
+      points_distance(x1, y1, x, y) <= line_len &&
+        points_distance(x2, y2, x, y) <= line_len &&
+        (((y2 - y1) * x - (x2 - x1) * y + x2 * y1 - y2 * x1).abs / line_len) <= 0.5 * @width.get
     end
 
     # Draw a line without creating a Line
@@ -72,13 +75,13 @@ module Ruby2D
                ])
     end
 
-    private
-
     def render
       self.class.ext_draw([
-                            @x1, @y1, @x2, @y2, @width, @round, @border, *@color, *@border_color
+                            @x1.get, @y1.get, @x2.get, @y2.get, @width.get, @round.get, @border.get, *@color, *@border_color
                           ])
     end
+
+    private
 
     # Calculate the distance between two points
     def points_distance(x1, y1, x2, y2)

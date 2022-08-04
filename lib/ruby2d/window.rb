@@ -6,6 +6,8 @@ module Ruby2D
   # Represents a window on screen, responsible for storing renderable graphics,
   # event handlers, the update loop, showing and closing the window.
   class Window
+    include Cluster
+    
     # Event structures
     EventDescriptor       = Struct.new(:type, :id)
     MouseEvent            = Struct.new(:type, :button, :direction, :x, :y, :delta_x, :delta_y)
@@ -22,6 +24,8 @@ module Ruby2D
     # @param fps_cap [Numeric] Over-ride the default (60fps) frames-per-second
     # @param vsync [Boolean] Enabled by default, use this to override it (Not recommended)
     def initialize(title: 'Ruby 2D', width: 640, height: 480, fps_cap: 60, vsync: true)
+      super()
+
       # Title of the window
       @title = title
 
@@ -42,8 +46,7 @@ module Ruby2D
       # Renderable objects currently in the window, like a linear scene graph
       @objects = []
 
-      # Entities currently in the window
-      @entities = []
+      @mouse_owner = self
 
       _init_window_defaults
       _init_event_stores
@@ -198,6 +201,10 @@ module Ruby2D
       end
     end
 
+    def contains?(x, y)
+      (0..@width).include?(x) && (0..@height).include?(y)
+    end
+
     # Public instance methods
 
     # --- start exception
@@ -265,50 +272,6 @@ module Ruby2D
 
       @diagnostics = opts[:diagnostics]
       ext_diagnostics(@diagnostics)
-    end
-
-    # Add an object to the window
-    def add(object)
-      case object
-      when nil
-        raise Error, "Cannot add '#{object.class}' to window!"
-      when Entity
-        @entities.push(object)
-      when Array
-        object.each { |x| add_object(x) }
-      else
-        add_object(object)
-      end
-    end
-
-    # Remove an object from the window
-    def remove(object)
-      raise Error, "Cannot remove '#{object.class}' from window!" if object.nil?
-
-      collection = object.class.ancestors.include?(Ruby2D::Entity) ? @entities : @objects
-      ix = collection.index(object)
-      return false if ix.nil?
-
-      collection.delete_at(ix)
-      true
-    end
-
-    # Clear all objects from the window
-    def clear
-      @objects.clear
-      @entities.clear
-    end
-
-    # Set the update callback
-    def update(&proc)
-      @update_proc = proc
-      true
-    end
-
-    # Set the render callback
-    def render(&proc)
-      @render_proc = proc
-      true
     end
 
     # Generate a new event key (ID)
@@ -454,10 +417,7 @@ module Ruby2D
     def update_callback
       update unless @using_dsl
 
-      @update_proc.call
-
-      # Run update method on all entities
-      @entities.each(&:update)
+      prot_update
 
       # Accept and eval commands if in console mode
       _handle_console_input if @console && $stdin.ready?
@@ -470,10 +430,7 @@ module Ruby2D
     def render_callback
       render unless @using_dsl
 
-      @render_proc.call
-
-      # Run render method on all entities
-      @entities.each(&:render)
+      prot_render
     end
 
     # Show the window
@@ -506,23 +463,6 @@ module Ruby2D
     # Private instance methods
 
     private
-
-    # An an object to the window, used by the public `add` method
-    def add_object(object)
-      if !@objects.include?(object)
-        index = @objects.index do |obj|
-          obj.z > object.z
-        end
-        if index
-          @objects.insert(index, object)
-        else
-          @objects.push(object)
-        end
-        true
-      else
-        false
-      end
-    end
 
     def _set_any_window_properties(opts)
       @background = Color.new(opts[:background]) if Color.valid? opts[:background]
@@ -797,12 +737,7 @@ module Ruby2D
     end
 
     def _init_procs_dsl_console
-      # The window update block
-      @update_proc = proc {}
-
-      # The window render block
-      @render_proc = proc {}
-
+    
       # Detect if window is being used through the DSL or as a class instance
       @using_dsl = !(method(:update).parameters.empty? || method(:render).parameters.empty?)
 

@@ -1675,16 +1675,6 @@ static void render() {
   ruby2d_c_window->background.b = NUM2DBL(r_iv_get(bc, "@b"));
   ruby2d_c_window->background.a = NUM2DBL(r_iv_get(bc, "@a"));
 
-  // Read window objects
-  R_VAL objects = r_iv_get(ruby2d_window, "@objects");
-  int num_objects = NUM2INT(r_funcall(objects, "length", 0));
-
-  // Switch on each object type
-  for (int i = 0; i < num_objects; ++i) {
-    R_VAL el = r_ary_entry(objects, i);
-    r_funcall(el, "render", 0);  // call the object's `render` function
-  }
-
   // Call render proc, `window.render`
   r_funcall(ruby2d_window, "render_callback", 0);
 }

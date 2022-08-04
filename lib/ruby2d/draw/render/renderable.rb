@@ -14,16 +14,6 @@ module Ruby2D
       add
     end
 
-    # Add the object to the window
-    def add
-      Window.add(self)
-    end
-
-    # Remove the object from the window
-    def remove
-      Window.remove(self)
-    end
-
     # Set the color value
     def color=(color)
       @color = Color.new(color)

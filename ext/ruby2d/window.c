@@ -218,59 +218,6 @@ void main_loop() {
         break;
 
       case SDL_WINDOWEVENT:
-      switch (e.window.event) {
-        case SDL_WINDOWEVENT_SHOWN:
-            printf("Window %d shown\n", e.window.windowID);
-            break;
-        case SDL_WINDOWEVENT_HIDDEN:
-            printf("Window %d hidden\n", e.window.windowID);
-            break;
-        case SDL_WINDOWEVENT_EXPOSED:
-            printf("Window %d exposed\n", e.window.windowID);
-            break;
-        case SDL_WINDOWEVENT_MOVED:
-            printf("Window %d moved to %d,%d\n",
-                    e.window.windowID, e.window.data1,
-                    e.window.data2);
-            break;
-        case SDL_WINDOWEVENT_RESIZED:
-            printf("Window %d resized to %dx%d\n",
-                    e.window.windowID, e.window.data1,
-                    e.window.data2);
-            break;
-        case SDL_WINDOWEVENT_SIZE_CHANGED:
-            printf("Window %d size changed to %dx%d\n",
-                    e.window.windowID, e.window.data1,
-                    e.window.data2);
-            break;
-        case SDL_WINDOWEVENT_MINIMIZED:
-            printf("Window %d minimized\n", e.window.windowID);
-            break;
-        case SDL_WINDOWEVENT_MAXIMIZED:
-            printf("Window %d maximized\n", e.window.windowID);
-            break;
-        case SDL_WINDOWEVENT_RESTORED:
-            printf("Window %d restored\n", e.window.windowID);
-            break;
-        case SDL_WINDOWEVENT_ENTER:
-            printf("Mouse entered window %d\n",
-                    e.window.windowID);
-            break;
-        case SDL_WINDOWEVENT_LEAVE:
-            printf("Mouse left window %d\n", e.window.windowID);
-            break;
-        case SDL_WINDOWEVENT_FOCUS_GAINED:
-            printf("Window %d gained keyboard focus\n",
-                    e.window.windowID);
-            break;
-        case SDL_WINDOWEVENT_FOCUS_LOST:
-            printf("Window %d lost keyboard focus\n",
-                    e.window.windowID);
-            break;
-        case SDL_WINDOWEVENT_CLOSE:
-            printf("Window %d closed\n", e.window.windowID);
-            break;
-      }
         switch (e.window.event) {
           case SDL_WINDOWEVENT_RESIZED:
             // Store new window size, set viewport

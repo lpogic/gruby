@@ -9,7 +9,8 @@ module Ruby2D
   class Circle
     include Renderable
 
-    attr_accessor :x, :y, :radius, :border, :sectors
+    let_accessor :x, :y, :radius, :border
+    attr_accessor :sectors
 
     # Create a circle
     #
@@ -23,17 +24,18 @@ module Ruby2D
     # @param [Float] opacity
     def initialize(x: 25, y: 25, z: 0, radius: 50, border: 0, sectors: 30,
                    color: nil, colour: nil, border_color: nil, opacity: nil)
-      @x = x
-      @y = y
-      @z = z
-      @radius = radius
-      @border = border
+      @x = Let.new x
+      @y = Let.new y
+      @z = Let.new z
+      @radius = Let.new radius
+      @border = Let.new border
       @sectors = sectors
       self.color = color || colour || 'white'
       self.border_color = border_color || 'black'
       self.color.opacity = opacity unless opacity.nil?
       add
     end
+
 
     # Check if the circle contains the point at +(x, y)+
     def contains?(x, y)
@@ -58,7 +60,7 @@ module Ruby2D
 
     def render
       self.class.ext_draw([
-                            @x, @y, @radius, @border, @sectors,
+                            @x.get, @y.get, @radius.get, @border.get, @sectors,
                             @color.r, @color.g, @color.b, @color.a,
                             @border_color.r, @border_color.g, @border_color.b, @border_color.a
                           ])

@@ -18,12 +18,12 @@ RSpec.describe Ruby2D::Line do
         color: 'gray', opacity: 0.5
       )
 
-      expect(line.x1).to eq(10)
-      expect(line.y1).to eq(20)
-      expect(line.x2).to eq(30)
-      expect(line.y2).to eq(40)
-      expect(line.z).to eq(50)
-      expect(line.width).to eq(60)
+      expect(line.x1.get).to eq(10)
+      expect(line.y1.get).to eq(20)
+      expect(line.x2.get).to eq(30)
+      expect(line.y2.get).to eq(40)
+      expect(line.z.get).to eq(50)
+      expect(line.width.get).to eq(60)
       expect(line.length).to be_within(0.0001).of(28.2843)
       expect(line.color.r).to eq(2/3.0)
       expect(line.color.opacity).to eq(0.5)
@@ -52,13 +52,13 @@ RSpec.describe Ruby2D::Line do
       line.color = 'gray'
       line.color.opacity = 0.5
 
-      expect(line.x1).to eq(10)
-      expect(line.y1).to eq(20)
-      expect(line.x2).to eq(30)
-      expect(line.y2).to eq(40)
-      expect(line.z).to eq(50)
-      expect(line.width).to eq(60)
-      expect(line.length).to be_within(0.0001).of(28.2843)
+      expect(line.x1.get).to eq(10)
+      expect(line.y1.get).to eq(20)
+      expect(line.x2.get).to eq(30)
+      expect(line.y2.get).to eq(40)
+      expect(line.z.get).to eq(50)
+      expect(line.width.get).to eq(60)
+      expect(line.length.get).to be_within(0.0001).of(28.2843)
       expect(line.color.r).to eq(2/3.0)
       expect(line.color.opacity).to eq(0.5)
     end

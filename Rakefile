@@ -3,7 +3,7 @@ require 'rubocop/rake_task'
 require_relative 'lib/ruby2d/cli/colorize'
 require_relative 'lib/ruby2d/version'
 
-$RUBY2D_DEV_MODE = true
+$RUBY2D_DEV_MODE = false
 
 # Helpers ######################################################################
 

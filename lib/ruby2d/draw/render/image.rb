@@ -39,7 +39,7 @@ module Ruby2D
     def initialize(path, atlas: nil,
                    width: nil, height: nil, x: 0, y: 0, z: 0,
                    rotate: 0, color: nil, colour: nil,
-                   opacity: nil, show: true)
+                   opacity: nil)
       @path = path.to_s
 
       # Consider input pixmap atlas if supplied to load image file
@@ -53,8 +53,6 @@ module Ruby2D
       @rotate = rotate
       self.color = color || colour || 'white'
       self.color.opacity = opacity unless opacity.nil?
-
-      add if show
     end
 
     def draw(x: 0, y: 0, width: nil, height: nil, rotate: 0, color: nil, colour: nil)
@@ -65,8 +63,6 @@ module Ruby2D
              color: Color.new(color || colour || 'white'),
              rotate: rotate || @rotate)
     end
-
-    private
 
     def render(x: @x, y: @y, width: @width, height: @height, color: @color, rotate: @rotate)
       vertices = Vertices.new(x, y, width, height, rotate)

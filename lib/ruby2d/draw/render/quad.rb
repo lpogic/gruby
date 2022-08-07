@@ -43,7 +43,6 @@ module Ruby2D
       @z  = z
       self.color = color || colour || 'white'
       self.color.opacity = opacity unless opacity.nil?
-      add
     end
 
     # Change the colour of the line
@@ -98,8 +97,6 @@ module Ruby2D
                ])
     end
 
-    private
-
     def render
       color_comp_arrays = color_components
       self.class.ext_draw([
@@ -109,6 +106,8 @@ module Ruby2D
                             @x4, @y4, *color_comp_arrays[3]
                           ])
     end
+
+    private
 
     def triangle_area(x1, y1, x2, y2, x3, y3)
       (x1 * y2 + x2 * y3 + x3 * y1 - x3 * y2 - x1 * y3 - x2 * y1).abs / 2

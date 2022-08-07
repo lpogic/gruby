@@ -3,15 +3,15 @@
 # Ruby2D module and native extension loader
 
 unless RUBY_ENGINE == 'mruby'
-  require 'ruby2d/let'
+  require 'ruby2d/communicationg_vessels_system'
   require 'ruby2d/cli/colorize'
   require 'ruby2d/exceptions'
   require 'ruby2d/draw/render/renderable'
   require 'ruby2d/draw/color'
+  require 'ruby2d/entity'
   require 'ruby2d/cluster'
   require 'ruby2d/window'
   require 'ruby2d/dsl'
-  require 'ruby2d/entity'
   require 'ruby2d/draw/render/quad'
   require 'ruby2d/draw/render/line'
   require 'ruby2d/draw/render/circle'

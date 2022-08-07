@@ -72,6 +72,12 @@ module Ruby2D
     
         def get_proc = @b
     end
+
+    module Letfull
+        def let(l = Let.new)
+            l.is_a?(Let) ? l : Let.new(l)
+        end
+    end
 end
 
 class Class

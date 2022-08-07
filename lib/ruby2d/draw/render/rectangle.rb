@@ -5,39 +5,52 @@
 module Ruby2D
   # A rectangle
   class Rectangle < Line
-    let_accessor :x, :y, rect_width: 'width', rect_height: 'height'
-    # Create an rectangle
-    # @param [Numeric] x
-    # @param [Numeric] y
-    # @param [Numeric] width
-    # @param [Numeric] height
-    # @param [Numeric] round
-    # @param [Numeric] z
-    # @param [String, Array] color
-    # @param [String | Color] border_color
-    # @param [Numeric] opacity Opacity of the image when rendering
-    def initialize(x: 0, y: 0, width: 200, height: 100, round: 0, border: 0, z: 0, 
-      color: nil, colour: nil, border_color: nil, opacity: nil)
-      @rect_width = Let.new width
-      @rect_height = Let.new height
-      @x = Let.new x
-      @y = Let.new y
-      super(x1: ->{
-        d = @rect_width.get - @rect_height.get
-        d < 0 ? @x.get : @x.get - d / 2
-      }, y1: ->{
-        d = @rect_width.get - @rect_height.get
-        d < 0 ? @y.get - d / 2 : @y.get
-      }, x2: ->{
-        d = @rect_width.get - @rect_height.get
-        d < 0 ? @x.get : @x.get + d / 2
-      }, y2: ->{
-        d = @rect_width.get - @rect_height.get
-        d < 0 ? @y.get + d / 2 : @y.get
-      }, z: z, width: ->{
-        [@rect_width.get, @rect_height.get].min
-      }, round: round, border: border, 
-        color: color, colour: colour, border_color: border_color, opacity: opacity)  
+    pot_accessor :x, :y, width: :rect_width, height: :rect_height
+    def initialize(**args)
+      super()
+      @rect_width = pot 200
+      @rect_height = pot 100
+      @x = pot 0
+      @y = pot 0
+      args.each{|k, v| send "#{k}=", v}
+      let @x, @y, @rect_width, @rect_height, out: [@x1, @y1, @x2, @y2, @width] do |x, y, w, h|
+        d = w - h
+        d < 0 ? [x, y - d / 2, x, y + d / 2, w] : [x - d / 2, y, x + d / 2, y, h]
+      end
+    end
+
+    pot_reader :left, :right, :top, :bottom
+
+    def left=(left)
+      @x.let(left){_1 + width / 2}
+    end
+
+    def left!
+      @left ||= pot_view(@x, @rect_width){_1 - _2 / 2}
+    end
+
+    def right=(right)
+      @x.let(right){_1 - width / 2}
+    end
+
+    def right!
+      @right ||= pot_view(@x, @rect_width){_1 + _2 / 2}
+    end
+
+    def top=(top)
+      @y.let(top){_1 + height / 2}
+    end
+
+    def top!
+      @top ||= pot_view(@y, @rect_height){_1 - _2 / 2}
+    end
+
+    def bottom=(bottom)
+      @y.let(bottom){_1 - height / 2}
+    end
+
+    def bottom!
+      @bottom ||= pot_view(@y, @rect_height){_1 + _2 / 2}
     end
 
     def self.draw(x:, y:, width:, height:, round:, border:, color:, border_color:)

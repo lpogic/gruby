@@ -7,7 +7,7 @@ module Ruby2D
   class Line
     include Renderable
 
-    let_accessor :x1, :x2, :y1, :y2, :width, :round, :border, :z
+    pot_accessor :x1, :x2, :y1, :y2, :width, :round, :border, :z
 
     # Create an Line
     # @param [Numeric] x1
@@ -22,14 +22,14 @@ module Ruby2D
     def initialize(x1: 0, y1: 0, x2: 100, y2: 100, z: 0,
                    width: 6, round: 2, border: 0, 
                    color: nil, colour: nil, border_color: nil, opacity: nil)
-      @x1 = Let.new x1
-      @y1 = Let.new y1
-      @x2 = Let.new x2
-      @y2 = Let.new y2
-      @z = Let.new z
-      @width = Let.new width
-      @round = Let.new round
-      @border = Let.new border
+      @x1 = pot x1
+      @y1 = pot y1
+      @x2 = pot x2
+      @y2 = pot y2
+      @z = pot z
+      @width = pot width
+      @round = pot round
+      @border = pot border
       self.color = color || colour || 'white'
       self.border_color = border_color || 'black'
       self.color.opacity = opacity unless opacity.nil?

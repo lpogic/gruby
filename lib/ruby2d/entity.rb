@@ -4,15 +4,14 @@
 
 module Ruby2D
   # Any object that can be managed by a Ruby2D::Window must be an Entity
-  class Entity
-    # Add the entity to the window
-    def add
-      Window.add(self)
+  module Entity
+    include CommunicatingVesselsSystem
+    
+    def emit(type, event = nil)  
     end
 
-    # Remove the entity from the window
-    def remove
-      Window.remove(self)
+    def contains?(x, y)
+      false
     end
   end
 end

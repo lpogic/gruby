@@ -5,6 +5,7 @@
 module Ruby2D
   # Base class for all renderable shapes
   module Renderable
+    include CommunicatingVesselsSystem
     attr_reader :x, :y, :z, :width, :height, :color
 
     # Set the z position (depth) of the object

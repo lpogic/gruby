@@ -31,7 +31,7 @@ module Ruby2D
     # @param clip_x [Numeric]
     # @param clip_width [Numeric]
     # @param clip_height [Numeric]
-    def initialize(path, atlas: nil, show: true, width: nil, height: nil,
+    def initialize(path, atlas: nil, width: nil, height: nil,
                    x: 0, y: 0, z: 0, rotate: 0, color: nil, colour: nil, opacity: nil,
                    loop: false, time: 300, animations: {}, default: 0,
                    clip_x: 0, clip_y: 0, clip_width: nil, clip_height: nil)
@@ -60,9 +60,6 @@ module Ruby2D
 
       _setup_texture_and_clip_box atlas, clip_x, clip_y, clip_width, clip_height
       _setup_animation
-
-      # Add the sprite to the window
-      add if show
     end
 
     # Start playing an animation
@@ -194,8 +191,6 @@ module Ruby2D
              })
     end
 
-    private
-
     def render(x: @x, y: @y, width: (@width || @clip_width), height: (@height || @clip_height),
                color: @color, rotate: @rotate, flip: @flip,
                crop: {
@@ -210,6 +205,8 @@ module Ruby2D
       vertices = Vertices.new(x, y, width, height, rotate, crop: crop, flip: flip)
       @texture.draw vertices.coordinates, vertices.texture_coordinates, color
     end
+
+    private
 
     # Reset the playing animation to the first frame
     def _reset_playing_animation

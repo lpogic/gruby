@@ -25,7 +25,7 @@ module Ruby2D
     def initialize(text, size: 20, style: nil, font: Font.default,
                    x: 0, y: 0, z: 0,
                    rotate: 0, color: nil, colour: nil,
-                   opacity: nil, show: true)
+                   opacity: nil)
       @x = x
       @y = y
       @z = z
@@ -39,8 +39,6 @@ module Ruby2D
       @texture = nil
       create_font
       create_texture
-
-      add if show
     end
 
     # Returns the path of the font as a string
@@ -68,8 +66,6 @@ module Ruby2D
       render(x: x, y: y, color: Color.new(color), rotate: rotate)
     end
 
-    private
-
     def render(x: @x, y: @y, color: @color, rotate: @rotate)
       vertices = Vertices.new(x, y, @width, @height, rotate)
 
@@ -77,6 +73,8 @@ module Ruby2D
         vertices.coordinates, vertices.texture_coordinates, color
       )
     end
+
+    private
 
     def create_font
       @font = Font.load(@font_path, @size, @style)

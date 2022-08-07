@@ -30,7 +30,7 @@ module Ruby2D
     # @param [true, false] show If +true+ the canvas is added to +Window+ automatically.
     def initialize(width:, height:, x: 0, y: 0, z: 0, rotate: 0,
                    fill: [0, 0, 0, 0], color: nil, colour: nil, opacity: nil,
-                   update: true, show: true)
+                   update: true)
       @x = x
       @y = y
       @z = z
@@ -44,7 +44,6 @@ module Ruby2D
 
       ext_create([@width, @height, @fill.r, @fill.g, @fill.b, @fill.a]) # sets @ext_pixel_data
       @texture = Texture.new(@ext_pixel_data, @width, @height)
-      add if show
     end
 
     # Clear the entire canvas, replacing every pixel with fill colour without blending.
@@ -281,6 +280,14 @@ module Ruby2D
       update_texture
     end
 
+    def render(x: @x, y: @y, width: @width, height: @height, color: @color, rotate: @rotate)
+      vertices = Vertices.new(x, y, width, height, rotate)
+
+      @texture.draw(
+        vertices.coordinates, vertices.texture_coordinates, color
+      )
+    end
+
     private
 
     # Converts +color_or_set+ as a sequence of colour components; e.g. +[ r1, g1, b1, a1, ...]+
@@ -302,14 +309,6 @@ module Ruby2D
     def update_texture
       @texture.delete
       @texture = Texture.new(@ext_pixel_data, @width, @height)
-    end
-
-    def render(x: @x, y: @y, width: @width, height: @height, color: @color, rotate: @rotate)
-      vertices = Vertices.new(x, y, width, height, rotate)
-
-      @texture.draw(
-        vertices.coordinates, vertices.texture_coordinates, color
-      )
     end
   end
 end

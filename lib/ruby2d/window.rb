@@ -9,7 +9,6 @@ module Ruby2D
     include Cluster
     
     # Event structures
-    EventDescriptor       = Struct.new(:type, :id)
     MouseEvent            = Struct.new(:type, :button, :direction, :x, :y, :delta_x, :delta_y)
     KeyEvent              = Struct.new(:type, :key)
     ControllerEvent       = Struct.new(:which, :type, :axis, :value, :button)
@@ -46,6 +45,7 @@ module Ruby2D
       # Renderable objects currently in the window, like a linear scene graph
       @objects = []
 
+      @mouse_current = nil
       @mouse_owner = self
 
       _init_window_defaults
@@ -61,6 +61,10 @@ module Ruby2D
     class << self
       def current
         get(:window)
+      end
+
+      def window
+        get :window
       end
 
       def title
@@ -205,6 +209,11 @@ module Ruby2D
       (0..@width).include?(x) && (0..@height).include?(y)
     end
 
+    def window = self
+
+    def width = @width
+    def height = @height
+
     # Public instance methods
 
     # --- start exception
@@ -274,25 +283,6 @@ module Ruby2D
       ext_diagnostics(@diagnostics)
     end
 
-    # Generate a new event key (ID)
-    def new_event_key
-      @event_key = @event_key.next
-    end
-
-    # Set an event handler
-    def on(event, &proc)
-      raise Error, "`#{event}` is not a valid event type" unless @events.key? event
-
-      event_id = new_event_key
-      @events[event][event_id] = proc
-      EventDescriptor.new(event, event_id)
-    end
-
-    # Remove an event handler
-    def off(event_descriptor)
-      @events[event_descriptor.type].delete(event_descriptor.id)
-    end
-
     # Key down event method for class pattern
     def key_down(key)
       @keys_down.include? key
@@ -313,9 +303,7 @@ module Ruby2D
       key = key.downcase
 
       # All key events
-      @events[:key].each do |_id, e|
-        e.call(KeyEvent.new(type, key))
-      end
+      emit :key, KeyEvent.new(type, key)
 
       case type
       # When key is pressed, fired once
@@ -353,9 +341,7 @@ module Ruby2D
     # Mouse callback method, called by the native and web extentions
     def mouse_callback(type, button, direction, x, y, delta_x, delta_y)
       # All mouse events
-      @events[:mouse].each do |_id, e|
-        e.call(MouseEvent.new(type, button, direction, x, y, delta_x, delta_y))
-      end
+      emit :mouse, MouseEvent.new(type, button, direction, x, y, delta_x, delta_y)
 
       case type
       # When mouse button pressed
@@ -396,9 +382,7 @@ module Ruby2D
     # Controller callback method, called by the native and web extentions
     def controller_callback(which, type, axis, value, button)
       # All controller events
-      @events[:controller].each do |_id, e|
-        e.call(ControllerEvent.new(which, type, axis, value, button))
-      end
+      emit :controller, ControllerEvent.new(which, type, axis, value, button)
 
       case type
       # When controller axis motion, like analog sticks
@@ -417,7 +401,7 @@ module Ruby2D
     def update_callback
       update unless @using_dsl
 
-      prot_update
+      update
 
       # Accept and eval commands if in console mode
       _handle_console_input if @console && $stdin.ready?
@@ -430,7 +414,7 @@ module Ruby2D
     def render_callback
       render unless @using_dsl
 
-      prot_render
+      render
     end
 
     # Show the window
@@ -486,9 +470,7 @@ module Ruby2D
       @keys_down << key if !@using_dsl && !(@keys_down.include? key)
 
       # Call event handler
-      @events[:key_down].each do |_id, e|
-        e.call(KeyEvent.new(type, key))
-      end
+      emit :key_down, KeyEvent.new(type, key)
     end
 
     def _handle_key_held(type, key)
@@ -496,9 +478,7 @@ module Ruby2D
       @keys_held << key if !@using_dsl && !(@keys_held.include? key)
 
       # Call event handler
-      @events[:key_held].each do |_id, e|
-        e.call(KeyEvent.new(type, key))
-      end
+      emit :key_held, KeyEvent.new(type, key)
     end
 
     def _handle_key_up(type, key)
@@ -506,9 +486,7 @@ module Ruby2D
       @keys_up << key if !@using_dsl && !(@keys_up.include? key)
 
       # Call event handler
-      @events[:key_up].each do |_id, e|
-        e.call(KeyEvent.new(type, key))
-      end
+      emit :key_up, KeyEvent.new(type, key)
     end
 
     def _handle_mouse_down(type, button, x, y)
@@ -516,8 +494,11 @@ module Ruby2D
       @mouse_buttons_down << button if !@using_dsl && !(@mouse_buttons_down.include? button)
 
       # Call event handler
-      @events[:mouse_down].each do |_id, e|
-        e.call(MouseEvent.new(type, button, nil, x, y, nil, nil))
+      e = MouseEvent.new(type, button, nil, x, y, nil, nil)
+      c = @mouse_current
+      while c
+          c.emit :mouse_down, e
+          c = c.parent
       end
     end
 
@@ -526,8 +507,11 @@ module Ruby2D
       @mouse_buttons_up << button if !@using_dsl && !(@mouse_buttons_up.include? button)
 
       # Call event handler
-      @events[:mouse_up].each do |_id, e|
-        e.call(MouseEvent.new(type, button, nil, x, y, nil, nil))
+      e = MouseEvent.new(type, button, nil, x, y, nil, nil)
+      c = @mouse_current
+      while c
+          c.emit :mouse_up, e
+          c = c.parent
       end
     end
 
@@ -541,9 +525,7 @@ module Ruby2D
       end
 
       # Call event handler
-      @events[:mouse_scroll].each do |_id, e|
-        e.call(MouseEvent.new(type, nil, direction, nil, nil, delta_x, delta_y))
-      end
+      event :mouse_scroll, MouseEvent.new(type, nil, direction, nil, nil, delta_x, delta_y)
     end
 
     def _handle_mouse_move(type, x, y, delta_x, delta_y)
@@ -555,8 +537,27 @@ module Ruby2D
       end
 
       # Call event handler
-      @events[:mouse_move].each do |_id, e|
-        e.call(MouseEvent.new(type, nil, nil, x, y, delta_x, delta_y))
+      e = MouseEvent.new(type, nil, nil, x, y, delta_x, delta_y)
+      # send :mouse_move, MouseEvent.new(type, nil, nil, x, y, delta_x, delta_y)
+      if @mouse_current
+          mc = @mouse_current
+          while not mc.contains?(x, y)
+              mc.emit :mouse_out, e
+              if mc == @mouse_owner
+                  mc = nil
+                  break
+              else
+                  mc = mc.parent
+              end
+          end
+          c = mc
+          while c
+              c.emit :mouse_move, e
+              c = c.parent
+          end            
+          @mouse_current = mc.accept_mouse(e) if mc
+      else
+          @mouse_current = @mouse_owner.accept_mouse(e) if @mouse_owner.contains?(x, y)
       end
     end
 
@@ -569,9 +570,7 @@ module Ruby2D
       end
 
       # Call event handler
-      @events[:controller_axis].each do |_id, e|
-        e.call(ControllerAxisEvent.new(which, axis, value))
-      end
+      emit :controller_axis, ControllerAxisEvent.new(which, axis, value)
     end
 
     def _set_controller_axis_value(axis, value)
@@ -595,9 +594,7 @@ module Ruby2D
       end
 
       # Call event handler
-      @events[:controller_button_down].each do |_id, e|
-        e.call(ControllerButtonEvent.new(which, button))
-      end
+      emit :controller_button_down, ControllerButtonEvent.new(which, button)
     end
 
     def _handle_controller_button_up(which, button)
@@ -608,9 +605,7 @@ module Ruby2D
       end
 
       # Call event handler
-      @events[:controller_button_up].each do |_id, e|
-        e.call(ControllerButtonEvent.new(which, button))
-      end
+      emit :controller_button_up, ControllerButtonEvent.new(which, button)
     end
 
     # --- start exception
@@ -715,25 +710,6 @@ module Ruby2D
       # Controller axis and button mappings file
       @controller_mappings = "#{File.expand_path('~')}/.ruby2d/controllers.txt"
 
-      # Unique ID for the input event being registered
-      @event_key = 0
-
-      # Registered input events
-      @events = {
-        key: {},
-        key_down: {},
-        key_held: {},
-        key_up: {},
-        mouse: {},
-        mouse_up: {},
-        mouse_down: {},
-        mouse_scroll: {},
-        mouse_move: {},
-        controller: {},
-        controller_axis: {},
-        controller_button_down: {},
-        controller_button_up: {}
-      }
     end
 
     def _init_procs_dsl_console

@@ -9,7 +9,7 @@ module Ruby2D
   class Circle
     include Renderable
 
-    let_accessor :x, :y, :radius, :border
+    pot_accessor :x, :y, :radius, :border
     attr_accessor :sectors
 
     # Create a circle
@@ -24,11 +24,11 @@ module Ruby2D
     # @param [Float] opacity
     def initialize(x: 25, y: 25, z: 0, radius: 50, border: 0, sectors: 30,
                    color: nil, colour: nil, border_color: nil, opacity: nil)
-      @x = Let.new x
-      @y = Let.new y
-      @z = Let.new z
-      @radius = Let.new radius
-      @border = Let.new border
+      @x = pot x
+      @y = pot y
+      @z = pot z
+      @radius = pot radius
+      @border = pot border
       @sectors = sectors
       self.color = color || colour || 'white'
       self.border_color = border_color || 'black'

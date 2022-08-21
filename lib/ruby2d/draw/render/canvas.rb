@@ -28,18 +28,16 @@ module Ruby2D
     # @param [Numeric] opacity Opacity of the texture when rendering
     # @param [true, false] update If +true+ updates the texture for every draw/fill call
     # @param [true, false] show If +true+ the canvas is added to +Window+ automatically.
-    def initialize(width:, height:, x: 0, y: 0, z: 0, rotate: 0,
-                   fill: [0, 0, 0, 0], color: nil, colour: nil, opacity: nil,
+    def initialize(width:, height:, x: 0, y: 0, rotate: 0,
+                   fill: [0, 0, 0, 0], color: nil, colour: nil,
                    update: true)
       @x = x
       @y = y
-      @z = z
       @width = width
       @height = height
       @rotate = rotate
       @fill = Color.new(fill)
       self.color = color || colour || 'white'
-      color.opacity = opacity if opacity
       @update = update
 
       ext_create([@width, @height, @fill.r, @fill.g, @fill.b, @fill.a]) # sets @ext_pixel_data

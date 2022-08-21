@@ -321,13 +321,12 @@ static R_VAL ruby2d_line_ext_draw(mrb_state* mrb, R_VAL self) {
 static R_VAL ruby2d_line_ext_draw(R_VAL self, R_VAL a) {
 #endif
   // `a` is the array representing the line
-
   R2D_DrawLine(
     NUM2DBL(r_ary_entry(a,  0)),  // x1
     NUM2DBL(r_ary_entry(a,  1)),  // y1
     NUM2DBL(r_ary_entry(a,  2)),  // x2
     NUM2DBL(r_ary_entry(a,  3)),  // y2
-    NUM2DBL(r_ary_entry(a,  4)),  // width
+    NUM2DBL(r_ary_entry(a,  4)),  // thick
     NUM2DBL(r_ary_entry(a,  5)),  // round
     NUM2DBL(r_ary_entry(a,  6)),  // border
 
@@ -1106,7 +1105,7 @@ static R_VAL ruby2d_canvas_ext_draw_ellipse(R_VAL self, R_VAL a) {
  * connecting the three points clock-wise. A negative value
  * means the angle "to the right" is > 180. 
  */
-static inline int cross_product_corner(x1, y1, x2, y2, x3, y3) {
+static inline int cross_product_corner(int x1, int y1, int x2, int y2, int x3, int y3) {
   register int vec1_x = x1 - x2;
   register int vec1_y = y1 - y2;
   register int vec2_x = x2 - x3;
@@ -1642,6 +1641,16 @@ static void on_controller(R2D_Event e) {
   );
 }
 
+/*
+ * Ruby 2D native `on_resize` callback function
+ */
+void on_resize(R2D_Event e) {
+
+  r_funcall(
+    ruby2d_window, "resize_callback", 2, INT2NUM(e.x), INT2NUM(e.y)
+  );
+}
+
 
 /*
  * Ruby 2D native `update` callback function
@@ -1743,8 +1752,12 @@ static R_VAL ruby2d_window_ext_show(R_VAL self) {
 
   // Get window attributes
   char *title = RSTRING_PTR(r_iv_get(self, "@title"));
-  int width   = NUM2INT(r_iv_get(self, "@width"));
-  int height  = NUM2INT(r_iv_get(self, "@height"));
+  // int width   = NUM2INT(r_iv_get(self, "@width"));
+  // int height  = NUM2INT(r_iv_get(self, "@height"));
+  int width   = NUM2INT(r_funcall(self, "get_width", 0));
+  int height  = NUM2INT(r_funcall(self, "get_height", 0));
+  // int width   = NUM2INT(r_iv_get(self, "@width_value"));
+  // int height  = NUM2INT(r_iv_get(self, "@height_value"));
   int fps_cap = NUM2INT(r_iv_get(self, "@fps_cap"));
 
   // Get the window icon
@@ -1788,6 +1801,7 @@ static R_VAL ruby2d_window_ext_show(R_VAL self) {
   ruby2d_c_window->on_key          = on_key;
   ruby2d_c_window->on_mouse        = on_mouse;
   ruby2d_c_window->on_controller   = on_controller;
+  ruby2d_c_window->on_resize       = on_resize;
 
   R2D_Show(ruby2d_c_window);
 

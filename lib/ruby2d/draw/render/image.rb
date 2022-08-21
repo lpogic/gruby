@@ -38,8 +38,7 @@ module Ruby2D
     # @param show [Boolean] If +true+ the image is added to +Window+ automatically.
     def initialize(path, atlas: nil,
                    width: nil, height: nil, x: 0, y: 0, z: 0,
-                   rotate: 0, color: nil, colour: nil,
-                   opacity: nil)
+                   rotate: 0, color: nil, colour: nil)
       @path = path.to_s
 
       # Consider input pixmap atlas if supplied to load image file
@@ -52,7 +51,6 @@ module Ruby2D
       @z = z
       @rotate = rotate
       self.color = color || colour || 'white'
-      self.color.opacity = opacity unless opacity.nil?
     end
 
     def draw(x: 0, y: 0, width: nil, height: nil, rotate: 0, color: nil, colour: nil)

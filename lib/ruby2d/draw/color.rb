@@ -48,7 +48,7 @@ module Ruby2D
       end
     end
 
-    attr_accessor :r, :g, :b, :a
+    attr_reader :r, :g, :b, :a
 
     # Based on clrs.cc
     NAMED_COLORS = {
@@ -81,9 +81,9 @@ module Ruby2D
         init_from_string color
       when Array
         @r = color[0]
-        @g = color[1]
-        @b = color[2]
-        @a = color[3]
+        @g = color[1] || color[0]
+        @b = color[2] || color[0]
+        @a = color[3] || 1.0
       when Color
         @r = color.r
         @g = color.g
@@ -120,7 +120,7 @@ module Ruby2D
           hex?(color) ||                  # hexadecimal value
           (                               # Array of Floats from 0.0..1.0
             color.instance_of?(Array) &&
-            color.length == 4 &&
+            color.length > 0 &&
             color.all? { |el| el.is_a?(Numeric) }
           )
       end
@@ -134,10 +134,6 @@ module Ruby2D
     # Convenience methods to alias `opacity` to `@a`
     def opacity
       @a
-    end
-
-    def opacity=(opacity)
-      @a = opacity
     end
 
     # Return colour components as an array +[r, g, b, a]+

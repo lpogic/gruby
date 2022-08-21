@@ -5,56 +5,62 @@
 module Ruby2D
   # A rectangle
   class Rectangle < Line
-    pot_accessor :x, :y, width: :rect_width, height: :rect_height
-    def initialize(**args)
-      super()
-      @rect_width = pot 200
-      @rect_height = pot 100
-      @x = pot 0
-      @y = pot 0
-      args.each{|k, v| send "#{k}=", v}
-      let @x, @y, @rect_width, @rect_height, out: [@x1, @y1, @x2, @y2, @width] do |x, y, w, h|
+    pot_accessor :x, :y, width: [:width, :w], height: [:height, :h]
+    def initialize(x: nil, y: nil, w: nil, width: nil, h: nil, height: nil,
+                   r: nil, round: nil, b: nil, border: nil, 
+                   color: 'white', border_color: 'black',
+                   left: nil, right: nil, top: nil, bottom: nil)
+      super(r: r, round: round, b: b, border: border, color: color, border_color: border_color)
+      @width = pot(width || w || 200)
+      @height = pot(height || h || 100)
+      @x = pot(x || 200)
+      @y = pot(y || 100)
+      self.left = left if left
+      self.right = right if right
+      self.top = top if top
+      self.bottom = bottom if bottom
+      let(@x, @y, @width, @height) do |x, y, w, h|
         d = w - h
         d < 0 ? [x, y - d / 2, x, y + d / 2, w] : [x - d / 2, y, x + d / 2, y, h]
-      end
+      end >> [@x1, @y1, @x2, @y2, @thick]
     end
 
-    pot_reader :left, :right, :top, :bottom
+    pot_getter :left, :right, :top, :bottom
 
     def left=(left)
       @x.let(left){_1 + width / 2}
     end
 
-    def left!
-      @left ||= pot_view(@x, @rect_width){_1 - _2 / 2}
+    def left_pot
+      @left ||= locked_pot(@x, @rect_width){_1 - _2 / 2}
     end
 
     def right=(right)
       @x.let(right){_1 - width / 2}
     end
 
-    def right!
-      @right ||= pot_view(@x, @rect_width){_1 + _2 / 2}
+    def right_pot
+      @right ||= locked_pot(@x, @rect_width){_1 + _2 / 2}
     end
 
     def top=(top)
       @y.let(top){_1 + height / 2}
     end
 
-    def top!
-      @top ||= pot_view(@y, @rect_height){_1 - _2 / 2}
+    def top_pot
+      @top ||= locked_pot(@y, @rect_height){_1 - _2 / 2}
     end
 
     def bottom=(bottom)
       @y.let(bottom){_1 - height / 2}
     end
 
-    def bottom!
-      @bottom ||= pot_view(@y, @rect_height){_1 + _2 / 2}
+    def bottom_pot
+      @bottom ||= locked_pot(@y, @rect_height){_1 + _2 / 2}
     end
 
     def self.draw(x:, y:, width:, height:, round:, border:, color:, border_color:)
-      d = (width - height) / 2
+      d = (width.get - height.get) / 2
       if d < 0
         super(x1: x, y1: y - d,
           x2: x, y2: y + d,
@@ -67,7 +73,7 @@ module Ruby2D
     end
 
     def contains?(x, y)
-      (self.x - x).abs * 2 < width && (self.y - y).abs * 2 < height
+      (self.x.get - x).abs * 2 < width.get && (self.y.get - y).abs * 2 < height.get
     end
 
     private :length

@@ -6,6 +6,7 @@ module Ruby2D
   # Any object that can be managed by a Ruby2D::Window must be an Entity
   module Entity
     include CommunicatingVesselsSystem
+    attr_accessor :parent
     
     def emit(type, event = nil)  
     end
@@ -13,5 +14,15 @@ module Ruby2D
     def contains?(x, y)
       false
     end
+
+    def accept_mouse(e)
+      contains?(e.x, e.y) ? self : nil
+    end
+
+    def lineage
+      @parent.lineage + [self]
+    end
+
+    def window = parent.window
   end
 end

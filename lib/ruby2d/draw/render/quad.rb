@@ -31,7 +31,7 @@ module Ruby2D
     # @param [Numeric] opacity Opacity of the image when rendering
     # @raise [ArgumentError] if an array of colours does not have 4 entries
     def initialize(x1: 0, y1: 0, x2: 100, y2: 0, x3: 100, y3: 100, x4: 0, y4: 100,
-                   z: 0, color: nil, colour: nil, opacity: nil)
+                   z: 0, color: nil, colour: nil)
       @x1 = x1
       @y1 = y1
       @x2 = x2
@@ -42,7 +42,6 @@ module Ruby2D
       @y4 = y4
       @z  = z
       self.color = color || colour || 'white'
-      self.color.opacity = opacity unless opacity.nil?
     end
 
     # Change the colour of the line

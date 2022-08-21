@@ -36,6 +36,8 @@ R2D_Window *R2D_CreateWindow(const char *title, int width, int height,
   window->on_key          = NULL;
   window->on_mouse        = NULL;
   window->on_controller   = NULL;
+  window->on_resize       = NULL;
+
   window->vsync           = true;
   window->fps_cap         = 60;
   window->background.r    = 0.0;
@@ -224,6 +226,12 @@ void main_loop() {
             window->width  = e.window.data1;
             window->height = e.window.data2;
             R2D_GL_SetViewport(window);
+            if(window->on_resize) {
+              R2D_Event event = {
+                .x = e.window.data1, .y = e.window.data2
+              };
+              window->on_resize(event);
+            }
             break;
         }
         break;

@@ -1,11 +1,10 @@
 module Ruby2D
     module Cluster
         include Entity
-        attr_accessor :parent
+        attr_reader :objects
         EventDescriptor = Struct.new(:type, :id)
 
         def initialize()
-            @entities = []
             @objects = []
             @event_handlers = {}
 
@@ -17,12 +16,10 @@ module Ruby2D
             objects.each do |o|
                 case o
                 when nil
-                    raise Error, "Cannot add '#{o.class}' to window!"
-                when Cluster
-                    @entities.push(o)
-                    o.parent = self
+                    raise Error, "Cannot add '#{o.class}' to cluster!"
                 when Entity
-                    @entities.push(o)
+                    add_object(o)
+                    o.parent = self
                 else
                     add_object(o)
                 end
@@ -31,19 +28,17 @@ module Ruby2D
         end
 
         def remove(object)
-            raise Error, "Cannot remove '#{object.class}' from window!" if object.nil?
+            raise Error, "Cannot remove '#{object.class}' from cluster!" if object.nil?
     
-            collection = object.class.ancestors.include?(Ruby2D::Entity) ? @entities : @objects
-            ix = collection.index(object)
+            ix = @objects.index(object)
             return false if ix.nil?
     
-            collection.delete_at(ix)
+            @objects.delete_at(ix)
             true
         end
     
         def clear
             @objects.clear
-            @entities.clear
         end
 
         # Generate a new event key (ID)
@@ -80,6 +75,10 @@ module Ruby2D
             Line.new(**args)
         end
 
+        def text(text, **args)
+            Text.new(text, **args)
+        end
+
         def emit(type, event = nil)
             ehh = @event_handlers[type]
             ehh.each_value{|eh|eh.call(event)} if ehh
@@ -101,27 +100,26 @@ module Ruby2D
         end
 
         def contains?(x, y)
-            @entities.any?{|e|e.contains?(x, y)}
+            @objects.filter{_1.is_a? Entity}.any?{|e|e.contains?(x, y)}
         end
 
-        def window = parent.window
-
         def update()
-            @entities.reverse.each{|e| e.emit :update}
+            @objects.reverse.filter{_1.is_a? Entity}.each{|e| e.emit :update}
         end
 
         def render()
-            @entities.each{|e| e.emit :render}
-            @objects.each(&:render)
-        end
-
-        def accept_mouse(e, mouse_in = false)
-            emit :mouse_in, e if mouse_in
-            ent = @entities.reverse.find do |t|
-                if t.contains?(e.x, e.y)
-                    t.accept_mouse(e, true)
+            @objects.each do |o|
+                if o.is_a? Entity
+                    o.emit :render
+                else
+                    o.render
                 end
             end
+        end
+
+        def accept_mouse(e)
+            return nil if not contains?(e.x, e.y)
+            ent = @objects.reverse.filter{_1.is_a? Entity}.find{|t| t.accept_mouse(e)}
             return ent || self
         end
 
@@ -130,14 +128,7 @@ module Ruby2D
         # An an object to the window, used by the public `add` method
         def add_object(object)
             if !@objects.include?(object)
-                index = @objects.index do |obj|
-                    obj.z > object.z
-                end
-                if index
-                    @objects.insert(index, object)
-                else
-                    @objects.push(object)
-                end
+                @objects.push(object)
                 true
             else
                 false

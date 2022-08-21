@@ -5,31 +5,18 @@
 module Ruby2D
   # A square
   class Square < Rectangle
-    # Create an square
-    # @param [Numeric] x
-    # @param [Numeric] y
-    # @param [Numeric] size is width and height
-    # @param [Numeric] z
-    # @param [String, Array] color
-    # @param [String | Color] border_color
-    # @param [Numeric] opacity Opacity of the image when rendering
-    # def initialize(x: 0, y: 0, size: 100, z: 0, round: 0, border: 0, color: nil, colour: nil, border_color: nil, opacity: nil)
-    #   super(x: x, y: y, width: size, height: size, z: z, round: round, border: border,
-    #         color: color, colour: colour, border_color: border_color, opacity: opacity)
-    # end
-
-    def initialize(**args)
-      super()
-      self.width = 100
-      self.height = 100
-      args.each{|k, v| send "#{k}=", v}
+    
+    def initialize(x: nil, y: nil, s: nil, size: nil,
+                   r: nil, round: nil, b: nil, border: nil, 
+                   color: 'white', border_color: 'black',
+                   left: nil, right: nil, top: nil, bottom: nil)
+      super(x: x, y: y, width: size || s || 100, height: size || s || 100, z: z, round: round, border: border,
+            color: color, colour: colour, border_color: border_color, left: left, right: right, top: top, bottom: bottom)
     end
 
     def size=(size)
       self.width = self.height = size
     end
-
-    def size!() = width!
 
     alias size width
 

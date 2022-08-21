@@ -1,15 +1,17 @@
+# Zmienne wyjściowe (outpot) muszą być podane jawnie, a nie jako efekt uboczny np {@a.set _1}, ponieważ przy zmianie wejścia (inlet) musi być znany.
+
 module Ruby2D
     module CommunicatingVesselsSystem
         def pot(*v, &block)
-            pot = Pot.new
-            pot.let(*v, &block)
-            pot
+            pt = Pot.new
+            pt.let(*v, &block)
+            pt
         end
     
-        def pot_view(*v, &block)
-            pot = PotView.new
-            pot.let(*v, &block)
-            pot
+        def locked_pot(*v, &block)
+            pt = pot(*v, &block)
+            pt.lockInlet self
+            pt
         end
     
         def let(*inpot, out: nil, &block)
@@ -18,7 +20,11 @@ module Ruby2D
                     return Let.new(inpot, &block)
                 else
                     l = Let.new(inpot, &block)
-                    l.applyOutpot(out.is_a?(Array) ? out : [out])
+                    if out.is_a? Array
+                        l.applyOutpot(*out)
+                    else
+                        l.applyOutpot(out)
+                    end
                     l.call
                     return l
                 end
@@ -42,15 +48,21 @@ module Ruby2D
         class Let
             def initialize(inpot, &block)
                 @callee = block
+                # raise "XD" if inpot.any?{not _1.is_a? Pot}
                 @inpot = inpot
             end
 
             def inpot = @inpot
     
-            def applyOutpot(outpot)
+            def applyOutpot(*outpot)
                 outpot.each{_1.setInlet(self)}
                 @inpot.each{_1.addOutlet(self)}
                 @outpot = outpot
+            end
+
+            def >>(that)
+                that.is_a?(Array) ? applyOutpot(*that) : applyOutpot(that)
+                self
             end
     
             def call
@@ -116,23 +128,38 @@ module Ruby2D
                             pot
                         end
                     end, &block)
-                    l.applyOutpot([self])
+                    l.applyOutpot(self)
                     l.call
                 elsif v[0].is_a? Let
-                    v[0].applyOutpot([self])
+                    v[0].applyOutpot(self)
                     v[0].call
                 elsif v[0].is_a? Pot
-                    CommunicatingVesselsSystem::let v[0], out: self do _1 end.call
+                    l = Let.new(v) do _1 end
+                    l.applyOutpot(self)
+                    l.call
                 else
                     set v[0]
                 end
+            end
+
+            def as(&block)
+                Let.new([self], &block)
             end
     
             alias value= set
     
             def setInlet(inlet)
+                raise "Locked by #{@lock}" if @lock
                 @inlet.deleteOutpot(self) if @inlet
                 @inlet = inlet
+            end
+
+            def lockInlet(lock)
+                @lock = lock
+            end
+
+            def unlockInlet
+                @lock = nil
             end
     
             def addOutlet(let)
@@ -215,28 +242,31 @@ module Ruby2D
                 end
             end
         end
-
-        class PotView < Pot
-        end
     end
 end
 
 class Class
     def pot_accessor(*args, **named_args)
+        pot_getter(*args, **named_args)
         args.each do |arg|
-            self.class_eval("def #{arg};@#{arg}.get;end")
-            self.class_eval("def #{arg}!;@#{arg};end")
-            self.class_eval("def #{arg}=(val);@#{arg}.set val;end")
+            self.class_eval("def #{arg}=(val);pt = defined?(self.#{arg}_pot) ? self.#{arg}_pot : @#{arg};pt.let val;end")
         end
-        named_args.each do |name, at|
-            self.class_eval("def #{name};@#{at}.get;end")
-            self.class_eval("def #{name}!;@#{at};end")
-            self.class_eval("def #{name}=(val);@#{at}.set val;end")
+        named_args.each do |at, names|
+            names = [names] if not names.is_a? Array
+            names.each do |name|
+                self.class_eval("def #{name}=(val);pt = defined?(self.#{at}_pot) ? self.#{at}_pot : @#{at};pt.let val;end")
+            end
         end
     end
-    def pot_reader(*args)
+    def pot_getter(*args, **named_args)
         args.each do |arg|
-            self.class_eval("def #{arg};#{arg}!.get;end")
+            self.class_eval("def #{arg}(&b);pt = defined?(self.#{arg}_pot) ? self.#{arg}_pot : @#{arg}; block_given? ? pt.as(&b) : pt;end")
+        end
+        named_args.each do |at, names|
+            names = [names] if not names.is_a? Array
+            names.each do |name|
+                self.class_eval("def #{name}(&b);pt = defined?(self.#{at}_pot) ? self.#{at}_pot : @#{at}; block_given? ? pt.as(&b) : pt;end")
+            end
         end
     end
 end

@@ -252,6 +252,7 @@ typedef void (*R2D_Render)();
 typedef void (*R2D_On_Key)(R2D_Event e);
 typedef void (*R2D_On_Mouse)(R2D_Event e);
 typedef void (*R2D_On_Controller)(R2D_Event e);
+typedef void (*R2D_On_Resize)(R2D_Event e);
 
 // R2D_GL_Point, for graphics calculations
 typedef struct {
@@ -304,6 +305,7 @@ typedef struct {
   R2D_On_Key on_key;
   R2D_On_Mouse on_mouse;
   R2D_On_Controller on_controller;
+  R2D_On_Resize on_resize;
   bool vsync;
   int fps_cap;
   R2D_Color background;
@@ -748,7 +750,8 @@ void R2D_GL_FlushBuffers();
 #else
   int R2D_GL2_Init();
   int R2D_GL3_Init();
-  int R2D_GL3_Load_Triangles_Textures();
+  int R2D_GL3_Load_Triangles();
+  int R2D_GL3_Load_Textures();
   int R2D_GL3_Load_Pins();
   void R2D_GL2_ApplyProjection(int w, int h);
   void R2D_GL3_ApplyProjection(GLfloat orthoMatrix[16], int w, int h);

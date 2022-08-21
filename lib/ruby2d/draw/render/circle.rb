@@ -9,41 +9,34 @@ module Ruby2D
   class Circle
     include Renderable
 
-    pot_accessor :x, :y, :radius, :border
-    attr_accessor :sectors
-
-    # Create a circle
-    #
-    # @param [Numeric] x
-    # @param [Numeric] y
-    # @param [Numeric] z
-    # @param [Numeric] radius
-    # @param [Numeric] sectors Smoothness of the circle is better when more +sectors+ are used.
-    # @param [String | Color] color Or +colour+
-    # @param [String | Color] border_color
-    # @param [Float] opacity
-    def initialize(x: 25, y: 25, z: 0, radius: 50, border: 0, sectors: 30,
-                   color: nil, colour: nil, border_color: nil, opacity: nil)
+    def initialize(x: 25, y: 25, r: nil, radius: nil, b: nil, border: nil, sectors: 30,
+                   color: 'yellow', border_color: 'black')
       @x = pot x
       @y = pot y
-      @z = pot z
-      @radius = pot radius
-      @border = pot border
+      @radius = pot(radius || r || 100)
+      @border = pot(border || b || 0)
       @sectors = sectors
-      self.color = color || colour || 'white'
-      self.border_color = border_color || 'black'
-      self.color.opacity = opacity unless opacity.nil?
-      add
+      @color = pot
+      self.color = color
+      @border_color = pot
+      self.border_color = border_color
     end
 
+    attr_accessor :sectors
+    pot_accessor :x, :y, radius: [:radius, :r], border: [:border, :b]
+    pot_getter :color, :border_color
 
-    # Check if the circle contains the point at +(x, y)+
-    def contains?(x, y)
-      Math.sqrt((x - @x)**2 + (y - @y)**2) <= @radius
+    def color=(color)
+      @color.let(color.is_a?(Pot) || color.is_a?(Let) ? color : Color.new(color))
     end
 
     def border_color=(color)
-      @border_color = Color.set(color)
+      @border_color.let(color.is_a?(Pot) || color.is_a?(Let) ? color : Color.new(color))
+    end
+
+    # Check if the circle contains the point at +(x, y)+
+    def contains?(x, y)
+      (x - @x.get) ** 2 + (y - @y.get) ** 2 <= @radius.get ** 2
     end
 
     def self.draw(opts = {})
@@ -56,13 +49,10 @@ module Ruby2D
                ])
     end
 
-    private
-
     def render
       self.class.ext_draw([
                             @x.get, @y.get, @radius.get, @border.get, @sectors,
-                            @color.r, @color.g, @color.b, @color.a,
-                            @border_color.r, @border_color.g, @border_color.b, @border_color.a
+                            *@color.get, *@border_color.get
                           ])
     end
   end

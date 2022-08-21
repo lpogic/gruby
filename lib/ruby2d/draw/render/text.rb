@@ -7,8 +7,8 @@ module Ruby2D
   class Text
     include Renderable
 
-    attr_reader :text, :size
-    attr_accessor :x, :y, :rotate, :data
+    pot_accessor :x, :y, :text, :size
+    attr_accessor :rotate
 
     # Create a text string
     # @param text The text to show
@@ -21,24 +21,30 @@ module Ruby2D
     # @param [Numeric] rotate Angle, default is 0
     # @param [Numeric] color or +colour+ Colour the text when rendering
     # @param [Numeric] opacity Opacity of the image when rendering
-    # @param [true, false] show If +true+ the Text is added to +Window+ automatically.
     def initialize(text, size: 20, style: nil, font: Font.default,
-                   x: 0, y: 0, z: 0,
-                   rotate: 0, color: nil, colour: nil,
-                   opacity: nil)
-      @x = x
-      @y = y
-      @z = z
-      @text = text.to_s
-      @size = size
+                   x: 0, y: 0, rotate: 0, color: nil, colour: nil,
+                   left: nil, right: nil, top: nil, bottom: nil)
+      @x = pot x
+      @y = pot y
+      self.left = left if left
+      self.right = right if right
+      self.top = top if top
+      self.bottom = bottom if bottom
+      @text = pot text.to_s
+      @size = pot size
       @rotate = rotate
       @style = style
       self.color = color || colour || 'white'
-      self.color.opacity = opacity unless opacity.nil?
       @font_path = font
+
       @texture = nil
+      @width = pot
+      @height = pot
       create_font
       create_texture
+
+      pot(@size){create_font}
+      pot(@size, @text){create_texture}
     end
 
     # Returns the path of the font as a string
@@ -46,15 +52,38 @@ module Ruby2D
       @font_path
     end
 
-    def text=(msg)
-      @text = msg.to_s
-      create_texture
+    pot_getter :width, :height, :left, :right, :top, :bottom
+
+    def left=(left)
+      @x.let(left){_1 + width / 2}
     end
 
-    def size=(size)
-      @size = size
-      create_font
-      create_texture
+    def left_pot
+      @left ||= locked_pot(@x, @width){_1 - _2 / 2}
+    end
+
+    def right=(right)
+      @x.let(right){_1 - width / 2}
+    end
+
+    def right_pot
+      @right ||= locked_pot(@x, @width){_1 + _2 / 2}
+    end
+
+    def top=(top)
+      @y.let(top){_1 + height / 2}
+    end
+
+    def top_pot
+      @top ||= locked_pot(@y, @height){_1 - _2 / 2}
+    end
+
+    def bottom=(bottom)
+      @y.let(bottom){_1 - height / 2}
+    end
+
+    def bottom_pot
+      @bottom ||= locked_pot(@y, @height){_1 + _2 / 2}
     end
 
     def draw(x:, y:, color:, rotate:)
@@ -66,9 +95,10 @@ module Ruby2D
       render(x: x, y: y, color: Color.new(color), rotate: rotate)
     end
 
-    def render(x: @x, y: @y, color: @color, rotate: @rotate)
-      vertices = Vertices.new(x, y, @width, @height, rotate)
-
+    def render(x: @x.get, y: @y.get, color: @color, rotate: @rotate)
+      w = @width.get
+      h = @height.get
+      vertices = Vertices.new(x - w / 2, y - h / 2, w, h, rotate)
       @texture.draw(
         vertices.coordinates, vertices.texture_coordinates, color
       )
@@ -77,14 +107,14 @@ module Ruby2D
     private
 
     def create_font
-      @font = Font.load(@font_path, @size, @style)
+      @font = Font.load(@font_path, @size.get, @style)
     end
 
     def create_texture
       @texture&.delete
-      @texture = Texture.new(*Text.ext_load_text(@font.ttf_font, @text))
-      @width = @texture.width
-      @height = @texture.height
+      @texture = Texture.new(*Text.ext_load_text(@font.ttf_font, @text.get))
+      @width.set @texture.width
+      @height.set @texture.height
     end
   end
 end

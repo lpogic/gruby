@@ -32,7 +32,7 @@ module Ruby2D
     # @param clip_width [Numeric]
     # @param clip_height [Numeric]
     def initialize(path, atlas: nil, width: nil, height: nil,
-                   x: 0, y: 0, z: 0, rotate: 0, color: nil, colour: nil, opacity: nil,
+                   x: 0, y: 0, z: 0, rotate: 0, color: nil, colour: nil,
                    loop: false, time: 300, animations: {}, default: 0,
                    clip_x: 0, clip_y: 0, clip_width: nil, clip_height: nil)
       @path = path.to_s
@@ -43,7 +43,6 @@ module Ruby2D
       @z = z
       @rotate = rotate
       self.color = color || colour || 'white'
-      self.color.opacity = opacity unless opacity.nil?
 
       # Dimensions
       @width  = width

@@ -9,6 +9,7 @@ module Ruby2D
     include Cluster
     
     # Event structures
+    ResizeEvent           = Struct.new(:width, :height)
     MouseEvent            = Struct.new(:type, :button, :direction, :x, :y, :delta_x, :delta_y)
     KeyEvent              = Struct.new(:type, :key)
     ControllerEvent       = Struct.new(:which, :type, :axis, :value, :button)
@@ -29,8 +30,10 @@ module Ruby2D
       @title = title
 
       # Window size
-      @width  = width
-      @height = height
+      @width  = pot width
+      @height = pot height
+      @width_value = width
+      @height_value = height
 
       # Frames per second upper limit, and the actual FPS
       @fps_cap = fps_cap
@@ -206,13 +209,25 @@ module Ruby2D
     end
 
     def contains?(x, y)
-      (0..@width).include?(x) && (0..@height).include?(y)
+      (0..@width.get).include?(x) && (0..@height.get).include?(y)
     end
 
     def window = self
+    def lineage = [self]
 
-    def width = @width
-    def height = @height
+
+    pot_getter :width, :height, :x, :y
+    def x_pot
+      @x ||= locked_pot(self.width{_1 / 2})
+    end
+
+    def y_pot
+      @y ||= locked_pot(self.height{_1 / 2})
+    end
+
+    # Getters for ruby2d_window_ext_show
+    def get_width = @width.get
+    def get_height = @height.get
 
     # Public instance methods
 
@@ -229,8 +244,8 @@ module Ruby2D
       when :window then          self
       when :title then           @title
       when :background then      @background
-      when :width then           @width
-      when :height then          @height
+      when :width then           @width.get
+      when :height then          @height.get
       when :viewport_width then  @viewport_width
       when :viewport_height then @viewport_height
       when :display_width, :display_height
@@ -359,6 +374,13 @@ module Ruby2D
       end
     end
 
+    def resize_callback(width, height)
+      emit :resize, ResizeEvent.new(width, height)
+
+      @width.set width
+      @height.set height
+    end
+
     # Add controller mappings from file
     def add_controller_mappings
       ext_add_controller_mappings(@controller_mappings) if File.exist? @controller_mappings
@@ -412,8 +434,6 @@ module Ruby2D
 
     # Render callback method, called by the native and web extentions
     def render_callback
-      render unless @using_dsl
-
       render
     end
 
@@ -458,8 +478,8 @@ module Ruby2D
     end
 
     def _set_any_window_dimensions(opts)
-      @width           = opts[:width]           if opts[:width]
-      @height          = opts[:height]          if opts[:height]
+      @width.set opts[:width]           if opts[:width]
+      @height.set opts[:height]          if opts[:height]
       @viewport_width  = opts[:viewport_width]  if opts[:viewport_width]
       @viewport_height = opts[:viewport_height] if opts[:viewport_height]
       @highdpi         = opts[:highdpi] unless opts[:highdpi].nil?
@@ -525,7 +545,7 @@ module Ruby2D
       end
 
       # Call event handler
-      event :mouse_scroll, MouseEvent.new(type, nil, direction, nil, nil, delta_x, delta_y)
+      emit :mouse_scroll, MouseEvent.new(type, nil, direction, nil, nil, delta_x, delta_y)
     end
 
     def _handle_mouse_move(type, x, y, delta_x, delta_y)
@@ -539,25 +559,20 @@ module Ruby2D
       # Call event handler
       e = MouseEvent.new(type, nil, nil, x, y, delta_x, delta_y)
       # send :mouse_move, MouseEvent.new(type, nil, nil, x, y, delta_x, delta_y)
-      if @mouse_current
-          mc = @mouse_current
-          while not mc.contains?(x, y)
-              mc.emit :mouse_out, e
-              if mc == @mouse_owner
-                  mc = nil
-                  break
-              else
-                  mc = mc.parent
-              end
-          end
-          c = mc
-          while c
-              c.emit :mouse_move, e
-              c = c.parent
-          end            
-          @mouse_current = mc.accept_mouse(e) if mc
-      else
-          @mouse_current = @mouse_owner.accept_mouse(e) if @mouse_owner.contains?(x, y)
+      if @mouse_owner.contains?(x, y)
+        new_mouse_current = @mouse_owner.accept_mouse(e)
+        if @mouse_current.nil?
+          new_mouse_current.lineage.each{_1.emit :mouse_in, e}
+          @mouse_current = new_mouse_current
+        elsif new_mouse_current != @mouse_current
+          mc_lineage = @mouse_current.lineage
+          nmc_lineage = new_mouse_current.lineage
+          i = mc_lineage.zip(nmc_lineage).index{|a, b| a != b}
+          mc_lineage[i..].reverse.each{_1.emit :mouse_out, e}
+          mc_lineage[...i].each{_1.emit :mouse_move, e}
+          nmc_lineage[i..].each{_1.emit :mouse_in, e}
+          @mouse_current = new_mouse_current
+        end
       end
     end
 

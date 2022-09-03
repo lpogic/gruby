@@ -5,7 +5,7 @@
 module Ruby2D
   # A rectangle
   class Rectangle < Line
-    pot_accessor :x, :y, width: [:width, :w], height: [:height, :h]
+    pot_accessor :x, :y, [:width, :w] => :width, [:height, :h] => :height
     def initialize(x: nil, y: nil, w: nil, width: nil, h: nil, height: nil,
                    r: nil, round: nil, b: nil, border: nil, 
                    color: 'white', border_color: 'black',
@@ -15,6 +15,7 @@ module Ruby2D
       @height = pot(height || h || 100)
       @x = pot(x || 200)
       @y = pot(y || 100)
+
       self.left = left if left
       self.right = right if right
       self.top = top if top
@@ -25,38 +26,72 @@ module Ruby2D
       end >> [@x1, @y1, @x2, @y2, @thick]
     end
 
-    pot_getter :left, :right, :top, :bottom
+    pot_accessor :left, :right, :top, :bottom, :hbounds, :vbounds
 
-    def left=(left)
-      @x.let(left){_1 + width / 2}
+    def _left
+      @left ||= let(@x, @width){_1 - _2 / 2}.affect{|left| @x.let(left, @width){_1 + _2 / 2}}
     end
 
-    def left_pot
-      @left ||= locked_pot(@x, @rect_width){_1 - _2 / 2}
+    def _right
+      @right ||= let(@x, @width){_1 + _2 / 2}.affect{|right| @x.let(right, @width){_1 - _2 / 2}}
     end
 
-    def right=(right)
-      @x.let(right){_1 - width / 2}
+    def _top
+      @top ||= let(@y, @height){_1 - _2 / 2}.affect{|top| @y.let(top, @height){_1 + _2 / 2}}
     end
 
-    def right_pot
-      @right ||= locked_pot(@x, @rect_width){_1 + _2 / 2}
+    def _bottom
+      @bottom ||= let(@y, @height){_1 + _2 / 2}.affect{|bottom| @y.let(bottom, @height){_1 - _2 / 2}}
     end
 
-    def top=(top)
-      @y.let(top){_1 + height / 2}
+    class HBounds
+      def initialize(left, right)
+        @left = left
+        @right = right
+      end
+
+      attr_reader :left, :right
+
+      def self.make(hb)
+        case hb
+        when Hbounds then hb
+        when Hash then Hbounds.new(hb[:left], hb[:right])
+        else raise "Error"
+        end
+      end
     end
 
-    def top_pot
-      @top ||= locked_pot(@y, @rect_height){_1 - _2 / 2}
+    def _hbounds
+      @hbounds ||= let(@x, @width) do |x, w|
+        HBounds.new(x - w / 2, x + w / 2)
+      end.affect do |hb|
+        let(hb){hb = HBounds.make(_1); [(hb.left + hb.right) / 2, hb.right - hb.left]} >> [@x, @width]
+      end
     end
 
-    def bottom=(bottom)
-      @y.let(bottom){_1 - height / 2}
+    class VBounds
+      def initialize(top, bottom)
+        @top = top
+        @bottom = bottom
+      end
+
+      attr_reader :top, :bottom
+
+      def self.make(hb)
+        case hb
+        when Hbounds then hb
+        when Hash then Vbounds.new(hb[:top], hb[:bottom])
+        else raise "Error"
+        end
+      end
     end
 
-    def bottom_pot
-      @bottom ||= locked_pot(@y, @rect_height){_1 + _2 / 2}
+    def _vbounds
+      @vbounds ||= let(@y, @height) do |y, h|
+        VBounds.new(top: y - h / 2, bottom: y + h / 2)
+      end.affect do |vb|
+        let(vb){vb = VBounds.make(_1); [(vb.top + vb.bottom) / 2, vb.bottom - vb.top]} >> [@y, @height]
+      end
     end
 
     def self.draw(x:, y:, width:, height:, round:, border:, color:, border_color:)

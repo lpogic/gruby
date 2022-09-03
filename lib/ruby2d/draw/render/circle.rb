@@ -16,23 +16,13 @@ module Ruby2D
       @radius = pot(radius || r || 100)
       @border = pot(border || b || 0)
       @sectors = sectors
-      @color = pot
-      self.color = color
-      @border_color = pot
-      self.border_color = border_color
+      @color = pot_affect{Color.new _1}.let(color)
+      @border_color = pot_affect{Color.new _1}.let(border_color)
     end
 
     attr_accessor :sectors
-    pot_accessor :x, :y, radius: [:radius, :r], border: [:border, :b]
-    pot_getter :color, :border_color
-
-    def color=(color)
-      @color.let(color.is_a?(Pot) || color.is_a?(Let) ? color : Color.new(color))
-    end
-
-    def border_color=(color)
-      @border_color.let(color.is_a?(Pot) || color.is_a?(Let) ? color : Color.new(color))
-    end
+    pot_accessor :x, :y, :color, :border_color
+    pot_accessor [:radius, :r] => :radius, [:border, :b] => :border
 
     # Check if the circle contains the point at +(x, y)+
     def contains?(x, y)

@@ -10,15 +10,13 @@ module Ruby2D
                    r: nil, round: nil, b: nil, border: nil, 
                    color: 'white', border_color: 'black',
                    left: nil, right: nil, top: nil, bottom: nil)
-      super(x: x, y: y, width: size || s || 100, height: size || s || 100, z: z, round: round, border: border,
-            color: color, colour: colour, border_color: border_color, left: left, right: right, top: top, bottom: bottom)
+      super(x: x, y: y, z: z, round: round, border: border,
+            color: color, border_color: border_color, left: left, right: right, top: top, bottom: bottom)
+      @size = pot(size || s || 100)
+      let(@size){[_1, _1]} >> [@width, @height]
     end
 
-    def size=(size)
-      self.width = self.height = size
-    end
-
-    alias size width
+    pot_accessor [:size, :s] => :size
 
     def self.draw(x:, y:, size:, round:, border:, color:)
       super(x: x, y: y,

@@ -7,11 +7,6 @@ module Ruby2D
   module Renderable
     include CommunicatingVesselsSystem
 
-    # Set the color value
-    def color=(color)
-      @color = Color.new(color)
-    end
-
     # Add a contains method stub
     def contains?(x, y)
       x >= @x && x <= (@x + @width) && y >= @y && y <= (@y + @height)

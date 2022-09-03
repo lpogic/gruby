@@ -5,9 +5,9 @@
 #if !GLES
 
 #define R2D_GL3_ELEMENTS_CAPACITY 7500
-#define R2D_GL3_TRIANGLES_VBO_CAPACITY 5000
-#define R2D_GL3_TEXTURES_VBO_CAPACITY 5000
-#define R2D_GL3_PINS_VBO_CAPACITY 5000
+#define R2D_GL3_TRIANGLES_VBO_CAPACITY 2500
+#define R2D_GL3_TEXTURES_VBO_CAPACITY 2500
+#define R2D_GL3_PINS_VBO_CAPACITY 2500
 #define R2D_GL3_TRIANGLE_ID 0
 #define R2D_GL3_PIN_ID 0xFFFFFFFF
 
@@ -91,7 +91,8 @@ int R2D_GL3_Init() {
   if(loadResult != GL_TRUE) {
     return loadResult;
   }
-  return R2D_GL3_Load_Pins();
+  loadResult = R2D_GL3_Load_Pins();
+  return loadResult;
 }
 
 /*
@@ -499,6 +500,7 @@ int R2D_GL3_Load_Pins() {
     "  if(pos.a > 0) {"
     "    vec4 c0;"
     "    vec2 sm = vec2(2.5 / winSize.x, 2.5 / winSize.y);"
+    // "    vec2 sm = vec2(0, 0);"
     "    if(r.x < sm.x || r.y < sm.y) {"
     "      r = sm;"
     "    }"

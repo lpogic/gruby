@@ -40,6 +40,7 @@ module Ruby2D
       # @return [String] full path if +font_name+ is known
       # @return [nil] if +font_name+ is unknown
       def path(font_name)
+        return font_name if font_name.end_with? '.ttf'
         all_paths.find { |path| path.downcase.include?(font_name) }
       end
 
@@ -135,6 +136,16 @@ module Ruby2D
     # Private constructor, called internally using +Font.send(:new,...)+
     def initialize(path, size, style = nil)
       @ttf_font = Font.ext_load(path.to_s, size, style.to_s)
+    end
+
+    def measure(text, w_max)
+      width, count = *Font.ext_text_measure(@ttf_font, text, w_max)
+      return count
+    end
+
+    def size(text)
+      size = *Font.ext_text_size(@ttf_font, text)
+      return {width: size[0], height: size[1]}
     end
   end
 end

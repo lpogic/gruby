@@ -32,3 +32,10 @@ include Ruby2D
 extend Ruby2D::DSL
 # rubocop:enable Style/MixinUsage
 # --- end lint exception
+class Object
+  private
+  def timems
+      now = Time.now
+      (now.to_i * 1e3 + now.usec / 1e3).to_i
+  end
+end

@@ -177,6 +177,7 @@ extern "C" {
 #define R2D_KEY_DOWN 1  // key is pressed
 #define R2D_KEY_HELD 2  // key is held down
 #define R2D_KEY_UP   3  // key is released
+#define R2D_KEY_TEXT   4  // text is given
 
 // Mouse events
 #define R2D_MOUSE_DOWN   1  // mouse button pressed

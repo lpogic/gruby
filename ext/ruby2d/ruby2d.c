@@ -1380,6 +1380,67 @@ static R_VAL ruby2d_font_ext_load(R_VAL self, R_VAL path, R_VAL size, R_VAL styl
   return r_data_wrap_struct(font, font);
 }
 
+/*
+ * Ruby2D::Font#ext_text_size
+ */
+#if MRUBY
+static R_VAL ruby2d_font_ext_text_size(mrb_state* mrb, R_VAL self) {
+  mrb_value font, message;
+  mrb_get_args(mrb, "oo", &font, &message);
+#else
+static R_VAL ruby2d_font_ext_text_size(R_VAL self, R_VAL font, R_VAL message) {
+#endif
+  R2D_Init();
+
+  R_VAL result = r_ary_new();
+
+  TTF_Font *ttf_font;
+
+#if MRUBY
+  Data_Get_Struct(mrb, font, &font_data_type, ttf_font);
+#else
+  Data_Get_Struct(font, TTF_Font, ttf_font);
+#endif
+
+  int w, h;
+  TTF_SizeUTF8(ttf_font, RSTRING_PTR(message), &w, &h);
+
+  r_ary_push(result, INT2NUM(w));
+  r_ary_push(result, INT2NUM(h));
+
+  return result;
+}
+
+/*
+ * Ruby2D::Font#ext_text_measure
+ */
+#if MRUBY
+static R_VAL ruby2d_font_ext_text_measure(mrb_state* mrb, R_VAL self) {
+  mrb_value font, message, measure_width;
+  mrb_get_args(mrb, "oo", &font, &message, &measure_width);
+#else
+static R_VAL ruby2d_font_ext_text_measure(R_VAL self, R_VAL font, R_VAL message, R_VAL measure_width) {
+#endif
+  R2D_Init();
+
+  R_VAL result = r_ary_new();
+
+  TTF_Font *ttf_font;
+
+#if MRUBY
+  Data_Get_Struct(mrb, font, &font_data_type, ttf_font);
+#else
+  Data_Get_Struct(font, TTF_Font, ttf_font);
+#endif
+
+  int extent, count;
+  TTF_MeasureUTF8(ttf_font, RSTRING_PTR(message), NUM2INT(measure_width), &extent, &count);
+
+  r_ary_push(result, INT2NUM(extent));
+  r_ary_push(result, INT2NUM(count));
+
+  return result;
+}
 
 /*
  * Ruby2D::Texture#ext_draw
@@ -1484,6 +1545,9 @@ static void on_key(R2D_Event e) {
       break;
     case R2D_KEY_UP:
       type = r_char_to_sym("up");
+      break;
+    case R2D_KEY_TEXT:
+      type = r_char_to_sym("text");
       break;
   }
 
@@ -1841,6 +1905,30 @@ static R_VAL ruby2d_window_ext_close() {
   return R_NIL;
 }
 
+/*
+ * Ruby2D::Cluster#ext_start_text_input
+ */
+#if MRUBY
+static R_VAL ruby2d_cluster_ext_start_text_input(mrb_state* mrb, R_VAL self) {
+#else
+static R_VAL ruby2d_cluster_ext_start_text_input(R_VAL self) {
+#endif
+  SDL_StartTextInput();
+  return R_NIL;
+}
+
+/*
+ * Ruby2D::Cluster#ext_stop_text_input
+ */
+#if MRUBY
+static R_VAL ruby2d_cluster_ext_stop_text_input(mrb_state* mrb, R_VAL self) {
+#else
+static R_VAL ruby2d_cluster_ext_stop_text_input(R_VAL self) {
+#endif
+  SDL_StopTextInput();
+  return R_NIL;
+}
+
 
 #if MRUBY
 /*
@@ -1972,6 +2060,12 @@ void Init_ruby2d() {
   // Ruby2D::Font#ext_load
   r_define_class_method(ruby2d_font_class, "ext_load", ruby2d_font_ext_load, r_args_req(3));
 
+  // Ruby2D::Font#ext_text_size
+  r_define_class_method(ruby2d_font_class, "ext_text_size", ruby2d_font_ext_text_size, r_args_req(2));
+
+  // Ruby2D::Font#ext_text_measure
+  r_define_class_method(ruby2d_font_class, "ext_text_measure", ruby2d_font_ext_text_measure, r_args_req(3));
+
   // Ruby2D::Texture
   R_CLASS ruby2d_texture_class = r_define_class(ruby2d_module, "Texture");
 
@@ -2020,8 +2114,17 @@ void Init_ruby2d() {
   // Ruby2D::Canvas#ext_draw_pixmap
   r_define_method(ruby2d_canvas_class, "ext_draw_pixmap", ruby2d_canvas_ext_draw_pixmap, r_args_req(6));
 
+  // Ruby2D::Cluster
+  R_CLASS ruby2d_cluster_class = r_define_class(ruby2d_module, "Cluster");
+
+  // Ruby2D::Cluster#ext_start_text_input
+  r_define_method(ruby2d_cluster_class, "ext_start_text_input", ruby2d_cluster_ext_start_text_input, r_args_none);
+
+  // Ruby2D::Cluster#ext_stop_text_input
+  r_define_method(ruby2d_cluster_class, "ext_stop_text_input", ruby2d_cluster_ext_stop_text_input, r_args_none);
+
   // Ruby2D::Window
-  R_CLASS ruby2d_window_class = r_define_class(ruby2d_module, "Window");
+  R_CLASS ruby2d_window_class = rb_define_class_under(ruby2d_module, "Window", ruby2d_cluster_class);
 
   // Ruby2D::Window#ext_diagnostics
   r_define_method(ruby2d_window_class, "ext_diagnostics", ruby2d_ext_diagnostics, r_args_req(1));

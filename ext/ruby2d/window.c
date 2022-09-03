@@ -130,6 +130,15 @@ void main_loop() {
           window->on_key(event);
         }
         break;
+      
+      case SDL_TEXTINPUT:
+        if (window->on_key) {
+          R2D_Event event = {
+            .type = R2D_KEY_TEXT, .key = e.text.text
+          };
+          window->on_key(event);
+        }
+        break;
 
       case SDL_MOUSEBUTTONDOWN: case SDL_MOUSEBUTTONUP:
         if (window->on_mouse) {

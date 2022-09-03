@@ -5,13 +5,13 @@
 module Ruby2D
   # Represents a window on screen, responsible for storing renderable graphics,
   # event handlers, the update loop, showing and closing the window.
-  class Window
-    include Cluster
+  class Window < Cluster
     
     # Event structures
     ResizeEvent           = Struct.new(:width, :height)
     MouseEvent            = Struct.new(:type, :button, :direction, :x, :y, :delta_x, :delta_y)
     KeyEvent              = Struct.new(:type, :key)
+    TextEvent             = Struct.new(:type, :text)
     ControllerEvent       = Struct.new(:which, :type, :axis, :value, :button)
     ControllerAxisEvent   = Struct.new(:which, :axis, :value)
     ControllerButtonEvent = Struct.new(:which, :button)
@@ -50,6 +50,8 @@ module Ruby2D
 
       @mouse_current = nil
       @mouse_owner = self
+      @keyboard_current_object = self
+      @key_typer = KeyTyper.new self
 
       _init_window_defaults
       _init_event_stores
@@ -190,6 +192,10 @@ module Ruby2D
         DSL.window.close
       end
 
+      def button(*a, **na)
+        DSL.window.button(*a, **na)
+      end
+
       def render_ready_check
         return if opened?
 
@@ -215,14 +221,38 @@ module Ruby2D
     def window = self
     def lineage = [self]
 
+    def make_outfit(element, style)
+      case element
+      when Button
+          case style
+          when 'default'
+              return BasicButtonStyle.new(element, Color.new('blue'), Color.new('#1084E9'), Color.new('#0064C9'), Color.new('white'), Color.new('#DFDFDF'))
+          when 'green'
+              return BasicButtonStyle.new(element, Color.new('#2c9b33'), Color.new('#23b22d'), Color.new('#2b642f'), Color.new('white'), Color.new('#DFDFDF'))
+          end
+      end
+      raise "Unsupported style '#{style}' used for element #{element.class}"
+    end
 
-    pot_getter :width, :height, :x, :y
+    pot_reader :width, :height, :x, :y
     def x_pot
       @x ||= locked_pot(self.width{_1 / 2})
     end
 
     def y_pot
       @y ||= locked_pot(self.height{_1 / 2})
+    end
+
+    def keyboard_current_object=(new_keyboard_current)
+      if @keyboard_current_object != new_keyboard_current
+        @keyboard_current_object.accept_keyboard false
+        new_keyboard_current.accept_keyboard
+        @keyboard_current_object = new_keyboard_current
+      end
+    end
+
+    def mouse_current
+      @mouse_current
     end
 
     # Getters for ruby2d_window_ext_show
@@ -303,14 +333,9 @@ module Ruby2D
       @keys_down.include? key
     end
 
-    # Key held event method for class pattern
-    def key_held(key)
-      @keys_held.include? key
-    end
-
     # Key up event method for class pattern
     def key_up(key)
-      @keys_up.include? key
+      not @keys_down.include?(key)
     end
 
     # Key callback method, called by the native and web extentions
@@ -330,6 +355,8 @@ module Ruby2D
       # When key released, fired once
       when :up
         _handle_key_up type, key
+      when :text
+        _handle_key_text type, key
       end
     end
 
@@ -490,24 +517,89 @@ module Ruby2D
       @keys_down << key if !@using_dsl && !(@keys_down.include? key)
 
       # Call event handler
-      emit :key_down, KeyEvent.new(type, key)
+      e = KeyEvent.new(type, key)
+      c = @keyboard_current_object
+      while c
+          c.emit :key_down, e
+          c = c.parent
+      end
     end
 
     def _handle_key_held(type, key)
       # For class pattern
-      @keys_held << key if !@using_dsl && !(@keys_held.include? key)
+      @keys_down << key if !@using_dsl && !(@keys_down.include? key)
 
       # Call event handler
-      emit :key_held, KeyEvent.new(type, key)
+      e = KeyEvent.new(type, key)
+      c = @keyboard_current_object
+      while c
+          c.emit :key_held, e
+          c = c.parent
+      end
+      if @key_typer.type key
+        c = @keyboard_current_object
+        while c
+            c.emit :key_type, e
+            c = c.parent
+        end
+      end
     end
 
     def _handle_key_up(type, key)
       # For class pattern
-      @keys_up << key if !@using_dsl && !(@keys_up.include? key)
+      @keys_down.delete(key) if !@using_dsl && (@keys_down.include? key)
 
       # Call event handler
-      emit :key_up, KeyEvent.new(type, key)
+      e = KeyEvent.new(type, key)
+      c = @keyboard_current_object
+      while c
+          c.emit :key_up, e
+          c = c.parent
+      end
+      @key_typer.up
     end
+
+    def _handle_key_text(type, text)
+
+      # Call event handler
+      e = TextEvent.new(type, text.force_encoding('utf-8'))
+      c = @keyboard_current_object
+      while c
+          c.emit :key_text, e
+          c = c.parent
+      end
+    end
+
+    class KeyTyper
+      def initialize(entity)
+          @entity = entity
+          @functional_keys = {
+              'left shift' => true,
+              'left ctrl' => true,
+              'left alt' => true,
+              'right shift' => true,
+              'right ctrl' => true,
+              'right alt' => true
+          }.freeze
+      end
+
+      def type(key)
+          return if @functional_keys[key]
+          if @last_key == key
+              @held_count += 1
+              return @held_count > 10 && @held_count % 3 == 0              
+          else
+              @last_key = key
+              @held_count = 0
+              return true
+          end
+      end
+
+      def up
+          @last_key = nil
+      end
+    end
+
 
     def _handle_mouse_down(type, button, x, y)
       # For class pattern
@@ -647,9 +739,6 @@ module Ruby2D
     # ---- end exception
 
     def _clear_event_stores
-      @keys_down.clear
-      @keys_held.clear
-      @keys_up.clear
       @mouse_buttons_down.clear
       @mouse_buttons_up.clear
       @mouse_scroll_event = false
@@ -690,8 +779,6 @@ module Ruby2D
     def _init_key_event_stores
       # Event stores for class pattern
       @keys_down = []
-      @keys_held = []
-      @keys_up   = []
     end
 
     def _init_mouse_event_stores
@@ -724,8 +811,9 @@ module Ruby2D
 
       # Controller axis and button mappings file
       @controller_mappings = "#{File.expand_path('~')}/.ruby2d/controllers.txt"
-
     end
+
+    
 
     def _init_procs_dsl_console
     

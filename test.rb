@@ -308,7 +308,7 @@ class BasicTextlineStyle
     end
 
     def border
-        1
+        3
     end
 
     def round
@@ -399,9 +399,17 @@ def textline(text = '', x: 200, y: 100, left: nil, right: nil, top: nil, bottom:
 end
 
 
-tln = textline("ąText line Text line Text line", x: 200, text_size: 14)
-win.add tln
-win.keyboard_current_object = tln
+# tln = textline("ąText line Text line Text line", x: 200, text_size: 14)
+# win.add tln
+# win.keyboard_current_object = tln
+# win.add (win.new_line x1: 100, y1: 100, x2: 300, y2: 200, b: 8, t: 20)
+win.add (win.new_line x1: 100, y1: 100, x2: 300, y2: 100, b: 2, t: 20, r: 10)
+win.add (l1 = win.new_line x1: 100, y1: 200, x2: 300, y2: 200, b: 5, t: 3, r: 0)
+win.add (win.new_line x1: 100, y1: 300, x2: 300, y2: 300, b: 4, t: 20, r: 4)
+win.on :mouse_move do |e|
+    l1.x1 = e.x
+    l1.y1 = e.y
+end
 
 # btn = win.button("Przyciśnij mnie!")
 # btn1 = win.button("Przyciśnij mnie!", x: 400, style: 'green') do

@@ -664,6 +664,8 @@ module Ruby2D
           mc_lineage[...i].each{_1.emit :mouse_move, e}
           nmc_lineage[i..].each{_1.emit :mouse_in, e}
           @mouse_current = new_mouse_current
+        else
+          @mouse_current.lineage.each{_1.emit :mouse_move, e}
         end
       end
     end

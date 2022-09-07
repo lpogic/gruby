@@ -403,12 +403,24 @@ end
 # win.add tln
 # win.keyboard_current_object = tln
 # win.add (win.new_line x1: 100, y1: 100, x2: 300, y2: 200, b: 8, t: 20)
-win.add (win.new_line x1: 100, y1: 100, x2: 300, y2: 100, b: 2, t: 20, r: 10)
-win.add (l1 = win.new_line x1: 100, y1: 200, x2: 300, y2: 200, b: 5, t: 3, r: 0)
-win.add (win.new_line x1: 100, y1: 300, x2: 300, y2: 300, b: 4, t: 20, r: 4)
+r = pot 10
+win.add (win.new_line x1: 100, y1: 100, x2: 300, y2: 100, b: 0, t: 20, r: r)
+# win.add (l = win.new_line x1: 100, y1: 300, x2: 300, y2: 330, b: 20, t: 30, r: r, border_color: [1,1,1,0.3], color: [0,0,0,0.3])
+win.add (l = win.new_line x1: 100, y1: 300, x2: 300, y2: 330, b: 0, t: 3)
+
 win.on :mouse_move do |e|
-    l1.x1 = e.x
-    l1.y1 = e.y
+    l.x2 = e.x
+    l.y2 = e.y
+end
+
+win.on :key_down do |e|
+    if e.key == '-'
+        r.set(r.get + 1)
+        p r.get
+    elsif e.key == '='
+        r.set(r.get - 1)
+        p r.get
+    end
 end
 
 # btn = win.button("Przyciśnij mnie!")

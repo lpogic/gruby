@@ -36,7 +36,7 @@ module Ruby2D
 
 
     class BasicButtonStyle
-        include CommunicatingVesselsSystem
+        include CommunicatingVesselSystem
     
         def initialize(element, 
             color, color_hovered, color_pressed, 

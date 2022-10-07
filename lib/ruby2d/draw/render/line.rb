@@ -17,8 +17,8 @@ module Ruby2D
       @thick = pot(thick || t || 6)
       @round = pot(round || r || 0)
       @border = pot(border || b || 0)
-      @color = pot_affect{Color.new _1}.let(color)
-      @border_color = pot_affect{Color.new _1}.let(border_color)
+      @color = compot{Color.new _1}.let color
+      @border_color = compot{Color.new _1}.let border_color
     end
 
     pot_accessor(:x1, :x2, :y1, :y2, :color, :border_color,

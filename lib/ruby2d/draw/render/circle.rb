@@ -16,8 +16,8 @@ module Ruby2D
       @radius = pot(radius || r || 100)
       @border = pot(border || b || 0)
       @sectors = sectors
-      @color = pot_affect{Color.new _1}.let(color)
-      @border_color = pot_affect{Color.new _1}.let(border_color)
+      @color = compot{Color.new _1}.let color
+      @border_color = compot{Color.new}.let border_color
     end
 
     attr_accessor :sectors

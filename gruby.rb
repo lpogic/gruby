@@ -1,4 +1,22 @@
-require 'ruby2d'
+module Kernel
+    # make an alias of the original require
+    alias_method :original_require, :require
+  
+    # rewrite require
+    def require name
+        if name == 'ruby2d/ruby2d'
+            original_require name
+        elsif name.start_with?('ruby2d')
+            original_require "./lib/#{name}"
+        else
+            original_require name
+        end
+    end
+end
+
+require 'ruby2d/core'
+include Ruby2D
+extend Ruby2D::DSL
 include CommunicatingVesselSystem
 
 module Ruby2D
@@ -34,7 +52,7 @@ class Multitext < Cluster
             let_sum(*parts.map{_1.text.width}) >> @width
             # @width.let(*parts.map{_1.text.width}){|*ptw| ptw.sum}
             remove s.get.map{_1.text} if not s.get.nil?
-            add parts.map{_1.text}
+            add *parts.map{_1.text}
             parts
         end
         parts = []
@@ -42,9 +60,9 @@ class Multitext < Cluster
         color.each_with_index do |lc, i|
             length, color = *lc
             if i == 0
-                r = pot.let(length){0.._1}
+                r = pot.let(length){0..._1}
             else
-                r = pot.let(length, r){_2.max.._2.max + _1}
+                r = pot.let(length, r){_2.max + 1.._2.max + _1}
             end
             text = new_text(let(@text, r){_1[_2]}, size: size, style: style, font: font, color: color, y: @y)
             text.plan :left
@@ -578,8 +596,7 @@ end
 tln = textline("ąText line Text line Text line", x: 200, text_size: 14)
 win.add tln
 win.keyboard_current_object = tln
-win.add(Multitext.new("XD", x: 400, y: 400, color: [[1, 'black'], [1, 'white']]))
+win.add(Multitext.new("XDXDXDXDXDXDXDXD", x: 400, y: 400, color: [[6, 'black'], [6, 'white'], [6, 'black']]))
+win.add(Text.new("XDXDXDXDXDXDXDXD", x: 400, y: 400, color: 'red'))
 
 show
-
-

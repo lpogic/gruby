@@ -139,6 +139,7 @@ module Ruby2D
     end
 
     def measure(text, w_max)
+      return 0 if text.length == 0 or w_max == 0
       width, count = *Font.ext_text_measure(@ttf_font, text, w_max)
       return count
     end

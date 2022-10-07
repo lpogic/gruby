@@ -5,7 +5,7 @@
 module Ruby2D
   # A rectangle
   class Rectangle < Line
-    pot_accessor :x, :y, [:width, :w] => :width, [:height, :h] => :height
+    pot_accessor :x, :y, :left, :right, :top, :bottom, [:width, :w] => :width, [:height, :h] => :height
     def initialize(x: nil, y: nil, w: nil, width: nil, h: nil, height: nil,
                    r: nil, round: nil, b: nil, border: nil, 
                    color: 'white', border_color: 'black',
@@ -16,81 +16,113 @@ module Ruby2D
       @x = pot(x || 200)
       @y = pot(y || 100)
 
-      self.left = left if left
-      self.right = right if right
-      self.top = top if top
-      self.bottom = bottom if bottom
       let(@x, @y, @width, @height) do |x, y, w, h|
         d = w - h
         d < 0 ? [x, y - d / 2, x, y + d / 2, w] : [x - d / 2, y, x + d / 2, y, h]
       end >> [@x1, @y1, @x2, @y2, @thick]
+
+      if left or right
+        plan :left, :right
+        self.left = left if left
+        self.right = right if right
+      end
+      if top or bottom
+        plan :top, :bottom
+        self.top = top if top
+        self.bottom = bottom if bottom
+      end
     end
 
-    pot_accessor :left, :right, :top, :bottom, :hbounds, :vbounds
+    def plan(*params)
+      if params.include?(:left)
+        ensure_left_right
+        if params.include?(:right)
+          plan_params [:left, :right], [:x, :width] do [(_1 + _2) / 2, _2 - _1] end
+        elsif params.include?(:width)
+          plan_params [:left, :width], [:x, :right] do [_1 + _2 / 2, _1 + _2] end
+        elsif params.include?(:x)
+          plan_params [:x, :left], [:width, :right] do [(_1 - _2) * 2, _2 * 2 - _1] end
+        else raise "Unsupported plan #{params}"
+        end
+      elsif params.include?(:right)
+        ensure_left_right
+        if params.include?(:width)
+          plan_params [:right, :width], [:x, :left] do [_1 - _2 / 2, _1 - _2] end
+        elsif params.include?(:x)
+          plan_params [:right, :x], [:width, :left] do [(_1 - _2) * 2, _2 * 2 - _1] end
+        else raise "Unsupported plan #{params}"
+        end
+      elsif params.include?(:x)
+        if params.include?(:width)
+          if @left
+            plan_params [:x, :width], [:left, :right] do [_1 - _2 / 2, _1 + _2 / 2] end
+          end
+        else raise "Unsupported plan #{params}"
+        end
+      end
+
+      if params.include?(:top)
+        ensure_top_bottom
+        if params.include?(:bottom)
+          plan_params [:top, :bottom], [:y, :height] do [(_1 + _2) / 2, _2 - _1] end
+        elsif params.include?(:height)
+          plan_params [:top, :height], [:y, :bottom] do [_1 + _2 / 2, _1 + _2] end
+        elsif params.include?(:y)
+          plan_params [:y, :top], [:height, :bottom] do [(_1 - _2) * 2, _2 * 2 - _1] end
+        else raise "Unsupported plan #{params}"
+        end
+      elsif params.include?(:bottom)
+        ensure_top_bottom
+        if params.include?(:height)
+          plan_params [:bottom, :height], [:y, :top] do [_1 - _2 / 2, _1 - _2] end
+        elsif params.include?(:y)
+          plan_params [:bottom, :y], [:height, :top] do [(_1 - _2) * 2, _2 * 2 - _1] end
+        else raise "Unsupported plan #{params}"
+        end
+      elsif params.include?(:y)
+        if params.include?(:height)
+          if @top
+            plan_params [:y, :height], [:top, :bottom] do [_1 - _2 / 2, _1 + _2 / 2] end
+          end
+        else raise "Unsupported plan #{params}"
+        end
+      end
+      params.map{instance_variable_get("@#{_1}")}
+    end
 
     def _left
-      @left ||= let(@x, @width){_1 - _2 / 2}.affect{|left| @x.let(left, @width){_1 + _2 / 2}}
+      ensure_left_right
+      @left
     end
 
     def _right
-      @right ||= let(@x, @width){_1 + _2 / 2}.affect{|right| @x.let(right, @width){_1 - _2 / 2}}
+      ensure_left_right
+      @right
+    end
+
+    def ensure_left_right
+      if not @left or not @right
+        let(@x, @width){[_1 - _2 / 2, _1 + _2 / 2]} >> [@left = pot, @right = pot]
+        @left.lock_inlet
+        @right.lock_inlet
+      end
     end
 
     def _top
-      @top ||= let(@y, @height){_1 - _2 / 2}.affect{|top| @y.let(top, @height){_1 + _2 / 2}}
+      ensure_top_bottom
+      @top
     end
 
     def _bottom
-      @bottom ||= let(@y, @height){_1 + _2 / 2}.affect{|bottom| @y.let(bottom, @height){_1 - _2 / 2}}
+      ensure_top_bottom
+      @bottom
     end
 
-    class HBounds
-      def initialize(left, right)
-        @left = left
-        @right = right
-      end
-
-      attr_reader :left, :right
-
-      def self.make(hb)
-        case hb
-        when Hbounds then hb
-        when Hash then Hbounds.new(hb[:left], hb[:right])
-        else raise "Error"
-        end
-      end
-    end
-
-    def _hbounds
-      @hbounds ||= let(@x, @width) do |x, w|
-        HBounds.new(x - w / 2, x + w / 2)
-      end.affect do |hb|
-        let(hb){hb = HBounds.make(_1); [(hb.left + hb.right) / 2, hb.right - hb.left]} >> [@x, @width]
-      end
-    end
-
-    class VBounds
-      def initialize(top, bottom)
-        @top = top
-        @bottom = bottom
-      end
-
-      attr_reader :top, :bottom
-
-      def self.make(hb)
-        case hb
-        when Hbounds then hb
-        when Hash then Vbounds.new(hb[:top], hb[:bottom])
-        else raise "Error"
-        end
-      end
-    end
-
-    def _vbounds
-      @vbounds ||= let(@y, @height) do |y, h|
-        VBounds.new(top: y - h / 2, bottom: y + h / 2)
-      end.affect do |vb|
-        let(vb){vb = VBounds.make(_1); [(vb.top + vb.bottom) / 2, vb.bottom - vb.top]} >> [@y, @height]
+    def ensure_top_bottom
+      if not @top or not @bottom
+        let(@y, @height){[_1 - _2 / 2, _1 + _2 / 2]} >> [@top = pot, @bottom = pot]
+        @top.lock_inlet
+        @bottom.lock_inlet
       end
     end
 

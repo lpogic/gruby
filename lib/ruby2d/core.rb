@@ -3,7 +3,7 @@
 # Ruby2D module and native extension loader
 
 unless RUBY_ENGINE == 'mruby'
-  require 'ruby2d/communicationg_vessels_system'
+  require 'ruby2d/communicating_vessel_system'
   require 'ruby2d/cli/colorize'
   require 'ruby2d/exceptions'
   require 'ruby2d/draw/render/renderable'

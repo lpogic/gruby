@@ -15,6 +15,11 @@ module Ruby2D
             pt.lock_inlet self if locked
             pt
         end
+
+        # def pot(v, accept_origin: false)
+        #     return v if v.is_a?(Pot) and accept_origin
+        #     BasicPot.new.let(v)
+        # end
         
         def locked_pot(*v, &block)
             pot(*v, locked: true, &block)
@@ -51,12 +56,6 @@ module Ruby2D
             end
         end
         
-        def let_sum(*inpot)
-            let(*inpot) do |*a| 
-                a.sum 
-            end
-        end
-        
         private
         
         class Let
@@ -68,27 +67,49 @@ module Ruby2D
                 @@suppress = s
             end
 
+            @@transaction = false
+            @@to_update = []
+            def self.transaction
+                if @@transaction
+                    yield
+                else
+                    t, @@transaction = @@transaction, true
+                    yield
+                    @@transaction = t
+                    to_update, @@to_update = @@to_update, []
+                    to_update.uniq.each{_1.__update_values}
+                end
+            end 
+
             def initialize(inpot, &block)
-                @callee = block
+                @function = block
                 @inpot = inpot
                 @outpot = []
-                class << @outpot
-                    alias xd <<
-                    def <<(e)
-                        p "XD" if e == true
-                        xd(e)
-                    end
-
-                    alias xd1 +
-                    def +(e)
-                        p "XD" if e == true
-                        xd1(e)
-                    end
-                end
             end
 
             def copy
-                Let.new @inpot, &@callee
+                Let.new @inpot, &@function
+            end
+
+            # dla funkcji agregujących np. let(*xes).max,    let(a, b, c).max
+            def method_missing(m, *a, &b)
+                if Array.method_defined? m
+                    __compose(m, *a, &b)
+                else
+                    super
+                end
+            end
+
+            def __compose(m, *arg, &b)
+                if @function
+                    Let.new(@inpot) do |*a|
+                        @function.call(*a).array.send(m, *arg, &b)
+                    end
+                else
+                    Let.new(@inpot) do |*a|
+                        a.send(m, *arg, &b)
+                    end
+                end
             end
             
             def inpot = @inpot
@@ -113,28 +134,36 @@ module Ruby2D
             end
 
             def update_values
-                __update_values if not @@suppress
+                if not @@suppress
+                    if @@transaction
+                        @@to_update << self
+                    else
+                        __update_values
+                    end
+                end
             end
             
             def __update_values
                 return if @closed
                 outpot = self.outpot
-                if outpot.compact.empty?
+                oc = outpot.compact
+                if oc.empty?
                     cancel
                     return
                 end
-                result = call
+                result = get.array
                 if outpot.size > 1
-                    ra = result.is_a?(Array) ? result : [result]
-                    ra.zip(outpot).each{|r, o| o.__set r if not o.nil?}
+                    result.zip(outpot).map{|r, o| o.nil? ? [] : o.__set(r, false) || []}.reduce(&:+).uniq.each{_1.update_values}
+                    oc.each{_1.__unlock}
                 else
-                    outpot[0].__set result
+                    outpot[0].__set result[0]
                 end
                 result
             end
-        
-            def call
-                @callee.call(*@inpot.map(&:get))
+
+            def get
+                i = @inpot.map(&:get)
+                @function ? @function.call(*i) : i.size > 1 ? i : i[0]
             end
             
             def close
@@ -142,14 +171,14 @@ module Ruby2D
             end
             
             def open(open = true)
-                raise "Canceled let open" if open and (!@callee or !@outpot)
+                raise "Canceled let open" if open and (!@function or !@outpot)
                 @closed = !open
             end
             
             def cancel
                 @inpot.each{|i| i.delete_outlet(self)}
                 @inpot = nil
-                @callee = nil
+                @function = nil
                 @closed = true
             end
 
@@ -183,82 +212,13 @@ module Ruby2D
             end
         end
 
-        module Pot
-            def +(that)
-                if that.is_a? Pot
-                    pot self, that do |a, b|
-                        a + b
-                    end
-                else
-                    pot self do |v|
-                        v + that
-                    end
-                end
-            end
-            
-            def -(that)
-                if that.is_a? Pot
-                    pot self, that do |a, b|
-                        a - b
-                    end
-                else
-                    pot self do |v|
-                        v - that
-                    end
-                end
-            end
-            
-            def *(that)
-                if that.is_a? Pot
-                    pot self, that do |a, b|
-                        a * b
-                    end
-                else
-                    pot self do |v|
-                        v * that
-                    end
-                end
-            end
-            
-            def /(that)
-                if that.is_a? Pot
-                    pot self, that do |a, b|
-                        a / b
-                    end
-                else
-                    pot self do |v|
-                        v / that
-                    end
-                end
-            end
-            
-            def **(that)
-                if that.is_a? Pot
-                    pot self, that do |a, b|
-                        a ** b
-                    end
-                else
-                    pot self do |v|
-                        v ** that
-                    end
-                end
-            end
-            
-            def %(that)
-                if that.is_a? Pot
-                    pot self, that do |a, b|
-                        a % b
-                    end
-                else
-                    pot self do |v|
-                        v % that
-                    end
-                end
+        class Pot
+            def push
+                __set get
             end
         end
         
-        class BasicPot
-            include Pot
+        class BasicPot < Pot
 
             def initialize(value = nil)
                 @inlet = nil
@@ -276,11 +236,19 @@ module Ruby2D
             
             alias value get
             
-            def __set(value)
+            def __set(value, auto_unlock = true)
                 return if @set_lock
                 @value = value
                 @set_lock = true
-                outlet.each(&:update_values)
+                if auto_unlock
+                    outlet.each(&:update_values)
+                    @set_lock = false
+                else
+                    outlet
+                end
+            end
+
+            def __unlock
                 @set_lock = false
             end
         
@@ -288,7 +256,8 @@ module Ruby2D
                 @outlet.map{_1.weakref_alive? ? _1.__getobj__ : nil}.compact
             end
             
-            def set(value)
+            def set(value = nil, &mod)
+                value = mod.call(get, value) if block_given?
                 set_inlet(nil)
                 __set(value)
                 self
@@ -308,7 +277,7 @@ module Ruby2D
                 elsif v[0].is_a? Let
                     l = v[0].copy
                 elsif v[0].is_a? Pot
-                    l = Let.new(v) do _1 end
+                    l = Let.new(v)
                 else
                     set_inlet(nil)
                     __set(v[0])
@@ -356,8 +325,7 @@ module Ruby2D
             end
         end
 
-        class Compot
-            include Pot
+        class Compot < Pot
 
             def initialize(inpot, outpot)
                 @inpot = inpot
@@ -365,7 +333,7 @@ module Ruby2D
             end
             
             def inspect
-                "CompoundPot:#{self.object_id} @inpot=#{@inpot.inspect} @outpot=#{@outpot.inspect}]"
+                "Compot:#{self.object_id} @inpot=#{@inpot.inspect} @outpot=#{@outpot.inspect}]"
             end
 
             def get
@@ -378,12 +346,12 @@ module Ruby2D
                 @outpot.outlet
             end
             
-            def __set(value)
-                @inpot.__set value
+            def __set(value, auto_unlock = true)
+                @inpot.__set value, auto_unlock
             end
             
-            def set(value)
-                @inpot.set value
+            def set(value = nil, &mod)
+                @inpot.set value, &mod
                 self
             end
             
@@ -430,29 +398,29 @@ module Ruby2D
 end
 
 class Class
-    def pot_reader(*una, **na)
+    def cvs_reader(*una, **na)
         una.each{na[_1] = _1}
         na.each do |mn, a|
             if a.is_a? Array
-                pt = 'pt = @' + a.join('.') 
+                pt = 'c = @' + a.join('.') 
             else
-                pt = "pt = defined?(self._#{a}) ? self._#{a} : @#{a}"
+                pt = "c = defined?(self._cvs_#{a}) ? self._cvs_#{a} : @#{a}"
             end
             mn = [mn] if not mn.is_a? Array
             mn.each do |m|
-                self.class_eval("def #{m}(&b); #{pt}; block_given? ? pt.as(&b) : pt;end")
+                self.class_eval("def #{m}(&b); #{pt}; block_given? ? c.as(&b) : c;end")
             end
         end
     end
 
-    def pot_accessor(*una, **na)
-        pot_reader(*una, **na)
+    def cvs_accessor(*una, **na)
+        cvs_reader(*una, **na)
         una.each{na[_1] = _1}
         na.each do |mn, a|
             if a.is_a? Array
                 pt_assign = '@' + a.join('.') + ' = val' 
             else
-                pt_assign = "pt = defined?(self._#{a}) ? self._#{a} : @#{a}; pt.let val"
+                pt_assign = "c = defined?(self._cvs_#{a}) ? self._cvs_#{a} : @#{a}; c.let val"
             end
             mn = [mn] if not mn.is_a? Array
             mn.each do |m|

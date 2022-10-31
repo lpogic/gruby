@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 # Ruby2D module and native extension loader
-
 unless RUBY_ENGINE == 'mruby'
   require 'ruby2d/communicating_vessel_system'
+  require 'ruby2d/planned'
   require 'ruby2d/cli/colorize'
   require 'ruby2d/exceptions'
   require 'ruby2d/draw/render/renderable'
@@ -32,6 +32,9 @@ unless RUBY_ENGINE == 'mruby'
   require 'ruby2d/draw/texture'
   require 'ruby2d/draw/vertices'
   require 'ruby2d/compose/widget'
+  require 'ruby2d/compose/grid'
+  require 'ruby2d/compose/fit_grid'
   require 'ruby2d/compose/button'
+  require 'ruby2d/compose/note'
   require 'ruby2d/ruby2d' # load native extension
 end

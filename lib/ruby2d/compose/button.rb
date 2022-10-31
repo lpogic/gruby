@@ -1,17 +1,16 @@
 module Ruby2D
     class Button < Widget
     
-        def initialize(text: nil, x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil, &on_click)
+        def initialize(text: nil, **na, &on_click)
             super()
-            @box = rectangle x: x, y: y, left: left, right: right, top: top, bottom: bottom
+            @box = rectangle **na
             @text = self.text text, x: @box.x, y: @box.y
-            add @box
-            add @text
+            place @box, @text
     
             on :click, &on_click if block_given?
         end
 
-        pot_accessor(
+        cvs_accessor(
             'color' => [:box, :color],
             'border_color' => [:box, :border_color],
             'border' => [:box, :border],
@@ -22,11 +21,11 @@ module Ruby2D
         )
     
         def padding_x=(px)
-            @box.w = let_sum(@text.width, px)
+            @box.w = let(@text.width, px).sum
         end
     
         def padding_y=(py)
-            @box.h = let_sum(@text.height, py)
+            @box.h = let(@text.height, py).sum
         end
     
         def contains?(x, y)

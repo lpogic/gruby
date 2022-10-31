@@ -89,6 +89,11 @@ module Ruby2D
         @g = color.g
         @b = color.b
         @a = color.a
+      when Integer
+        @r = color
+        @g = color
+        @b = color
+        @a = color
       end
     end
 
@@ -115,7 +120,8 @@ module Ruby2D
 
       # Check if the color is valid
       def valid?(color)
-        color.is_a?(Color) ||             # color object
+        color.is_a?(Color) ||
+        color.is_a?(Integer) ||            
           NAMED_COLORS.key?(color) ||     # keyword
           hex?(color) ||                  # hexadecimal value
           (                               # Array of Floats from 0.0..1.0
@@ -124,11 +130,6 @@ module Ruby2D
             color.all? { |el| el.is_a?(Numeric) }
           )
       end
-
-      #
-      # Backwards compatibility
-      alias is_valid? valid?
-      alias is_hex? valid?
     end
 
     # Convenience methods to alias `opacity` to `@a`

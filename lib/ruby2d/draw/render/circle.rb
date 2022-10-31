@@ -17,12 +17,12 @@ module Ruby2D
       @border = pot(border || b || 0)
       @sectors = sectors
       @color = compot{Color.new _1}.let color
-      @border_color = compot{Color.new}.let border_color
+      @border_color = compot{Color.new _1}.let border_color
     end
 
     attr_accessor :sectors
-    pot_accessor :x, :y, :color, :border_color
-    pot_accessor [:radius, :r] => :radius, [:border, :b] => :border
+    cvs_accessor :x, :y, :color, :border_color
+    cvs_accessor [:radius, :r] => :radius, [:border, :b] => :border
 
     # Check if the circle contains the point at +(x, y)+
     def contains?(x, y)

@@ -139,14 +139,36 @@ module Ruby2D
     end
 
     def measure(text, w_max)
-      return 0 if text.length == 0 or w_max == 0
-      width, count = *Font.ext_text_measure(@ttf_font, text, w_max)
-      return count
+      r = text.length == 0 || w_max == 0 ? [0, 0] : Font.ext_text_measure(@ttf_font, text, w_max)
+      return {
+        width: r[0],
+        count: r[1]
+      }
     end
 
     def size(text)
-      size = *Font.ext_text_size(@ttf_font, text)
-      return {width: size[0], height: size[1]}
+      w, h = *Font.ext_text_size(@ttf_font, text)
+      return {
+        width: w, 
+        height: h
+      }
+    end
+
+    def nearest(text, w)
+      m = measure text, w
+      return m[:count] if m[:count] >= text.length
+      s = size text[..m[:count]]
+      return w - m[:width] > s[:width] - w ? m[:count] + 1 : m[:count]
+    end
+
+    def dimensions
+      height, ascent, descent, line_skip = *Font.ext_dimensions(@ttf_font)
+      return {
+        height: height,
+        ascent: ascent,
+        descent: descent,
+        line_skip: line_skip
+      }
     end
   end
 end

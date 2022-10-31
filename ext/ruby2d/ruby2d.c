@@ -1443,6 +1443,36 @@ static R_VAL ruby2d_font_ext_text_measure(R_VAL self, R_VAL font, R_VAL message,
 }
 
 /*
+ * Ruby2D::Font#ext_dimensions
+ */
+#if MRUBY
+static R_VAL ruby2d_font_ext_dimensions(mrb_state* mrb, R_VAL self) {
+  mrb_value font;
+  mrb_get_args(mrb, "oo", &font);
+#else
+static R_VAL ruby2d_font_ext_dimensions(R_VAL self, R_VAL font) {
+#endif
+  R2D_Init();
+
+  R_VAL result = r_ary_new();
+
+  TTF_Font *ttf_font;
+
+#if MRUBY
+  Data_Get_Struct(mrb, font, &font_data_type, ttf_font);
+#else
+  Data_Get_Struct(font, TTF_Font, ttf_font);
+#endif
+
+  r_ary_push(result, INT2NUM(TTF_FontHeight(ttf_font)));
+  r_ary_push(result, INT2NUM(TTF_FontAscent(ttf_font)));
+  r_ary_push(result, INT2NUM(TTF_FontDescent(ttf_font)));
+  r_ary_push(result, INT2NUM(TTF_FontLineSkip(ttf_font)));
+
+  return result;
+}
+
+/*
  * Ruby2D::Texture#ext_draw
  */
 #if MRUBY
@@ -1722,8 +1752,8 @@ void on_resize(R2D_Event e) {
 static void update() {
 
   // Set the cursor
-  r_iv_set(ruby2d_window, "@mouse_x", INT2NUM(ruby2d_c_window->mouse.x));
-  r_iv_set(ruby2d_window, "@mouse_y", INT2NUM(ruby2d_c_window->mouse.y));
+  r_funcall(ruby2d_window, "set_mouse_x", 1, INT2NUM(ruby2d_c_window->mouse.x));
+  r_funcall(ruby2d_window, "set_mouse_y", 1, INT2NUM(ruby2d_c_window->mouse.y));
 
   // Store frames
   r_iv_set(ruby2d_window, "@frames", DBL2NUM(ruby2d_c_window->frames));
@@ -1929,6 +1959,33 @@ static R_VAL ruby2d_cluster_ext_stop_text_input(R_VAL self) {
   return R_NIL;
 }
 
+/*
+ * Ruby2D::Cluster#ext_get_clipboard
+ */
+#if MRUBY
+static R_VAL ruby2d_cluster_ext_get_clipboard(mrb_state* mrb, R_VAL self) {
+#else
+static R_VAL ruby2d_cluster_ext_get_clipboard(R_VAL self) {
+#endif
+  char* text = SDL_GetClipboardText();
+  return rb_str_new_cstr(text);
+}
+
+/*
+ * Ruby2D::Cluster#ext_set_clipboard
+ */
+#if MRUBY
+static R_VAL ruby2d_cluster_ext_set_clipboard(mrb_state* mrb, R_VAL self) {
+  mrb_value text;
+  mrb_get_args(mrb, "o", &text);
+#else
+static R_VAL ruby2d_cluster_ext_set_clipboard(R_VAL self, R_VAL text) {
+#endif
+  SDL_SetClipboardText(RSTRING_PTR(text));
+  return R_NIL;
+}
+
+
 
 #if MRUBY
 /*
@@ -2066,6 +2123,9 @@ void Init_ruby2d() {
   // Ruby2D::Font#ext_text_measure
   r_define_class_method(ruby2d_font_class, "ext_text_measure", ruby2d_font_ext_text_measure, r_args_req(3));
 
+  // Ruby2D::Font#ext_dimensions
+  r_define_class_method(ruby2d_font_class, "ext_dimensions", ruby2d_font_ext_dimensions, r_args_req(1));
+
   // Ruby2D::Texture
   R_CLASS ruby2d_texture_class = r_define_class(ruby2d_module, "Texture");
 
@@ -2122,6 +2182,12 @@ void Init_ruby2d() {
 
   // Ruby2D::Cluster#ext_stop_text_input
   r_define_method(ruby2d_cluster_class, "ext_stop_text_input", ruby2d_cluster_ext_stop_text_input, r_args_none);
+
+  // Ruby2D::Cluster#ext_get_clipboard
+  r_define_method(ruby2d_cluster_class, "ext_get_clipboard", ruby2d_cluster_ext_get_clipboard, r_args_none);
+
+  // Ruby2D::Cluster#ext_get_clipboard
+  r_define_method(ruby2d_cluster_class, "ext_set_clipboard", ruby2d_cluster_ext_set_clipboard, r_args_req(1));
 
   // Ruby2D::Window
   R_CLASS ruby2d_window_class = rb_define_class_under(ruby2d_module, "Window", ruby2d_cluster_class);

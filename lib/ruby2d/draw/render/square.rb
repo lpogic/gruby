@@ -16,7 +16,7 @@ module Ruby2D
       let(@size){[_1, _1]} >> [@width, @height]
     end
 
-    pot_accessor [:size, :s] => :size
+    cvs_accessor [:size, :s] => :size
 
     def self.draw(x:, y:, size:, round:, border:, color:)
       super(x: x, y: y,

@@ -1,4 +1,4 @@
-# frozen_string_literal: true
+# frozen_string_literal: trueCluster
 
 # Ruby2D::Window
 
@@ -38,6 +38,7 @@ module Ruby2D
       # Frames per second upper limit, and the actual FPS
       @fps_cap = fps_cap
       @fps = @fps_cap
+      @timepot = pot timems
 
       # Vertical synchronization, set to prevent screen tearing (recommended)
       @vsync = vsync
@@ -221,26 +222,65 @@ module Ruby2D
     def window = self
     def lineage = [self]
 
-    def make_outfit(element, style)
+    def make_outfit(element, style = 'default')
       case element
       when Button
-          case style
-          when 'default'
-              return BasicButtonStyle.new(element, Color.new('blue'), Color.new('#1084E9'), Color.new('#0064C9'), Color.new('white'), Color.new('#DFDFDF'))
-          when 'green'
-              return BasicButtonStyle.new(element, Color.new('#2c9b33'), Color.new('#23b22d'), Color.new('#2b642f'), Color.new('white'), Color.new('#DFDFDF'))
-          end
+        case style
+        when 'default'
+            return BasicButtonStyle.new(element, Color.new('blue'), Color.new('#1084E9'), Color.new('#0064C9'), Color.new('white'), Color.new('#DFDFDF'))
+        when 'green'
+            return BasicButtonStyle.new(element, Color.new('#2c9b33'), Color.new('#23b22d'), Color.new('#2b642f'), Color.new('white'), Color.new('#DFDFDF'))
+        end
+      when Note
+        case style
+        when 'default'
+          return BasicNoteStyle.new(
+            element, 
+            Color.new('#3c3c3f'), 
+            Color.new('#4c4c4f'), 
+            Color.new('#4c4c4f'), 
+            Color.new('white'), 
+            Color.new('#DFDFDF'),
+            'consola'
+          )
+        when 'green'
+          return BasicNoteStyle.new(
+            element, 
+            Color.new('#2c9b33'), 
+            Color.new('#23b22d'), 
+            Color.new('#2b642f'), 
+            Color.new('white'), 
+            Color.new('#DFDFDF'),
+            'consola'
+          )
+        when 'text'
+          return TextNoteStyle.new(
+            element, 
+            Color.new([0,0,0,0]),
+            Color.new('white'),
+            'consola'
+          )
+        end
       end
       raise "Unsupported style '#{style}' used for element #{element.class}"
     end
 
-    pot_reader :width, :height, :x, :y
-    def x_pot
-      @x ||= locked_pot(self.width{_1 / 2})
+    cvs_reader :x, :y, :left, :top, :mouse_x, :mouse_y, :timepot, [:width, :right] => :width, [:height, :bottom] => :height
+
+    def _cvs_left
+      @left ||= locked_pot 0
     end
 
-    def y_pot
-      @y ||= locked_pot(self.height{_1 / 2})
+    def _cvs_top
+      @top ||= locked_pot 0
+    end
+
+    def _cvs_x
+      self.width{_1 / 2}
+    end
+
+    def _cvs_y
+      self.height{_1 / 2}
     end
 
     def keyboard_current_object=(new_keyboard_current)
@@ -255,9 +295,25 @@ module Ruby2D
       @mouse_current
     end
 
+    def replace_mouse_owner(new_owner)
+      o, @mouse_owner = @mouse_owner, new_owner
+      o
+    end
+
     # Getters for ruby2d_window_ext_show
     def get_width = @width.get
     def get_height = @height.get
+    # Setters for ruby2d.c update
+    def set_mouse_x x
+      if x != @mouse_x.get
+        @mouse_x.set x
+      end
+    end
+    def set_mouse_y y
+      if y != @mouse_y
+        @mouse_y.set y
+      end
+    end
 
     # Public instance methods
 
@@ -448,6 +504,8 @@ module Ruby2D
 
     # Update callback method, called by the native and web extentions
     def update_callback
+      @timepot.set timems
+
       update unless @using_dsl
 
       update
@@ -637,7 +695,8 @@ module Ruby2D
       end
 
       # Call event handler
-      emit :mouse_scroll, MouseEvent.new(type, nil, direction, nil, nil, delta_x, delta_y)
+      e = MouseEvent.new(type, nil, direction, nil, nil, delta_x, delta_y)
+      @mouse_current.lineage.each{_1.emit :mouse_scroll, e}
     end
 
     def _handle_mouse_move(type, x, y, delta_x, delta_y)
@@ -650,7 +709,6 @@ module Ruby2D
 
       # Call event handler
       e = MouseEvent.new(type, nil, nil, x, y, delta_x, delta_y)
-      # send :mouse_move, MouseEvent.new(type, nil, nil, x, y, delta_x, delta_y)
       if @mouse_owner.contains?(x, y)
         new_mouse_current = @mouse_owner.accept_mouse(e)
         if @mouse_current.nil?
@@ -808,8 +866,8 @@ module Ruby2D
 
     def _init_event_registrations
       # Mouse X and Y position in the window
-      @mouse_x = 0
-      @mouse_y = 0
+      @mouse_x = pot 0
+      @mouse_y = pot 0
 
       # Controller axis and button mappings file
       @controller_mappings = "#{File.expand_path('~')}/.ruby2d/controllers.txt"

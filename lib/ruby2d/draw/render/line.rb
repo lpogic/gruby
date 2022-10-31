@@ -6,6 +6,7 @@ module Ruby2D
   # A line between two points.
   class Line
     include Renderable
+    include Planned
 
     def initialize(x1: 0, y1: 0, x2: 100, y2: 100,
                    t: nil, thick: nil, r: nil, round: nil, b: nil, border: nil, 
@@ -21,7 +22,7 @@ module Ruby2D
       @border_color = compot{Color.new _1}.let border_color
     end
 
-    pot_accessor(:x1, :x2, :y1, :y2, :color, :border_color,
+    cvs_accessor(:x1, :x2, :y1, :y2, :color, :border_color,
       [:thick, :t] => :thick, 
       [:round, :r] => :round, 
       [:border, :b] => :border

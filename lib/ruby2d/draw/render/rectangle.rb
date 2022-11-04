@@ -38,7 +38,7 @@ module Ruby2D
       elsif left and right
         let(left, right){[(_1 + _2) * 0.5, _2 - _1]} >> [@x, @width]
       elsif x
-        let(x){[_1]} >> [@x]
+        let(x) >> @x
       elsif left
         let(@width, left){_2 + _1 * 0.5} >> @x
       elsif right

@@ -8,6 +8,7 @@ module Ruby2D
   #
   class Circle
     include Renderable
+    include Planned
 
     def initialize(x: 25, y: 25, r: nil, radius: nil, b: nil, border: nil, sectors: 30,
                    color: 'yellow', border_color: 'black')
@@ -44,6 +45,20 @@ module Ruby2D
                             @x.get, @y.get, @radius.get, @border.get, @sectors,
                             *@color.get, *@border_color.get
                           ])
+    end
+
+    def _default_plan(x: nil, y: nil, radius: nil, **)
+      if x and radius
+        let(x, radius){[_1, _2]} >> [@x, @radius]
+      elsif x
+        let(x){_1} >> @x
+      end
+
+      if y and radius
+        let(y, radius){[_1, _2]} >> [@y, @radius]
+      elsif y
+        let(y){_1} >> @y
+      end
     end
   end
 end

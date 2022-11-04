@@ -229,28 +229,38 @@ def color_row
    [r, n]
 end
 
-col color: 0.5, width: 400, height: 400 do
-   row color: 'red' do |r|
-      text 'Red', left: r.left, top: r.top
-   end
-   @r, @n = color_row
-   row color: 'blue' do 
-      @b = button 'Button'
-   end
+# col color: 0.5, width: 400, height: 400 do
+#    row color: 'red' do |r|
+#       text 'Red', left: r.left, top: r.top
+#    end
+#    @r, @n = color_row
+#    row color: 'blue' do 
+#       @b = button 'Button'
+#    end
+# end
+
+
+# @b.on :click do
+#    @r.color = 'random'
+#    @n.text.set @r.color.get.to_s(opacity: false)
+# end
+
+# on @n.text do |t|
+#    begin
+#       @r.color = t
+#    rescue
+#    end
+# end
+
+circle x: window.mouse_x, y: window.mouse_y
+on :click do |e|
+   p e.button
+   c = {
+      :left => 'red',
+      :right => 'green',
+      :middle => 'blue'
+   }[e.button]
+   circle x: e.x, y: e.y, color: c
 end
-
-
-@b.on :click do
-   @r.color = 'random'
-   @n.text.set @r.color.get.to_s(opacity: false)
-end
-
-on @n.text do |t|
-   begin
-      @r.color = t
-   rescue
-   end
-end
-
 
 show

@@ -55,5 +55,13 @@ module Ruby2D
         def button(t, **na)
             append(new_button(text: t), **na)
         end
+
+        def rect(**ona)
+            append(new_rectangle(**ona), **ona)
+        end
+
+        def circle(**ona)
+            append(new_circle(**ona), **ona)
+        end
     end
 end

@@ -1846,12 +1846,8 @@ static R_VAL ruby2d_window_ext_show(R_VAL self) {
 
   // Get window attributes
   char *title = RSTRING_PTR(r_iv_get(self, "@title"));
-  // int width   = NUM2INT(r_iv_get(self, "@width"));
-  // int height  = NUM2INT(r_iv_get(self, "@height"));
   int width   = NUM2INT(r_funcall(self, "get_width", 0));
   int height  = NUM2INT(r_funcall(self, "get_height", 0));
-  // int width   = NUM2INT(r_iv_get(self, "@width_value"));
-  // int height  = NUM2INT(r_iv_get(self, "@height_value"));
   int fps_cap = NUM2INT(r_iv_get(self, "@fps_cap"));
 
   // Get the window icon
@@ -2189,8 +2185,11 @@ void Init_ruby2d() {
   // Ruby2D::Cluster#ext_get_clipboard
   r_define_method(ruby2d_cluster_class, "ext_set_clipboard", ruby2d_cluster_ext_set_clipboard, r_args_req(1));
 
+  // Ruby2D::Arena
+  R_CLASS ruby2d_arena_class = rb_define_class_under(ruby2d_module, "Arena", ruby2d_cluster_class);
+
   // Ruby2D::Window
-  R_CLASS ruby2d_window_class = rb_define_class_under(ruby2d_module, "Window", ruby2d_cluster_class);
+  R_CLASS ruby2d_window_class = rb_define_class_under(ruby2d_module, "Window", ruby2d_arena_class);
 
   // Ruby2D::Window#ext_diagnostics
   r_define_method(ruby2d_window_class, "ext_diagnostics", ruby2d_ext_diagnostics, r_args_req(1));

@@ -90,7 +90,7 @@ module Ruby2D
         x: tw / 2 - w / 2 + tox,
         y: th / 2 - txtr.height / 2 + toy
       }
-      vertices = Vertices.new(x - w / 2, y + h / 2 - txtr.height, w, txtr.height, rotate, crop: crop)
+      vertices = Vertices.new((x - w / 2).round, (y + h / 2 - txtr.height).round, w, txtr.height, rotate, crop: crop)
       @texture.get.draw(
         vertices.coordinates, vertices.texture_coordinates, color
       )

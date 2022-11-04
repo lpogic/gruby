@@ -38,7 +38,7 @@ module Ruby2D
                 @position = compot(@text.text{_1.length}){_1.clamp(0, _2)}.set 0
                 @rect = new_rectangle border: 0, round: 0, color: [0,0,0,0.5],
                     y: text.y, height: text.size, width: 2, 
-                    right: let(@position, @text.left, @text.text){|pos, l, t|
+                    left: let(@position, @text.left, @text.text){|pos, l, t|
                         pos <= 0 ? l : l + text.font.get.size(t[0, pos])[:width]
                     }
             end
@@ -56,7 +56,7 @@ module Ruby2D
         class Car < Cluster
             def initialize(text)
                 super()
-                @enabled = pot true
+                @enabled = pot false
                 @text = text
                 @tl = @text.text{_1.length}
                 @coordinates = pot Selection.new
@@ -103,8 +103,9 @@ module Ruby2D
             end
         end
     
-        def initialize(text: nil, **narg)
+        def initialize(text: nil, editable: true, **narg)
             super()
+            @editable = pot editable
             @padding_x = pot 20
             @box = new_rectangle **narg
             @text_value = pot text.force_encoding('utf-8')
@@ -122,11 +123,11 @@ module Ruby2D
                 end
             end.set 0
             @pen = Pen.new @text
-            @pen.enabled = @keyboard_current
+            @pen.enabled.let(@keyboard_current, @editable){_1 & _2}
             @selection = pot Selection.new
             @car = Car.new @text
-            @car.coordinates = let(@selection, @text_offset){_1.move(-_2, 0)}
             @car.enabled = @keyboard_current
+            @car.coordinates = let(@selection, @text_offset){_1.move(-_2, 0)}
             @story = LimitedStack.new 50
             @story_index = 0
             
@@ -293,26 +294,18 @@ module Ruby2D
             "#{self.class} text:\"#{@text_value.get}\""
         end
 
-        def plan **na
-            @box.plan **na
-        end
+        delegate box: %w[fill plan x y left top right bottom width\= height\= color\= border_color\= border\= round\=]
     
         cvs_accessor(
             :padding_x,
             :pen_position,
             :text_color,
-            'color' => [:box, :color],
-            'border_color' => [:box, :border_color],
-            'border' => [:box, :border],
-            'round' => [:box, :round],
             'text' => :text_value,
             'text_visible' => [:text, :text],
             'text_font' => [:text, :font],
             'text_size' => [:text, :size],
             ['w', 'width'] => [:box, :width],
-            ['h', 'height'] => [:box, :height],
-            'x' => [:box, :x],
-            'y' => [:box, :y]
+            ['h', 'height'] => [:box, :height]
         )
     
         cvs_reader(
@@ -432,6 +425,7 @@ module Ruby2D
         end
 
         def paste(str, type = false)
+            return if not @editable.get
             selection = @selection.get
             tv = @text_value.get
             if type
@@ -605,7 +599,7 @@ module Ruby2D
         end
     
         def text_size
-            18
+            14
         end
     
         def text_font
@@ -613,7 +607,9 @@ module Ruby2D
         end
     
         def border
-            1
+            let @element.keyboard_current do |kc|
+                kc ? 1 : 0
+            end
         end
     
         def round
@@ -672,7 +668,7 @@ module Ruby2D
         end
     
         def text_size
-            18
+            14
         end
     
         def text_font

@@ -5,7 +5,7 @@
 module Ruby2D
   # Represents a window on screen, responsible for storing renderable graphics,
   # event handlers, the update loop, showing and closing the window.
-  class Window < Cluster
+  class Window < Arena
     
     # Event structures
     ResizeEvent           = Struct.new(:width, :height)
@@ -614,7 +614,7 @@ module Ruby2D
           c.emit :key_up, e
           c = c.parent
       end
-      @key_typer.up
+      @key_typer.up key
     end
 
     def _handle_key_text(type, text)
@@ -639,22 +639,18 @@ module Ruby2D
               'right ctrl' => true,
               'right alt' => true
           }.freeze
+          @helds = {}
       end
 
       def type(key)
           return if @functional_keys[key]
-          if @last_key == key
-              @held_count += 1
-              return @held_count > 10 && @held_count % 3 == 0              
-          else
-              @last_key = key
-              @held_count = 0
-              return true
-          end
+          h = (@helds[key] ||= 0)
+          @helds[key] = h + 1
+          return h == 0 || (h > 10 && h % 3 == 0)
       end
 
-      def up
-          @last_key = nil
+      def up(key)
+        @helds[key] = 0
       end
     end
 

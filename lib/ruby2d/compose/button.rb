@@ -3,12 +3,14 @@ module Ruby2D
     
         def initialize(text: nil, **na, &on_click)
             super()
-            @box = rectangle **na
-            @text = self.text text, x: @box.x, y: @box.y
+            @box = new_rectangle **na
+            @text = new_text text, x: @box.x, y: @box.y
             place @box, @text
     
             on :click, &on_click if block_given?
         end
+
+        delegate box: %w[x y left top right bottom width height color border_color border round plan fill contains?]
 
         cvs_accessor(
             'color' => [:box, :color],
@@ -26,10 +28,6 @@ module Ruby2D
     
         def padding_y=(py)
             @box.h = let(@text.height, py).sum
-        end
-    
-        def contains?(x, y)
-            @box.contains?(x, y)
         end
     end
 
@@ -49,15 +47,15 @@ module Ruby2D
         end
     
         def text_size
-            20
+            14
         end
     
         def border
-            5
+            1
         end
     
         def round
-            8
+            12
         end
     
         def color

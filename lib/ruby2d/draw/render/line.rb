@@ -66,7 +66,7 @@ module Ruby2D
 
     def render
       self.class.ext_draw([
-                            @x1.get, @y1.get, @x2.get, @y2.get, @thick.get, @round.get, @border.get, *@color.get, *@border_color.get
+                            @x1.get.round, @y1.get.round, @x2.get.round, @y2.get.round, @thick.get, @round.get, @border.get, *@color.get, *@border_color.get
                           ])
     end
 

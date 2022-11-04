@@ -7,46 +7,6 @@ module Ruby2D
   # (based on css), a hexadecimal value or an array containing a collection of
   # red, green, blue, and alpha (transparency) values expressed as a Float from 0.0 to 1.0.
   class Color
-    # Color::Set represents an array of colors.
-    class Set
-      include Enumerable
-
-      def initialize(colors)
-        @colors = colors.map { |c| Color.new(c) }
-      end
-
-      def [](index)
-        @colors[index]
-      end
-
-      def length
-        @colors.length
-      end
-
-      alias count length
-
-      def each(&block)
-        @colors.each(&block)
-      end
-
-      def first
-        @colors.first
-      end
-
-      def last
-        @colors.last
-      end
-
-      def opacity
-        @colors.first.opacity
-      end
-
-      def opacity=(opacity)
-        @colors.each do |color|
-          color.opacity = opacity
-        end
-      end
-    end
 
     attr_reader :r, :g, :b, :a
 
@@ -89,11 +49,10 @@ module Ruby2D
         @g = color.g
         @b = color.b
         @a = color.a
-      when Integer
-        @r = color
-        @g = color
-        @b = color
-        @a = color
+      when Numeric
+        @r =  @g =  @b =  @a = color
+      else
+        @r =  @g =  @b =  @a = color ? 1 : 0
       end
     end
 
@@ -120,15 +79,16 @@ module Ruby2D
 
       # Check if the color is valid
       def valid?(color)
+        !color || color == true ||
         color.is_a?(Color) ||
-        color.is_a?(Integer) ||            
-          NAMED_COLORS.key?(color) ||     # keyword
-          hex?(color) ||                  # hexadecimal value
-          (                               # Array of Floats from 0.0..1.0
-            color.instance_of?(Array) &&
-            color.length > 0 &&
-            color.all? { |el| el.is_a?(Numeric) }
-          )
+        color.is_a?(Numeric) ||           
+        NAMED_COLORS.key?(color) ||     # keyword
+        hex?(color) ||                  # hexadecimal value
+        (                               # Array of Floats from 0.0..1.0
+          color.instance_of?(Array) &&
+          color.length > 0 &&
+          color.all? { |el| el.is_a?(Numeric) }
+        )
       end
     end
 
@@ -140,6 +100,12 @@ module Ruby2D
     # Return colour components as an array +[r, g, b, a]+
     def to_a
       [@r, @g, @b, @a]
+    end
+
+    def to_s(opacity: true)
+      c = to_a
+      c.pop if !opacity
+      '#' + c.map{('00' + (_1 * 255).to_i.to_s(16))[-2..]}.join
     end
 
     private

@@ -120,12 +120,30 @@ module Ruby2D
             parent.make_outfit(element, style)
         end
 
-        def new_button(text: 'Button', x: 100, y: 100, left: nil, right: nil, top: nil, bottom: nil, 
-            style: 'default', text_size: nil, text_color: nil, round: nil, r: nil, color: nil, border: nil, b: nil, border_color: nil, 
-            padding_x: nil, px: nil, padding_y: nil, py: nil, &on_click)
+        def plan_x_defined? plan
+            plan.any_in?( :x, :left, :right)
+        end
+
+        def plan_y_defined? plan
+            plan.any_in? :y, :top, :bottom
+        end
+
+        def plan_w_defined? plan
+            plan[:width] || (plan.keys & [:x, :left, :right]).size > 1
+        end
+
+        def plan_h_defined? plan
+            plan[:height] || (plan.keys & [:y, :top, :bottom]).size > 1
+        end
+
+        def new_button(text: 'Button', style: 'default', text_size: nil, text_color: nil, round: nil, r: nil, color: nil, border: nil, b: nil, border_color: nil, 
+            padding_x: nil, px: nil, padding_y: nil, py: nil, **plan, &on_click)
         
-            btn = Button.new text: text, x: x, y: y, left: left, right: right, top: top, bottom: bottom, &on_click
+            btn = Button.new text: text, &on_click
             style = make_outfit btn, style
+            plan[:x] = 200 if not plan_x_defined? plan
+            plan[:y] = 100 if not plan_y_defined? plan
+            btn.plan **plan
             btn.text_size = text_size || style.text_size
             btn.text_color = text_color || style.text_color
             btn.round = round || r || style.round
@@ -138,15 +156,14 @@ module Ruby2D
         end
 
         def new_note(text: '', style: 'default', text_font: nil, text_size: nil, text_color: nil, round: nil, r: nil, color: nil, border: nil, b: nil, border_color: nil, 
-            padding_x: nil, px: nil, padding_y: nil, py: nil, **na, &on_click)
+            padding_x: nil, px: nil, padding_y: nil, py: nil, **plan, &on_click)
         
-            
             tln = Note.new text: text, &on_click
             style = make_outfit tln, style
-            na[:x] ||= 200
-            na[:y] ||= 100
-            na[:width] ||= style.width
-            tln.plan **na
+            plan[:width] = style.width if not plan_w_defined? plan
+            plan[:x] = 200 if not plan_x_defined? plan
+            plan[:y] = 100 if not plan_y_defined? plan
+            tln.plan **plan
             tln.text_font = text_font || style.text_font
             tln.text_size = text_size || style.text_size
             tln.text_color = text_color || style.text_color
@@ -256,11 +273,6 @@ module Ruby2D
         def clipboard=(c)
             ext_set_clipboard c
             c
-        end
-
-        def timems
-            now = Time.now
-            (now.to_i * 1e3 + now.usec / 1e3).to_i
         end
 
         private

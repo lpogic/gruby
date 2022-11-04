@@ -8,11 +8,11 @@ module Ruby2D
            @top = pot(na[:top] || 100)
            @width = pot
            @height = pot
-           @cols = compot do |cols, s|
+           @cols = compot do |cols|
               let(*cols).sum >> @width
               [cols]
            end.set cols.map{pot _1}
-           @rows = compot do |rows, s|
+           @rows = compot do |rows|
               let(*rows).sum >> @height
               [rows]
            end.set rows.map{pot _1}

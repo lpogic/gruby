@@ -1,1 +1,13 @@
-p [1, 2, 3].map{p "A#{_1}"}.find{p "B#{_1}"; _1 == 'A2'}
+class Foo
+    def xd
+        p "XD"
+    end
+end
+
+o = Foo.new
+
+def o.template
+    xd
+end
+
+o.template

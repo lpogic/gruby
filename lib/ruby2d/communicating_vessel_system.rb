@@ -111,6 +111,16 @@ module Ruby2D
                     end
                 end
             end
+
+            def as(&b)
+                if @function
+                    Let.new(@inpot) do |*a|
+                        b.(*@function.call(*a))
+                    end
+                else
+                    Let.new(@inpot, &b)
+                end
+            end
             
             def inpot = @inpot
             
@@ -153,8 +163,11 @@ module Ruby2D
                 end
                 result = get.array
                 if outpot.size > 1
-                    result.zip(outpot).map{|r, o| o.nil? ? [] : o.__set(r, false) || []}.reduce(&:+).uniq.each{_1.update_values}
-                    oc.each{_1.__unlock}
+                    begin
+                        result.zip(outpot).map{|r, o| o.nil? ? [] : o.__set(r, false) || []}.reduce(&:+).uniq.each{_1.update_values}
+                    ensure
+                        oc.each{_1.__unlock}
+                    end
                 else
                     outpot[0].__set result[0]
                 end
@@ -241,8 +254,11 @@ module Ruby2D
                 @value = value
                 @set_lock = true
                 if auto_unlock
-                    outlet.each(&:update_values)
-                    @set_lock = false
+                    begin
+                        outlet.each(&:update_values)
+                    ensure
+                        @set_lock = false
+                    end
                 else
                     outlet
                 end

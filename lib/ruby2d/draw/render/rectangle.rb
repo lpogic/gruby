@@ -24,13 +24,13 @@ module Ruby2D
       plan **na
     end
     
-    def _default_plan(x: nil, y: nil, width: nil, height: nil, left: nil, right: nil, top: nil, bottom: nil)
+    def _default_plan(x: nil, y: nil, width: nil, height: nil, left: nil, right: nil, top: nil, bottom: nil, **)
       if x and width
         let(x, width){[_1, _2]} >> [@x, @width]
       elsif x and left
         let(x, left){[_1, (_1 - _2) * 2]} >> [@x, @width]
       elsif x and right
-        let(x, left){[_1, (_2 - _1) * 2]} >> [@x, @width]
+        let(x, right){[_1, (_2 - _1) * 2]} >> [@x, @width]
       elsif width and left
         let(width, left){[_2 + _1 * 0.5, _1]} >> [@x, @width]
       elsif width and right
@@ -50,7 +50,7 @@ module Ruby2D
       elsif y and top
         let(y, top){[_1, (_1 - _2) * 2]} >> [@y, @height]
       elsif y and bottom
-        let(y, top){[_1, (_2 - _1) * 2]} >> [@y, @height]
+        let(y, bottom){[_1, (_2 - _1) * 2]} >> [@y, @height]
       elsif height and top
         let(height, top){[_2 + _1 * 0.5, _1]} >> [@y, @height]
       elsif height and bottom
@@ -100,7 +100,7 @@ module Ruby2D
     end
 
     def fill(o)
-      plan left: o.left, right: o.right, top: o.top, bottom: o.bottom
+      plan x: o.x, y: o.y, width: o.width, height: o.height
     end
 
     private :length

@@ -17,6 +17,6 @@ end
 
 x = pot 0
 y = pot 1
-let(x, y){p "XD"; [_1, _2]} >> [y, x]
+let(x, y, x){p "XD"; [_1, _2]} >> [y, x]
 
 show

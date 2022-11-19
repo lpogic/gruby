@@ -6,6 +6,12 @@ module Ruby2D
   # A rectangle
   class Rectangle < Line
 
+    @@instances = 0
+
+    def self.instances
+        @@instances
+    end
+
     cvs_accessor :x, :y, [:width, :w] => :width, [:height, :h] => :height
     cvs_reader :left, :right, :top, :bottom
     def initialize(r: nil, round: nil, b: nil, border: nil, 
@@ -22,6 +28,7 @@ module Ruby2D
       end >> [@x1, @y1, @x2, @y2, @thick]
       
       plan **na
+      @@instances += 1
     end
     
     def _default_plan(x: nil, y: nil, width: nil, height: nil, left: nil, right: nil, top: nil, bottom: nil, **)
@@ -39,6 +46,8 @@ module Ruby2D
         let(left, right){[(_1 + _2) * 0.5, _2 - _1]} >> [@x, @width]
       elsif x
         let(x) >> @x
+      elsif width
+        let(width) >> @width
       elsif left
         let(@width, left){_2 + _1 * 0.5} >> @x
       elsif right
@@ -58,7 +67,9 @@ module Ruby2D
       elsif top and bottom
         let(top, bottom){[(_1 + _2) * 0.5, _2 - _1]} >> [@y, @height]
       elsif y
-        let(y){[_1]} >> [@y]
+        let(y){_1} >> @y
+      elsif height
+        let(height) >> @height
       elsif top
         let(@height, top){[_2 + _1 * 0.5]} >> [@y]
       elsif bottom

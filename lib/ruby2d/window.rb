@@ -52,6 +52,7 @@ module Ruby2D
       @mouse_current = nil
       @mouse_owner = self
       @keyboard_current_object = self
+      @tab_callback = nil
       @key_typer = KeyTyper.new self
 
       _init_window_defaults
@@ -288,6 +289,40 @@ module Ruby2D
         @keyboard_current_object.accept_keyboard false
         new_keyboard_current.accept_keyboard
         @keyboard_current_object = new_keyboard_current
+      end
+    end
+
+    def pass_keyboard(current, reverse: false)
+      if current.nil?
+        ps = reverse ? @objects.reverse : @objects
+        ps.filter{_1.is_a? Cluster}.each do |psi|
+          return true if psi.pass_keyboard nil, reverse: reverse
+        end
+      else
+        i = @objects.find_index(current)
+        ps = reverse ? @objects[...i].reverse : @objects[i + 1..]
+        ps.filter{_1.is_a? Cluster}.each do |psi|
+          return true if psi.pass_keyboard nil, reverse: reverse
+        end
+        ps = reverse ? @objects[i..].reverse : @objects[..i]
+        ps.filter{_1.is_a? Cluster}.each do |psi|
+          return true if psi.pass_keyboard nil, reverse: reverse
+        end
+      end
+    end
+
+    def enable_tab_callback(enable = true)
+      if enable
+        if @tab_callback.nil?
+          @tab_callback = on :key_down do |e|
+            pass_keyboard nil, reverse: shift_down if e.key == 'tab' and !@keyboard_current_object.is_a?(Widget)
+          end
+        end
+      else
+        if not @tab_callback.nil?
+          @tab_callback.cancel
+          @tab_callback = nil
+        end
       end
     end
 

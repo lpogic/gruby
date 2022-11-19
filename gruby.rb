@@ -70,6 +70,9 @@ class Array
    def any_in?(*o)
       o.any?{include? _1}
    end
+
+   alias or any?
+   alias and all?
  end
  class Hash
    def all_in?(*o)
@@ -96,34 +99,23 @@ set background: 'gray', resizable: true
 on :key_down do |e|
     close if e.key == 'escape'
 end
+window.enable_tab_callback
 
-module Container
-end
 
 class ColRowContainer < Cluster
-   include Container
 
-   def initialize(span: 1, **ona)
+   def initialize(gap: 0, **ona)
       super()
       ona[:color] ||= 0
       @body = new_rectangle **ona
-      @span = pot span
       place @body
-      @total_span = pot 0
-      @spans = compot do |v|
-         let(*v).sum >> @total_span
-         v
-      end.set []
+      @gap = pot gap
    end
-
-   attr_reader :span
 
    def append(element, **plan)
       gs = @grid.sector(-1, -1)
       plan[:x] = gs.x if not plan_x_defined? plan
       plan[:y] = gs.y if not plan_y_defined? plan
-      plan[:width] = gs.width if not plan_w_defined?(plan) and element.is_a? Container
-      plan[:height] = gs.height if not plan_h_defined?(plan) and element.is_a? Container
       element.plan **plan
       place element
    end
@@ -131,41 +123,39 @@ class ColRowContainer < Cluster
    delegate body: %w[fill plan left top right bottom x y width height color\=]
 end
 
-class Col < ColRowContainer
+class Row < ColRowContainer
 
-   def initialize(span: 1, **ona)
+   def initialize(gap: 0, **ona)
+      @height = pot 0
       super
-      @grid = Grid.new cols: [@body.width], left: @body.left, top: @body.top
+      h = ona[:height] || @height
+      @grid = Grid.new rows: [h], left: @body.left, top: @body.top
+      @body.width = @grid.width
+      @body.height = h
    end
 
    def append(element, **plan)
-      if element.is_a? Row
-         span = element.span
-      else
-         span = pot 1
-      end
-      @spans.set{_1 + [span]}
-      @grid.rows.set{|a|a + [let(@body.height, @total_span){_1 * span.get / _2}]}
+      @grid.cols.set{|a|a.empty? ? [element.width] : a + [@gap, element.width]}
       super
+      let(*@objects.map{_1.height}).max >> @height
    end
 end
 
-class Row < ColRowContainer
+class Col < ColRowContainer
 
-   def initialize(**ona)
+   def initialize(gap: 0, **ona)
+      @width = pot 0
       super
-      @grid = Grid.new rows: [@body.height], left: @body.left, top: @body.top
+      w = ona[:width] || @width
+      @grid = Grid.new cols: [w], left: @body.left, top: @body.top
+      @body.width = w
+      @body.height = @grid.height
    end
 
    def append(element, **plan)
-      if element.is_a? Col
-         span = element.span
-      else
-         span = pot 1
-      end
-      @spans.set{_1 + [span]}
-      @grid.cols.set{|a|a + [let(@body.width, @total_span){_1 * span.get / _2}]}
+      @grid.rows.set{|a|a.empty? ? [element.height] : a + [@gap, element.height]}
       super
+      let(*@objects.map{_1.width}).max >> @width
    end
 end
 
@@ -176,7 +166,7 @@ class Form < Arena
       @body = new_rectangle **plan
    end
 
-   delegate body: %w[fill plan x y width height left right top bottom]
+   delegate body: %w[fill plan x y width height left right top bottom contains?]
 
    def note_row(label)
       n = nil
@@ -187,22 +177,48 @@ class Form < Arena
       n
    end
 
-   def button_row(*labels)
+   def button_row(col, *labels)
       btns = []
-      row do
-         labels.each do |l|
-            col{btns << button(l)}
-         end
+      row right: col.right{_1 - 10}, gap: 5 do
+         btns = labels.map{button _1}
       end
       btns
    end
 
+end
+
+
+class PersonForm < Form
    def build
-      col color: [0.5, 0.5, 0.5], round: 8 do
-         @name = note_row 'Imię:'
-         @surname = note_row 'Nazwisko:'
-         @age = note_row 'Age:'
-         @save, @cancel = button_row 'Zapisz', 'Anuluj'
+      margin = pot 4
+      col color: [0.5, 0.5, 0.5], round: 8, gap: 6 do |c|
+         row margin
+         row gap: 5 do
+            col margin
+            col width: 80 do text "Imię:", right: _1.right end
+            @name = note
+            col margin
+         end
+         row gap: 5 do
+            col margin
+            col width: 80 do text "Nazwisko:", right: _1.right end
+            @surname = note
+            col margin
+         end
+         row gap: 5 do
+            col margin
+            col width: 80 do text "Wiek:", right: _1.right end
+            @age = note
+            col margin
+         end
+         row 2
+         @c = row gap: 5, right: c.right do
+            col margin
+            @save = button "Zapisz"
+            @cancel = button "Anuluj"
+            col margin
+         end
+         row margin
       end
 
       @save.on :click do
@@ -213,54 +229,41 @@ class Form < Arena
          @name.text.set ''
          @surname.text.set ''
          @age.text.set ''
+         margin.set{_1 + 1}
+      end
+   end
+end
+
+class OtherForm < Form
+   def build
+      margin = pot 4
+      col color: [0.5, 0.5, 0.5], round: 8, gap: 6 do |c|
+         row do
+            col margin
+            # col margin
+         end
+         # row margin
+         # row gap: 5 do
+            # col margin
+            # @cancel = button "Anuluj"
+            # col margin
+         # end
+         # row margin
       end
 
+      puts margin.nod.join("\n")
+
+      # @cancel.on :click do
+      #    margin.set{_1 + 1}
+      # end
    end
 end
 
-# f = Form.new x: window.x, y: window.y, width: 300, height: 200
-# place f
+f = OtherForm.new x: window.x, y: window.y
+place f
 
-def color_row
-   n = nil
-   r = row color: 'green' do
-      n = note text: 'Choose color'
-   end
-   [r, n]
-end
-
-# col color: 0.5, width: 400, height: 400 do
-#    row color: 'red' do |r|
-#       text 'Red', left: r.left, top: r.top
-#    end
-#    @r, @n = color_row
-#    row color: 'blue' do 
-#       @b = button 'Button'
-#    end
-# end
-
-
-# @b.on :click do
-#    @r.color = 'random'
-#    @n.text.set @r.color.get.to_s(opacity: false)
-# end
-
-# on @n.text do |t|
-#    begin
-#       @r.color = t
-#    rescue
-#    end
-# end
-
-circle x: window.mouse_x, y: window.mouse_y
-on :click do |e|
-   p e.button
-   c = {
-      :left => 'red',
-      :right => 'green',
-      :middle => 'blue'
-   }[e.button]
-   circle x: e.x, y: e.y, color: c
-end
+# p Pot.instances
+# p Let.instances
+p Rectangle.instances
 
 show

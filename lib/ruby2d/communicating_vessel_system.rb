@@ -10,7 +10,7 @@ require 'weakref'
 module Ruby2D
     module CommunicatingVesselSystem
         def pot(*v, locked: false, &block)
-            pt = BasicPot.new
+            pt = BasicPot.new location: caller(1, 1)[0]
             pt.let(*v, &block)
             pt.lock_inlet self if locked
             pt
@@ -33,7 +33,7 @@ module Ruby2D
             p1 = pot locked: locked
             p2 = pot
             p2.let(*v, p1, superpot(p2), update: false, &block)
-            Compot.new(p1, p2)
+            Compot.new(p1, p2, location: caller(1, 1)[0])
         end
         
         def let(*inpot, out: nil, &block)
@@ -59,6 +59,11 @@ module Ruby2D
         private
         
         class Let
+            @@instances = 0
+
+            def self.instances
+                @@instances
+            end
 
             @@suppress = false
             def self.suppress
@@ -67,15 +72,15 @@ module Ruby2D
                 @@suppress = s
             end
 
-            @@transaction = false
+            @@pool = false
             @@to_update = []
-            def self.transaction
-                if @@transaction
+            def self.pool
+                if @@pool
                     yield
                 else
-                    t, @@transaction = @@transaction, true
+                    t, @@pool = @@pool, true
                     yield
-                    @@transaction = t
+                    @@pool = t
                     to_update, @@to_update = @@to_update, []
                     to_update.uniq.each{_1.__update_values}
                 end
@@ -85,6 +90,7 @@ module Ruby2D
                 @function = block
                 @inpot = inpot
                 @outpot = []
+                @@instances += 1
             end
 
             def copy
@@ -143,14 +149,21 @@ module Ruby2D
                 self
             end
 
-            def update_values
+            def update_values(unlock = true)
+                return if @locked
+                @locked = true
                 if not @@suppress
-                    if @@transaction
+                    if @@pool
                         @@to_update << self
                     else
                         __update_values
                     end
                 end
+                @locked = false if unlock
+            end
+
+            def unlock
+                @locked = false
             end
             
             def __update_values
@@ -202,8 +215,8 @@ module Ruby2D
                 @outpot = []
             end
             
-            def delete_outpot(outpot)
-                @outpot = @outpot.map{_1.nil? || !_1.weakref_alive? || _1.__getobj__ == outpot ? nil : _1}
+            def delete_outpot(to_delete)
+                @outpot = @outpot.map{_1.nil? || !_1.weakref_alive? || _1.__getobj__ == to_delete ? nil : _1}
                 cancel if @outpot.compact.empty?
             end
         
@@ -223,20 +236,66 @@ module Ruby2D
                     pots
                 end
             end
+
+            def nodes
+                o = outpot.compact
+                o.map{_1.nodes}.sum + o.size
+            end
+
+            def nod(tabs)
+                ["<#{object_id}>"] + outpot.compact.map{_1.nod tabs}.reduce(&:+)
+            end
+
+            def levels
+                o = outpot.compact
+                (o.map{_1.levels}.max || 0) + 1
+            end
         end
 
         class Pot
-            def push
-                __set get
+            @@instances = 0
+
+            def self.instances
+                @@instances
+            end
+
+            def initialize
+                @@instances += 1
+            end
+
+            def nodes()
+                return 0 if @loop
+                @loop = true
+                s = outlet.map{_1.nodes}.sum
+                @loop = false
+                s
+            end
+
+            def nod(tabs = 0)
+                return [] if @loop
+                @loop = true
+                s = [object_id.to_s] + outlet.map{_1.nod tabs + 1}.flatten.map{" " + _1}
+                @loop = false
+                s
+            end
+
+            def levels
+                return 0 if @loop
+                @loop = true
+                s = outlet.map{_1.levels}.max
+                @loop = false
+                s
             end
         end
         
         class BasicPot < Pot
 
-            def initialize(value = nil)
+            def initialize(value = nil, location: nil)
+                super()
                 @inlet = nil
                 @outlet = []
                 @value = value
+                @location = location
             end
             
             def inspect
@@ -255,8 +314,9 @@ module Ruby2D
                 @set_lock = true
                 if auto_unlock
                     begin
-                        outlet.each(&:update_values)
+                        outlet.each{_1.update_values false}
                     ensure
+                        outlet.each{_1.unlock}
                         @set_lock = false
                     end
                 else
@@ -333,7 +393,7 @@ module Ruby2D
             end
             
             def add_outlet(let)
-                @outlet.append(WeakRef.new let)
+                @outlet.append(WeakRef.new let) if not outlet.include? let
             end
             
             def delete_outlet(let)
@@ -343,9 +403,11 @@ module Ruby2D
 
         class Compot < Pot
 
-            def initialize(inpot, outpot)
+            def initialize(inpot, outpot, location: nil)
+                super()
                 @inpot = inpot
                 @outpot = outpot
+                @location = location
             end
             
             def inspect

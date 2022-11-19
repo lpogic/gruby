@@ -20,8 +20,8 @@ module Ruby2D
            plan **na
         end
      
-        cvs_accessor :left, :top, :right, :bottom, :x, :y, :cols, :rows
-        cvs_reader :width, :height
+        cvs_accessor :left, :top, :cols, :rows
+        cvs_reader :width, :height, :right, :bottom, :x, :y
      
         def _default_plan(x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil)
          if x
@@ -42,19 +42,19 @@ module Ruby2D
        end
      
         def _cvs_right
-         let(@left, @width){_1 + _2}.pot
+         let(@left, @width){_1 + _2}
         end
      
         def _cvs_bottom
-         let(@top, @height){_1 + _2}.pot
+         let(@top, @height){_1 + _2}
         end
      
         def _cvs_x
-            let(@left, @width){_1 + _2 * 0.5}.pot
+            let(@left, @width){_1 + _2 * 0.5}
         end
      
         def _cvs_y
-            let(@top, @height){_1 + _2 * 0.5}.pot
+            let(@top, @height){_1 + _2 * 0.5}
         end
      
         class Sector

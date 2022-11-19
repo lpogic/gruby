@@ -103,9 +103,9 @@ module Ruby2D
             end
         end
     
-        def initialize(text: nil, editable: true, **narg)
+        def initialize(text: nil, **narg)
             super()
-            @editable = pot editable
+            @editable = pot true
             @padding_x = pot 20
             @box = new_rectangle **narg
             @text_value = pot text.force_encoding('utf-8')
@@ -256,7 +256,7 @@ module Ruby2D
                     end
                     window.on :mouse_up do |ue, muh|
                         @pen.enabled = @keyboard_current
-                        @pen_position.push
+                        @pen_position.set{_1}
                         muh.cancel
                         mmh.cancel
                     end
@@ -300,6 +300,7 @@ module Ruby2D
             :padding_x,
             :pen_position,
             :text_color,
+            :editable,
             'text' => :text_value,
             'text_visible' => [:text, :text],
             'text_font' => [:text, :font],
@@ -322,6 +323,14 @@ module Ruby2D
     
         def contains?(x, y)
             @box.contains?(x, y)
+        end
+
+        def pass_keyboard(current, reverse: false)
+            if @editable.get
+                super
+            else
+                return false
+            end
         end
 
         def pen_at(position, selection = false)
@@ -617,10 +626,10 @@ module Ruby2D
         end
     
         def color
-            let @element.state do |s|
-                if s[:pressed]
+            let @element.hovered, @element.pressed do |h, pr|
+                if pr
                     @color_pressed
-                elsif s[:hovered]
+                elsif h
                     @color_hovered
                 else
                     @color
@@ -635,8 +644,8 @@ module Ruby2D
         end
     
         def text_color
-            let @element.state do |s|
-                if s[:pressed]
+            let @element.pressed do |pr|
+                if pr
                     @text_color_pressed
                 else
                     @text_color
@@ -654,6 +663,10 @@ module Ruby2D
 
         def width
             200
+        end
+
+        def editable
+            true
         end
     end
 
@@ -705,6 +718,10 @@ module Ruby2D
 
         def width
             let(@element.text_font, @element.text, @element.padding_x){_1.size(_2)[:width] + _3 + 1}
+        end
+
+        def editable
+            false
         end
     end
 end

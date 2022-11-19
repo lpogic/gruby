@@ -16,11 +16,10 @@ module Ruby2D
     
         def append(element, **plan)
             if @_top == self
-                plan[:x] = self.x if not plan.any_in? :left, :x, :right
-                plan[:y] = self.y if not plan.any_in? :top, :y, :bottom
-                plan[:width] = self.width if not plan.include?(:width) and element.is_a? Container
-                plan[:height] = self.height if not plan.include?(:height) and element.is_a? Container
+                plan[:x] = self.x if not plan_x_defined? plan
+                plan[:y] = self.y if not plan_y_defined? plan
                 element.plan **plan
+                plan width: element.width, height: element.height
                 place element
             else
                 @_top.append(element, **plan)
@@ -35,12 +34,17 @@ module Ruby2D
             @_top = top
             element
         end
+
+        def plan(**a)
+        end
     
-        def row(**na, &b)
+        def row(height = nil, **na, &b)
+            na[:height] = height if height
             append(Row.new(**na), **na, &b)
         end
     
-        def col(**na, &b)
+        def col(width = nil, **na, &b)
+            na[:width] = width if width
             append(Col.new(**na), **na, &b)
         end
     

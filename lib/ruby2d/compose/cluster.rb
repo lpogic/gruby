@@ -17,6 +17,8 @@ module Ruby2D
             end
         end
 
+        cvs_accessor :hovered, :pressed
+
         def initialize()
             @objects = []
             @event_handlers = {}
@@ -25,9 +27,39 @@ module Ruby2D
             # Unique ID for the input event being registered
             @event_key = 0
             @keyboard_current = pot false
+            @hovered = pot false
+            @pressed = pot false
+            on :mouse_down do
+                Let.pool do
+                    @hovered.set true
+                    @pressed.set true
+                end
+                window.keyboard_current_object = self if window.mouse_current == self
+            end
+            on :mouse_up do |e|
+                @pressed.set false
+                emit :click, e if not pressed.get
+            end
+            on :mouse_in do
+                @hovered.set true
+            end
+            on :mouse_out do
+                Let.pool do
+                    @hovered.set false
+                    @pressed.set false
+                end
+            end
+        end
+
+        def inspect
+            "#{self.class}:id:#{self.object_id}"
         end
 
         cvs_reader :keyboard_current
+
+        def keyboard_current?
+            @keyboard_current.get
+        end
 
         def place(*objects)
             objects.each do |o|
@@ -156,7 +188,7 @@ module Ruby2D
         end
 
         def new_note(text: '', style: 'default', text_font: nil, text_size: nil, text_color: nil, round: nil, r: nil, color: nil, border: nil, b: nil, border_color: nil, 
-            padding_x: nil, px: nil, padding_y: nil, py: nil, **plan, &on_click)
+            padding_x: nil, px: nil, padding_y: nil, py: nil, editable: nil, **plan, &on_click)
         
             tln = Note.new text: text, &on_click
             style = make_outfit tln, style
@@ -173,6 +205,7 @@ module Ruby2D
             tln.border_color = border_color || style.border_color
             tln.padding_x = padding_x || px || style.padding_x
             tln.padding_y = padding_y || py || style.padding_y
+            tln.editable = editable || style.editable
             tln
         end
 
@@ -184,16 +217,6 @@ module Ruby2D
                 update
             when :render
                 render
-            when :mouse_out
-                @mouse_down = false
-            when :mouse_down
-                @mouse_down = true
-                window.keyboard_current_object = self if window.mouse_current == self
-            when :mouse_up
-                if @mouse_down
-                    emit :click, event
-                    @mouse_down = false
-                end
             when :click
                 click_time = timems
                 if @last_double_click_time and click_time - @last_double_click_time < 300
@@ -236,6 +259,23 @@ module Ruby2D
 
         def accept_keyboard(current = true)
             @keyboard_current.set current
+        end
+
+        def pass_keyboard(current, reverse: false)
+            if current.nil?
+                ps = reverse ? @objects.reverse : @objects
+                ps.filter{_1.is_a? Cluster}.each do |psi|
+                    return true if psi.pass_keyboard nil, reverse: reverse
+                end
+                return false
+            else
+                i = @objects.find_index(current)
+                ps = reverse ? @objects[...i].reverse : @objects[i + 1..]
+                ps.filter{_1.is_a? Cluster}.each do |psi|
+                    return true if psi.pass_keyboard nil, reverse: reverse
+                end
+                return parent.pass_keyboard self, reverse: reverse
+            end
         end
 
         def enable_text_input(enable = true)

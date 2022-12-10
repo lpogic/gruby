@@ -9,31 +9,28 @@ require 'weakref'
 
 module Ruby2D
     module CommunicatingVesselSystem
-        def pot(*v, locked: false, &block)
-            pt = BasicPot.new location: caller(1, 1)[0]
-            pt.let(*v, &block)
-            pt.lock_inlet self if locked
-            pt
+        def pot(v = nil, unique: true, pull: true)
+            return v if not unique and v.is_a?(Pot)
+            BasicPot.new(pull: pull).let v
         end
 
-        # def pot(v, accept_origin: false)
-        #     return v if v.is_a?(Pot) and accept_origin
-        #     BasicPot.new.let(v)
-        # end
-        
-        def locked_pot(*v, &block)
-            pot(*v, locked: true, &block)
+        def compot(*v, pull: true, &block)
+            p1 = pot
+            p2 = pot pull: pull
+            let(*v, p1, BasicPot.new(p2), &block).apply_outpot(p2, pull: false)
+            p2.recent = true
+            Compot.new(p1, p2)
         end
 
-        def superpot(p0)
-            BasicPot.new p0
-        end
-
-        def compot(*v, locked: false, &block)
-            p1 = pot locked: locked
-            p2 = pot
-            p2.let(*v, p1, superpot(p2), update: false, &block)
-            Compot.new(p1, p2, location: caller(1, 1)[0])
+        def arrpot(pull: true)
+            p1 = pot
+            p2 = pot pull: pull
+            p3 = pot pull: true
+            let(p1) do |pots|
+                let(*pots){|*a|[a]} >> p2
+                nil
+            end >> p3
+            Arrpot.new(p1, p2, p3)
         end
         
         def let(*inpot, out: nil, &block)
@@ -43,54 +40,43 @@ module Ruby2D
                     return Let.new(inpot, &block)
                 else
                     l = Let.new(inpot, &block)
-                    if out.is_a? Array
-                        l.apply_outpot(*out)
-                    else
-                        l.apply_outpot(out)
-                    end
-                    l.update_values
+                    l.apply_outpot(*out)
                     return l
                 end
             else
                 return Let.new(inpot) do |*v| v end
             end
         end
+
+        def let_debug(*inpot, out: nil, &block)
+            inpot = inpot.map{_1.is_a?(Pot) ? _1 : BasicPot.new.let(_1)}
+            if block_given?
+                if out.nil?
+                    return LetDebug.new(inpot, caller, &block)
+                else
+                    l = LetDebug.new(inpot, caller, &block)
+                    l.apply_outpot(*out)
+                    return l
+                end
+            else
+                return LetDebug.new(inpot, caller) do |*v| v end
+            end
+        end
         
         private
         
         class Let
-            @@instances = 0
-
-            def self.instances
-                @@instances
-            end
-
-            @@suppress = false
-            def self.suppress
-                s, @@suppress = @@suppress, true
-                yield
-                @@suppress = s
-            end
-
-            @@pool = false
-            @@to_update = []
-            def self.pool
-                if @@pool
-                    yield
-                else
-                    t, @@pool = @@pool, true
-                    yield
-                    @@pool = t
-                    to_update, @@to_update = @@to_update, []
-                    to_update.uniq.each{_1.__update_values}
-                end
-            end 
 
             def initialize(inpot, &block)
                 @function = block
                 @inpot = inpot
                 @outpot = []
-                @@instances += 1
+            end
+
+            attr_reader :function
+
+            def inspect
+                "Let:#{self.object_id} @inpot=#{@inpot.map{"Pot:" + _1.object_id.to_s}} @outpot=#{@outpot.map{"Pot:" + _1.object_id.to_s}} @function=#{@function}"
             end
 
             def copy
@@ -130,43 +116,68 @@ module Ruby2D
             
             def inpot = @inpot
             
-            def apply_outpot(*outpot)
-                outpot.each{_1.set_inlet(self)}
+            def apply_outpot(*outpot, pull: true)
+                od = outpot.map do
+                    _1.set_inlet self
+                    _1.outdate
+                end.reduce(:+)
                 @outpot += outpot.map{WeakRef.new _1}
                 if not @inpot_connected
                     @inpot.each{_1.add_outlet(self)}
                     @inpot_connected = true
                 end
+                od.each(&:get) if pull
             end
             
+            # def outpot
+            #     @outpot.map{_1 and _1.weakref_alive? ? _1.__getobj__ : nil}
+            # end
+
             def outpot
-                @outpot.map{_1 and _1.weakref_alive? ? _1.__getobj__ : nil}
+                o = []
+                @outpot = @outpot.map do |wr|
+                    if wr
+                        begin
+                            o << wr.__getobj__
+                            wr
+                        rescue
+                            o << nil
+                            nil
+                        end
+                    else
+                        o <<nil
+                        nil
+                    end
+                end
+                o
             end
             
             def >>(that)
-                that.is_a?(Array) ? apply_outpot(*that) : apply_outpot(that)
-                update_values
-                self
-            end
-
-            def update_values(unlock = true)
-                return if @locked
-                @locked = true
-                if not @@suppress
-                    if @@pool
-                        @@to_update << self
-                    else
-                        __update_values
-                    end
+                case that
+                when Pot
+                    apply_outpot that
+                    that
+                when Let
+                    apply_outpot *that.inpot
+                    that
+                when Array
+                    apply_outpot *that
+                    Let.new that
+                else raise "Invalid right side"
                 end
-                @locked = false if unlock
             end
 
             def unlock
                 @locked = false
             end
+
+            # @@updates = 0
+            # def self.updates
+            #     u, @@updates = @@updates, 0
+            #     u
+            # end
             
-            def __update_values
+            def update
                 return if @closed
                 outpot = self.outpot
                 oc = outpot.compact
@@ -174,17 +185,19 @@ module Ruby2D
                     cancel
                     return
                 end
+                # @@updates += 1
+                oc.each{_1.recent = true}
                 result = get.array
                 if outpot.size > 1
-                    begin
-                        result.zip(outpot).map{|r, o| o.nil? ? [] : o.__set(r, false) || []}.reduce(&:+).uniq.each{_1.update_values}
-                    ensure
-                        oc.each{_1.__unlock}
-                    end
+                    result.zip(outpot).each{|r, o| o.__set r if not o.nil?}
                 else
                     outpot[0].__set result[0]
                 end
                 result
+            end
+
+            def outdate
+                outpot.compact.map{_1.outdate}.reduce([], :+)
             end
 
             def get
@@ -220,147 +233,150 @@ module Ruby2D
                 cancel if @outpot.compact.empty?
             end
         
-            def pot(count: nil, locked: false)
-                if count.nil?
-                    pt = BasicPot.new
-                    pt.let(self)
-                    pt.lock_inlet self if locked
+            def pot
+                pt = BasicPot.new
+                self >> pt
+                pt
+            end
+
+            def pots(count)
+                Array.new(count){BasicPot.new}.map do |pt|
+                    self >> pt
                     pt
-                else
-                    pots = Array.new(count){BasicPot.new}.map do |pt|
-                        self >> pt
-                        pt.lock_inlet locked if locked
-                        pt
-                    end
-                    update_val ues
-                    pots
                 end
-            end
-
-            def nodes
-                o = outpot.compact
-                o.map{_1.nodes}.sum + o.size
-            end
-
-            def nod(tabs)
-                ["<#{object_id}>"] + outpot.compact.map{_1.nod tabs}.reduce(&:+)
-            end
-
-            def levels
-                o = outpot.compact
-                (o.map{_1.levels}.max || 0) + 1
             end
         end
 
+        class LetDebug < Let
+            def initialize(inpot, caller, &block)
+                @function = block
+                @inpot = inpot
+                @outpot = []
+                @caller = caller
+            end
+
+            attr_reader :caller
+        end
+
         class Pot
-            @@instances = 0
 
-            def self.instances
-                @@instances
+            def >>(pt)
+                CommunicatingVesselSystem.let(self) >> pt
+                pt
             end
 
-            def initialize
-                @@instances += 1
+            def <<(obj)
+                obj = CommunicatingVesselSystem.let(obj) if not obj.is_a? Let
+                obj >> self
+                obj
             end
 
-            def nodes()
-                return 0 if @loop
-                @loop = true
-                s = outlet.map{_1.nodes}.sum
-                @loop = false
-                s
+            def self.path(sender, receiver)
+                return [] if sender == receiver
+                path = [receiver]
+                return path_rq(sender, path) ? path : nil
             end
 
-            def nod(tabs = 0)
-                return [] if @loop
-                @loop = true
-                s = [object_id.to_s] + outlet.map{_1.nod tabs + 1}.flatten.map{" " + _1}
-                @loop = false
-                s
-            end
-
-            def levels
-                return 0 if @loop
-                @loop = true
-                s = outlet.map{_1.levels}.max
-                @loop = false
-                s
+            def self.path_rq(sender, path)
+                inlet = path.last.inlet
+                return false if inlet.nil?
+                path << inlet
+                inlet.inpot.each do |inp|
+                    if path.include? inp
+                        path.pop
+                        return false
+                    else
+                        path << inp
+                        return true if inp == sender || path_rq(sender, path)
+                        path.pop
+                    end
+                end
+                path.pop
+                return false
             end
         end
         
         class BasicPot < Pot
 
-            def initialize(value = nil, location: nil)
+            def initialize(value = nil, pull: true, recent: true)
                 super()
                 @inlet = nil
                 @outlet = []
                 @value = value
-                @location = location
+                @recent = recent
+                @pull = pull
             end
-            
+
             def inspect
-                "Pot:#{self.object_id} @value=#{@value.inspect} @inlet=Let:#{@inlet.object_id} @outlet=[#{@outlet.map{"Let:#{_1.object_id}"}.join(', ')}]"
+                "Pot:#{self.object_id} @recent=#{@recent} @value=#{@value.inspect} @inlet=#{@inlet ? "Let:" + @inlet.object_id.to_s : "nil"} @outlet=#{@outlet.map{"Let:" + _1.object_id.to_s}}"
             end
             
             def get
+                update if not @recent
                 @value
             end
-            
-            alias value get
-            
-            def __set(value, auto_unlock = true)
-                return if @set_lock
-                @value = value
-                @set_lock = true
-                if auto_unlock
-                    begin
-                        outlet.each{_1.update_values false}
-                    ensure
-                        outlet.each{_1.unlock}
-                        @set_lock = false
-                    end
-                else
-                    outlet
-                end
+
+            attr_accessor :recent, :value
+
+            def nopull
+                pull, @pull = @pull, false
+                yield
+                @pull = pull
             end
 
-            def __unlock
-                @set_lock = false
+            def update
+                @recent = true
+                @inlet.update if @inlet
+            end
+
+            def outdate
+                if @recent
+                    @recent = false
+                    pull_down = outlet.map{o = _1.outdate; p _1.function if o.nil?; o}.reduce([], :+)
+                    pull_down && !pull_down.empty? ? pull_down : @pull ? [self] : []
+                else
+                    []
+                end
+            end
+            
+            def __set(value)
+                @value = value
+                @recent = true
             end
         
             def outlet
-                @outlet.map{_1.weakref_alive? ? _1.__getobj__ : nil}.compact
+                o = []
+                @outlet = @outlet.map do |wr|
+                    begin
+                        o << wr.__getobj__
+                        wr
+                    rescue
+                        nil
+                    end
+                end.compact
+                o
             end
             
             def set(value = nil, &mod)
                 value = mod.call(get, value) if block_given?
                 set_inlet(nil)
+                od = outdate
                 __set(value)
+                od.each(&:get)
                 self
             end
             
-            def let(*v, update: true, &block)
+            def let(*v, &block)
                 if block_given?
-                    l = Let.new(v.map do |v1| 
-                        if v1.is_a?(Pot)
-                            v1
-                        else
-                            pot = BasicPot.new
-                            pot.let(v1)
-                            pot
-                        end
-                    end, &block)
+                    l = Let.new(v.map{_1.is_a?(Pot) ? _1 : BasicPot.new.let(_1)}, &block)
                 elsif v[0].is_a? Let
                     l = v[0].copy
                 elsif v[0].is_a? Pot
                     l = Let.new(v)
                 else
-                    set_inlet(nil)
-                    __set(v[0])
-                    return self
+                    return set(v[0])
                 end
                 l.apply_outpot(self)
-                l.update_values if update
                 self
             end
             
@@ -371,8 +387,7 @@ module Ruby2D
             alias value= set
             
             def set_inlet(inlet)
-                raise "Pot locked by #{@let_lock}" if @let_lock
-                @inlet.delete_outpot(self) if @inlet
+                @inlet.delete_outpot self if @inlet
                 @inlet = inlet
             end
         
@@ -383,15 +398,7 @@ module Ruby2D
             def dependent?
                 return !!@inlet
             end
-            
-            def lock_inlet(lock = true)
-                @let_lock = lock
-            end
-            
-            def unlock_inlet
-                @let_lock = nil
-            end
-            
+
             def add_outlet(let)
                 @outlet.append(WeakRef.new let) if not outlet.include? let
             end
@@ -403,11 +410,10 @@ module Ruby2D
 
         class Compot < Pot
 
-            def initialize(inpot, outpot, location: nil)
+            def initialize(inpot, outpot)
                 super()
                 @inpot = inpot
                 @outpot = outpot
-                @location = location
             end
             
             def inspect
@@ -418,14 +424,32 @@ module Ruby2D
                 @outpot.get
             end
             
-            alias value get
+            def value
+                @outpot.value
+            end
         
             def outlet
                 @outpot.outlet
             end
+
+            def update
+                @inpot.update
+            end
+
+            def outdate
+                @inpot.outdate
+            end
+
+            def recent=(recent)
+                @outpot.recent = recent
+            end
+
+            def recent
+                @outpot.recent
+            end
             
-            def __set(value, auto_unlock = true)
-                @inpot.__set value, auto_unlock
+            def __set(value)
+                @inpot.__set value
             end
             
             def set(value = nil, &mod)
@@ -471,38 +495,44 @@ module Ruby2D
             def delete_outlet(let)
                 @outpot.delete_outlet(let)
             end
+
+            def inpot = @inpot
+            def outpot = @outpot
+        end
+
+        class Arrpot < Compot
+            def initialize(inpot, outpot, drainpot)
+                super(inpot, outpot)
+                @drain = drainpot
+            end
+
+            # dla funkcji agregujących np. let(*xes).max,    let(a, b, c).max
+            def method_missing(m, *a, &b)
+                if Array.method_defined? m
+                    as{_1.send(m, *a, &b)}
+                else
+                    super
+                end
+            end
+
         end
     end
 end
 
 class Class
-    def cvs_reader(*una, **na)
-        una.each{na[_1] = _1}
-        na.each do |mn, a|
-            if a.is_a? Array
-                pt = 'c = @' + a.join('.') 
-            else
-                pt = "c = defined?(self._cvs_#{a}) ? self._cvs_#{a} : @#{a}"
-            end
-            mn = [mn] if not mn.is_a? Array
-            mn.each do |m|
-                self.class_eval("def #{m}(&b); #{pt}; block_given? ? c.as(&b) : c;end")
-            end
+    def cvs_reader(*a)
+        make_reader = proc do |n|
+            ns = n.split(':')
+            ns[1] ||= ns[0]
+            pt = "c = defined?(self._cvs_#{ns[0]}) ? self._cvs_#{ns[0]} : @#{ns[0]}"
+            self.class_eval("def #{ns[1]}(&b); #{pt}; block_given? ? c.as(&b) : c;end")
         end
-    end
 
-    def cvs_accessor(*una, **na)
-        cvs_reader(*una, **na)
-        una.each{na[_1] = _1}
-        na.each do |mn, a|
-            if a.is_a? Array
-                pt_assign = '@' + a.join('.') + ' = val' 
+        a.each do |n|
+            if n.is_a? Array
+                n.each{make_reader.(_1.to_s)}
             else
-                pt_assign = "c = defined?(self._cvs_#{a}) ? self._cvs_#{a} : @#{a}; c.let val"
-            end
-            mn = [mn] if not mn.is_a? Array
-            mn.each do |m|
-                self.class_eval("def #{m}=(val); #{pt_assign};end")
+                make_reader.(n.to_s)
             end
         end
     end

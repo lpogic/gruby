@@ -1,8 +1,8 @@
 module Ruby2D
     class Arena < Cluster
 
-        def initialize()
-            super()
+        def initialize(parent)
+            super
             @_top = self
         end
 
@@ -47,6 +47,10 @@ module Ruby2D
             na[:width] = width if width
             append(Col.new(**na), **na, &b)
         end
+
+        def gap(size)
+            append(Gap.new(size))
+        end
     
         def text(t, **na)
             append(new_note(text: t, style: 'text', **na), **na)
@@ -57,7 +61,7 @@ module Ruby2D
         end
     
         def button(t, **na)
-            append(new_button(text: t), **na)
+            append(new_button(text: t, **na), **na)
         end
 
         def rect(**ona)

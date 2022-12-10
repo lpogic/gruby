@@ -12,8 +12,8 @@ module Ruby2D
 
     def initialize(x: 25, y: 25, r: nil, radius: nil, b: nil, border: nil, sectors: 30,
                    color: 'yellow', border_color: 'black')
-      @x = pot x
-      @y = pot y
+      @x = pot.let x
+      @y = pot.let y
       @radius = pot(radius || r || 100)
       @border = pot(border || b || 0)
       @sectors = sectors
@@ -22,8 +22,7 @@ module Ruby2D
     end
 
     attr_accessor :sectors
-    cvs_accessor :x, :y, :color, :border_color
-    cvs_accessor [:radius, :r] => :radius, [:border, :b] => :border
+    cvs_reader :x, :y, :color, :border_color, :radius, :border
 
     # Check if the circle contains the point at +(x, y)+
     def contains?(x, y)

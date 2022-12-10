@@ -1,7 +1,7 @@
 module Ruby2D
     class Cluster
         include Entity
-        attr_reader :objects
+        attr_reader :objects, :rendered
 
         class EventDescriptor
 
@@ -17,10 +17,11 @@ module Ruby2D
             end
         end
 
-        cvs_accessor :hovered, :pressed
+        cvs_reader :hovered, :pressed
 
-        def initialize()
+        def initialize(parent, *una, accepts_keyboard: true, **na, &b)
             @objects = []
+            @parent = parent
             @event_handlers = {}
             @pot_handlers = []
 
@@ -29,13 +30,10 @@ module Ruby2D
             @keyboard_current = pot false
             @hovered = pot false
             @pressed = pot false
-            on :mouse_down do
-                Let.pool do
-                    @hovered.set true
-                    @pressed.set true
-                end
-                window.keyboard_current_object = self if window.mouse_current == self
+            on :mouse_down do |e|
+                handle_mouse_down e
             end
+
             on :mouse_up do |e|
                 @pressed.set false
                 emit :click, e if not pressed.get
@@ -44,11 +42,30 @@ module Ruby2D
                 @hovered.set true
             end
             on :mouse_out do
-                Let.pool do
-                    @hovered.set false
-                    @pressed.set false
+                @hovered.set false
+                @pressed.set false
+            end
+
+            init(*una, **na, &b)
+        end
+
+        def handle_mouse_down e
+            @hovered.set true
+            @pressed.set true
+            window.keyboard_current_object = self if window.mouse_current == self and not @accept_keyboard_disabled
+        end
+
+        def disable(*keys)
+            keys.each do |k|
+                case k
+                when :accept_keyboard
+                    @accept_keyboard_disabled = true
+                else raise 'Unknown switch ' + k.to_s
                 end
             end
+        end
+
+        def init
         end
 
         def inspect
@@ -94,6 +111,12 @@ module Ruby2D
         # Generate a new event key (ID)
         def new_event_key
             @event_key = @event_key.next
+        end
+
+        def pull
+            pt = pot
+            @pot_handlers << pt
+            pt
         end
 
         # Set an event handler
@@ -169,43 +192,44 @@ module Ruby2D
         end
 
         def new_button(text: 'Button', style: 'default', text_size: nil, text_color: nil, round: nil, r: nil, color: nil, border: nil, b: nil, border_color: nil, 
-            padding_x: nil, px: nil, padding_y: nil, py: nil, **plan, &on_click)
+            **plan, &on_click)
         
-            btn = Button.new text: text, &on_click
+            btn = Button.new self, text: text, &on_click
             style = make_outfit btn, style
             plan[:x] = 200 if not plan_x_defined? plan
             plan[:y] = 100 if not plan_y_defined? plan
+            plan[:width] = style.width if not plan_w_defined? plan
+            plan[:height] = style.height if not plan_h_defined? plan
             btn.plan **plan
-            btn.text_size = text_size || style.text_size
-            btn.text_color = text_color || style.text_color
-            btn.round = round || r || style.round
-            btn.color = color || style.color
-            btn.border = border || b || style.border
-            btn.border_color = border_color || style.border_color
-            btn.padding_x = padding_x || px || style.padding_x
-            btn.padding_y = padding_y || py || style.padding_y
+            btn.text_size << (text_size || style.text_size)
+            btn.text_color << (text_color || style.text_color)
+            btn.round << (round || r || style.round)
+            btn.color << (color || style.color)
+            btn.border << (border || b || style.border)
+            btn.border_color << (border_color || style.border_color)
+            style.text_x
             btn
         end
 
         def new_note(text: '', style: 'default', text_font: nil, text_size: nil, text_color: nil, round: nil, r: nil, color: nil, border: nil, b: nil, border_color: nil, 
-            padding_x: nil, px: nil, padding_y: nil, py: nil, editable: nil, **plan, &on_click)
+            width_pad: nil, editable: nil, **plan, &on_click)
         
-            tln = Note.new text: text, &on_click
+            tln = Note.new self, text: text, &on_click
             style = make_outfit tln, style
             plan[:width] = style.width if not plan_w_defined? plan
+            plan[:height] = style.height if not plan_h_defined? plan
             plan[:x] = 200 if not plan_x_defined? plan
             plan[:y] = 100 if not plan_y_defined? plan
             tln.plan **plan
-            tln.text_font = text_font || style.text_font
-            tln.text_size = text_size || style.text_size
-            tln.text_color = text_color || style.text_color
-            tln.round = round || r || style.round
-            tln.color = color || style.color
-            tln.border = border || b || style.border
-            tln.border_color = border_color || style.border_color
-            tln.padding_x = padding_x || px || style.padding_x
-            tln.padding_y = padding_y || py || style.padding_y
-            tln.editable = editable || style.editable
+            tln.text_font << (text_font || style.text_font)
+            tln.text_size << (text_size || style.text_size)
+            tln.text_color << (text_color || style.text_color)
+            tln.width_pad << (width_pad || style.width_pad)
+            tln.round << (round || r || style.round)
+            tln.color << (color || style.color)
+            tln.border << (border || b || style.border)
+            tln.border_color << (border_color || style.border_color)
+            tln.editable << (editable.nil?? style.editable : editable)
             tln
         end
 
@@ -216,7 +240,7 @@ module Ruby2D
             when :update
                 update
             when :render
-                render
+                cluster_render
             when :click
                 click_time = timems
                 if @last_double_click_time and click_time - @last_double_click_time < 300
@@ -240,7 +264,18 @@ module Ruby2D
             @objects.reverse.filter{_1.is_a? Entity}.each{|e| e.emit :update}
         end
 
-        def render()
+        def cluster_render
+            if @nanny
+                return if not @nanny.rendered
+            else
+                return if not @parent.rendered
+            end
+            @rendered = true
+            render
+            @rendered = false
+        end
+
+        def render
             @objects.each do |o|
                 if o.is_a? Entity
                     o.emit :render
@@ -250,10 +285,15 @@ module Ruby2D
             end
         end
 
-        def accept_mouse(e)
+        def accept_mouse(e, invoker)
+            if @nanny
+                return nil if invoker != @nanny
+            else
+                return nil if invoker != @parent
+            end
             return nil if not contains?(e.x, e.y)
             am = nil
-            @objects.reverse.find{|t| t.is_a?(Entity) && (am = t.accept_mouse(e))}
+            @objects.reverse.find{|t| t.is_a?(Entity) && (am = t.accept_mouse(e, self))}
             return am || self
         end
 
@@ -307,7 +347,7 @@ module Ruby2D
         end
 
         def clipboard
-            ext_get_clipboard
+            ext_get_clipboard.force_encoding('utf-8')
         end
     
         def clipboard=(c)

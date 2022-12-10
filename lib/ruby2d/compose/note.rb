@@ -31,7 +31,7 @@ module Ruby2D
         end
     
         class Pen < Cluster
-            def initialize(text)
+            def init(text)
                 super()
                 @enabled = pot false
                 @text = text
@@ -43,7 +43,7 @@ module Ruby2D
                     }
             end
     
-            cvs_accessor(
+            cvs_reader(
                 :enabled,
                 :position
             )
@@ -54,7 +54,7 @@ module Ruby2D
         end
     
         class Car < Cluster
-            def initialize(text)
+            def init(text)
                 super()
                 @enabled = pot false
                 @text = text
@@ -79,7 +79,7 @@ module Ruby2D
                 end >> @rect.plan(:left, :width)
             end
     
-            cvs_accessor(
+            cvs_reader(
                 :enabled,
                 :coordinates
             )
@@ -103,18 +103,18 @@ module Ruby2D
             end
         end
     
-        def initialize(text: nil, **narg)
+        def init(text: '', **narg)
             super()
             @editable = pot true
-            @padding_x = pot 20
+            @width_pad = pot 20
             @box = new_rectangle **narg
-            @text_value = pot text.force_encoding('utf-8')
+            @text_value = compot{_1.encode('utf-8')}.let text
     
-            @text = new_text '', left: let(@box.left, @padding_x){_1 + _2 / 2}, y: @box.y
+            @text = new_text '', left: let(@box.left, @width_pad){_1 + _2 / 2}, y: @box.y
             @text_offset = pot 0
-            @text.text = let(@text_value, @box.width, @text_offset, @padding_x, @text.size, @text.font) do |tv, bw, to, px, ts, tf|
+            @text.text << let(@text_value, @box.width, @text_offset, @width_pad, @text.size, @text.font) do |tv, bw, to, wp, ts, tf|
                 t = tv[to..]
-                t ? t[0, tf.measure(t, bw - px)[:count]] : ''
+                t ? t[0, tf.measure(t, bw - wp)[:count]] : ''
             end
             @pen_position = compot(@text_value.as{_1.length}) do |tvl, v|
                 if v < 0 then 0
@@ -122,12 +122,12 @@ module Ruby2D
                 else v
                 end
             end.set 0
-            @pen = Pen.new @text
+            @pen = Pen.new self, @text
             @pen.enabled.let(@keyboard_current, @editable){_1 & _2}
             @selection = pot Selection.new
-            @car = Car.new @text
-            @car.enabled = @keyboard_current
-            @car.coordinates = let(@selection, @text_offset){_1.move(-_2, 0)}
+            @car = Car.new self, @text
+            @car.enabled << @keyboard_current
+            @car.coordinates << let(@selection, @text_offset){_1.move(-_2, 0)}
             @story = LimitedStack.new 50
             @story_index = 0
             
@@ -141,14 +141,14 @@ module Ruby2D
                 to = @text_offset.get
                 if pp - to < 0
                     @text_offset.set(pp)
-                    @pen.position = 0
+                    @pen.position << 0
                 else
                     tl = @text.text.get.length
                     if to + tl < pp
                         @text_offset.set(pp - tl)
-                        @pen.position = tl
+                        @pen.position << tl
                     else
-                        @pen.position = pp - to
+                        @pen.position << pp - to
                     end
                 end
                 @selection.set Selection.new(pp) if @selection.get.empty?
@@ -162,16 +162,20 @@ module Ruby2D
                 when 'right'
                     pen_right(shift_down, ctrl_down ? alt_down ? :class : :word : :character)
                 when 'backspace'
-                    if @selection.get.empty?
-                        pen_erase(:left)
-                    else
-                        paste ''
+                    if @editable.get
+                        if @selection.get.empty?
+                            pen_erase(:left)
+                        else
+                            paste ''
+                        end
                     end
                 when 'delete'
-                    if @selection.get.empty?
-                        pen_erase(:right)
-                    else
-                        paste ''
+                    if @editable.get
+                        if @selection.get.empty?
+                            pen_erase(:right)
+                        else
+                            paste ''
+                        end
                     end
                 when 'home'
                     pen_left(shift_down, @pen_position.get)
@@ -221,7 +225,7 @@ module Ruby2D
                 when :left
                     @mouse_pen.set true
                     tt = @text.text.get
-                    x = @text.font.get.nearest(tt, e.x - @box.left.get - @padding_x.get / 2)
+                    x = @text.font.get.nearest(tt, e.x - @box.left.get - @width_pad.get / 2)
                     pen_at x + @text_offset.get, shift_down
                     mmh = window.on :mouse_move do |e|
                         tl = @text.left.get
@@ -230,7 +234,7 @@ module Ruby2D
                         elsif @text.right.get < e.x
                             pen_right true if e.delta_x > 0
                         else
-                            x = @text.font.get.nearest(tt, e.x - @box.left.get - @padding_x.get / 2)
+                            x = @text.font.get.nearest(tt, e.x - @box.left.get - @width_pad.get / 2)
                             pen_at x + @text_offset.get, true
                         end
                     end
@@ -275,7 +279,7 @@ module Ruby2D
                 if e.button == :left
                     tt = @text.text.get
                     to = @text_offset.get
-                    x = @text.font.get.nearest(tt, e.x - @box.left.get - @padding_x.get / 2)
+                    x = @text.font.get.nearest(tt, e.x - @box.left.get - @width_pad.get / 2)
                     sl = class_step_left @text_value.get, to + x, :character_class
                     sr = class_step_right @text_value.get, to + x, :character_class
                     @selection.set Selection.new(to + x - sl, sl + sr + 1)
@@ -294,31 +298,14 @@ module Ruby2D
             "#{self.class} text:\"#{@text_value.get}\""
         end
 
-        delegate box: %w[fill plan x y left top right bottom width\= height\= color\= border_color\= border\= round\=]
-    
-        cvs_accessor(
-            :padding_x,
-            :pen_position,
-            :text_color,
-            :editable,
-            'text' => :text_value,
-            'text_visible' => [:text, :text],
-            'text_font' => [:text, :font],
-            'text_size' => [:text, :size],
-            ['w', 'width'] => [:box, :width],
-            ['h', 'height'] => [:box, :height]
-        )
-    
-        cvs_reader(
-            :text_offset
-        )
+        delegate box: %w(fill plan x y left top right bottom width height color border_color border round)
+        delegate text: %w(text:text_visible font:text_font size:text_size color:text_color)
+        cvs_reader %w(text_value:text width_pad pen_position editable text_offset keyboard_current)
+
+        def text_object = @text
     
         def text_offset=(to)
             @text_offset.let(to, @text_value.as{_1.length}){_1.clamp(0, _2)}
-        end
-    
-        def padding_y=(py)
-            @box.h = let(@text.height, py).sum
         end
     
         def contains?(x, y)
@@ -652,15 +639,15 @@ module Ruby2D
                 end
             end
         end
-    
-        def padding_x
+
+        def height
+            let(@element.text_object.height){_1 + 10}
+        end
+
+        def width_pad
             20
         end
     
-        def padding_y
-            10
-        end
-
         def width
             200
         end
@@ -707,17 +694,17 @@ module Ruby2D
         def text_color
             @text_color
         end
-    
-        def padding_x
-            0
-        end
-    
-        def padding_y
-            0
+
+        def height
+            @element.text_object.height.as{_1 + 3}
         end
 
+        def width_pad
+            0
+        end
+    
         def width
-            let(@element.text_font, @element.text, @element.padding_x){_1.size(_2)[:width] + _3 + 1}
+            let(@element.text_font, @element.text){_1.size(_2)[:width] + 1}
         end
 
         def editable

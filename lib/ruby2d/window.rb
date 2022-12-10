@@ -24,7 +24,7 @@ module Ruby2D
     # @param fps_cap [Numeric] Over-ride the default (60fps) frames-per-second
     # @param vsync [Boolean] Enabled by default, use this to override it (Not recommended)
     def initialize(title: 'Ruby 2D', width: 640, height: 480, fps_cap: 60, vsync: true)
-      super()
+      super(nil)
 
       # Title of the window
       @title = title
@@ -228,9 +228,35 @@ module Ruby2D
       when Button
         case style
         when 'default'
-            return BasicButtonStyle.new(element, Color.new('blue'), Color.new('#1084E9'), Color.new('#0064C9'), Color.new('white'), Color.new('#DFDFDF'))
+          return BasicButtonStyle.new(
+            element: element, 
+            color: Color.new('blue'), 
+            color_hovered: Color.new('#1084E9'),
+            color_pressed: Color.new('#0064C9'), 
+            text_color: Color.new('white'),
+            text_color_pressed: Color.new('#DFDFDF'),
+            border_color: Color.new('blue')
+          )
         when 'green'
-            return BasicButtonStyle.new(element, Color.new('#2c9b33'), Color.new('#23b22d'), Color.new('#2b642f'), Color.new('white'), Color.new('#DFDFDF'))
+          return BasicButtonStyle.new(
+            element: element, 
+            color: Color.new('#2c9b33'), 
+            color_hovered: Color.new('#23b22d'),
+            color_pressed: Color.new('#2b642f'), 
+            text_color: Color.new('white'),
+            text_color_pressed: Color.new('#DFDFDF'),
+            border_color: Color.new('#2c9b33')
+          )
+        when 'option'
+          return OptionButtonStyle.new(
+            element: element, 
+            color: Color.new('#2c2c2f'), 
+            color_hovered: Color.new('#4c4c4f'),
+            color_pressed: Color.new('#5c5c5f'), 
+            text_color: Color.new('white'),
+            text_color_pressed: Color.new('#DFDFDF'),
+            border_color: Color.new('#2c2c2f')
+          )
         end
       when Note
         case style
@@ -266,7 +292,7 @@ module Ruby2D
       raise "Unsupported style '#{style}' used for element #{element.class}"
     end
 
-    cvs_reader :x, :y, :left, :top, :mouse_x, :mouse_y, :timepot, [:width, :right] => :width, [:height, :bottom] => :height
+    cvs_reader :x, :y, :left, :top, :mouse_x, :mouse_y, :timepot, :width, :height, %w(width:right height:bottom)
 
     def _cvs_left
       @left ||= locked_pot 0
@@ -554,7 +580,9 @@ module Ruby2D
 
     # Render callback method, called by the native and web extentions
     def render_callback
+      @rendered = true
       render
+      @rendered = false
     end
 
     # Show the window
@@ -696,11 +724,7 @@ module Ruby2D
 
       # Call event handler
       e = MouseEvent.new(type, button, nil, x, y, nil, nil)
-      c = @mouse_current
-      while c
-          c.emit :mouse_down, e
-          c = c.parent
-      end
+      @mouse_current.lineage.each{_1.emit :mouse_down, e}
     end
 
     def _handle_mouse_up(type, button, x, y)
@@ -709,11 +733,7 @@ module Ruby2D
 
       # Call event handler
       e = MouseEvent.new(type, button, nil, x, y, nil, nil)
-      c = @mouse_current
-      while c
-          c.emit :mouse_up, e
-          c = c.parent
-      end
+      @mouse_current.lineage.each{_1.emit :mouse_up, e}
     end
 
     def _handle_mouse_scroll(type, direction, delta_x, delta_y)
@@ -741,7 +761,7 @@ module Ruby2D
       # Call event handler
       e = MouseEvent.new(type, nil, nil, x, y, delta_x, delta_y)
       if @mouse_owner.contains?(x, y)
-        new_mouse_current = @mouse_owner.accept_mouse(e)
+        new_mouse_current = @mouse_owner.accept_mouse(e, nil)
         if @mouse_current.nil?
           new_mouse_current.lineage.each{_1.emit :mouse_in, e}
           @mouse_current = new_mouse_current

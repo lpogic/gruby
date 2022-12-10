@@ -1,12 +1,10 @@
 module Ruby2D
     class Widget < Cluster
     
-        
+        def initialize(parent, *una, **na, &b)
+            super
 
-        def initialize()
-            super()
-
-            on :key_down do |e|
+            @tab_pass_keyboard = on :key_down do |e|
                 if e.key == 'tab'
                     parent.pass_keyboard self, reverse: shift_down
                 end
@@ -18,6 +16,7 @@ module Ruby2D
         end
 
         def pass_keyboard(*)
+            return false if @accept_keyboard_disabled
             window.keyboard_current_object = self
             true
         end

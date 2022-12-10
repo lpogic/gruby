@@ -12,15 +12,14 @@ module Ruby2D
         @@instances
     end
 
-    cvs_accessor :x, :y, [:width, :w] => :width, [:height, :h] => :height
-    cvs_reader :left, :right, :top, :bottom
+    cvs_reader :left, :right, :top, :bottom, :x, :y, :width, :height
     def initialize(r: nil, round: nil, b: nil, border: nil, 
                    color: 'white', border_color: 'black', **na)
       super(r: r, round: round, b: b, border: border, color: color, border_color: border_color)
-      @width = pot(na[:width] || 200)
-      @height = pot(na[:height] || 100)
-      @x = pot(na[:x] || 200)
-      @y = pot(na[:y] || 100)
+      @width = pot.let na[:width] || 200
+      @height = pot.let na[:height] || 100
+      @x = pot.let na[:x] || 200
+      @y = pot.let na[:y] || 100
 
       let(@x, @y, @width, @height) do |x, y, w, h|
         d = w - h
@@ -33,7 +32,8 @@ module Ruby2D
     
     def _default_plan(x: nil, y: nil, width: nil, height: nil, left: nil, right: nil, top: nil, bottom: nil, **)
       if x and width
-        let(x, width){[_1, _2]} >> [@x, @width]
+        @x << x
+        @width << width
       elsif x and left
         let(x, left){[_1, (_1 - _2) * 2]} >> [@x, @width]
       elsif x and right
@@ -45,9 +45,9 @@ module Ruby2D
       elsif left and right
         let(left, right){[(_1 + _2) * 0.5, _2 - _1]} >> [@x, @width]
       elsif x
-        let(x) >> @x
+        @x << x
       elsif width
-        let(width) >> @width
+        @width << width
       elsif left
         let(@width, left){_2 + _1 * 0.5} >> @x
       elsif right
@@ -55,7 +55,8 @@ module Ruby2D
       end
 
       if y and height
-        let(y, height){[_1, _2]} >> [@y, @height]
+        @y << y
+        @height << height
       elsif y and top
         let(y, top){[_1, (_1 - _2) * 2]} >> [@y, @height]
       elsif y and bottom
@@ -67,13 +68,13 @@ module Ruby2D
       elsif top and bottom
         let(top, bottom){[(_1 + _2) * 0.5, _2 - _1]} >> [@y, @height]
       elsif y
-        let(y){_1} >> @y
+        @y << y
       elsif height
-        let(height) >> @height
+        @height << height
       elsif top
-        let(@height, top){[_2 + _1 * 0.5]} >> [@y]
+        let(@height, top){[_2 + _1 * 0.5]} >> @y
       elsif bottom
-        let(@height, bottom){[_2 - _1 * 0.5]} >> [@y]
+        let(@height, bottom){[_2 - _1 * 0.5]} >> @y
       end
     end
 

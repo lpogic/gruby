@@ -1,7 +1,7 @@
 module Ruby2D
     class Button < Widget
 
-        cvs_accessor :space_pressed
+        cvs_reader :space_pressed
 
         alias mouse_pressed pressed
 
@@ -9,8 +9,7 @@ module Ruby2D
             let(mouse_pressed, space_pressed).or
         end
     
-        def initialize(text: nil, **na, &on_click)
-            super()
+        def init(text: nil, **na, &on_click)
             @space_pressed = pot false
             @box = new_rectangle **na
             @text = new_text text, x: @box.x, y: @box.y
@@ -37,40 +36,16 @@ module Ruby2D
         end
 
         delegate box: %w[x y left top right bottom width height color border_color border round plan fill contains?]
+        delegate text: %w(text size:text_size color:text_color x:text_x)
 
-        cvs_accessor(
-            'color' => [:box, :color],
-            'border_color' => [:box, :border_color],
-            'border' => [:box, :border],
-            'round' => [:box, :round],
-            'text' => [:text, :text],
-            'text_size' => [:text, :size],
-            'text_color' => [:text, :color]
-        )
-    
-        def padding_x=(px)
-            @box.w = let(@text.width, px).sum
-        end
-    
-        def padding_y=(py)
-            @box.h = let(@text.height, py).sum
-        end
+        def text_object = @text
     end
 
 
     class BasicButtonStyle
         include CommunicatingVesselSystem
     
-        def initialize(element, 
-            color, color_hovered, color_pressed, 
-            text_color, text_color_pressed)
-            @element = element
-            @color = color
-            @color_hovered = color_hovered
-            @color_pressed = color_pressed
-            @text_color = text_color
-            @text_color_pressed = text_color_pressed
-        end
+        hash_init :element, :color, :color_hovered, :color_pressed, :text_color, :text_color_pressed, :border_color
     
         def text_size
             14
@@ -97,8 +72,8 @@ module Ruby2D
         end
     
         def border_color
-            let @element.keyboard_current do |kc|
-                kc ? Color.new('#7b00ae') : Color.new('blue')
+            let @element.keyboard_current, @border_color do |kc, bc|
+                kc ? Color.new('#7b00ae') : bc
             end
         end
     
@@ -112,12 +87,82 @@ module Ruby2D
             end
         end
     
-        def padding_x
-            20
+        def width
+            @element.text_object.width.as{_1 + 20}
+        end
+
+        def height
+            @element.text_object.height.as{_1 + 10}
+        end
+
+        def text_x
+        end
+    end
+
+    class OptionButtonStyle
+        include CommunicatingVesselSystem
+    
+        hash_init :element, :color, :color_hovered, :color_pressed, :text_color, :text_color_pressed, :border_color
+    
+        def text_size
+            14
         end
     
-        def padding_y
-            10
+        def border
+            1
+        end
+    
+        def round
+            0
+        end
+    
+        def color
+            let @element.hovered, @element.pressed do |h, pr|
+                if pr
+                    @color_pressed
+                elsif h
+                    @color_hovered
+                else
+                    @color
+                end
+            end
+        end
+    
+        def border_color
+            @border_color
+        end
+    
+        def text_color
+            let @element.pressed do |pr|
+                if pr
+                    @text_color_pressed
+                else
+                    @text_color
+                end
+            end
+        end
+    
+        def width
+            100
+        end
+
+        def height
+            @element.text_object.height.as{_1 + 10}
+        end
+
+        def text_x
+            @element.text_object.plan x: let(@element.left, @element.text_object.width, 10){_1 + _2 * 0.5 + _3}
+            class << @element
+                def cancel_tab_pass_keyboard
+                    @tab_pass_keyboard.cancel
+                    @tab_pass_keyboard = nil
+                end
+
+                def pass_keyboard(*)
+                    false
+                end
+            end
+            @element.cancel_tab_pass_keyboard
         end
     end
 end

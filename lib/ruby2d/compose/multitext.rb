@@ -3,22 +3,20 @@ module Ruby2D
         include Renderable
         TextPart = Struct.new(:text, :length)
 
-        cvs_accessor :x, :y, :size, :text
-        cvs_reader :height, :width, :left, :right, :top, :bottom
+        cvs_reader :height, :width, :left, :right, :top, :bottom, :x, :y, :size, :text
 
 
-        def initialize(text, size: 20, style: nil, font: nil, portions: nil, **na)
-            super()
-            @text = pot text
-            @size = pot size
+        def init(text, size: 20, style: nil, font: nil, portions: nil, **na)
+            @text = pot.let text
+            @size = pot.let size
             @font_path = compot{Font.path _1}.let(font || Font.default)
-            @font_style = pot style
+            @font_style = pot.let style
             @font = pot(@font_path, @size, @font_style){Font.load(_1, _2, _3)}
             @x = pot 100
             @y = pot 100
             @width = pot
             @height = pot
-            @parts = compot do |parts, s|
+            @parts = compot pull: true do |parts, s|
                 let(*parts.map{_1.text.width}).sum >> @width
                 @height.let(parts.empty? ? 0 : parts[0].text.height)
                 drop *s.get.map{_1.text} if not s.get.nil?

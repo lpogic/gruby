@@ -16,15 +16,12 @@ module Ruby2D
       let(@size){[_1, _1]} >> [@width, @height]
     end
 
-    cvs_accessor [:size, :s] => :size
+    cvs_reader :size
 
     def self.draw(x:, y:, size:, round:, border:, color:)
       super(x: x, y: y,
             width: size, height: size, round: round, border: border,
             color: color)
     end
-
-    # Make the inherited width and height attribute accessors private
-    private :width=, :height=
   end
 end

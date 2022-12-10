@@ -22,11 +22,7 @@ module Ruby2D
       @border_color = compot{Color.new _1}.let border_color
     end
 
-    cvs_accessor(:x1, :x2, :y1, :y2, :color, :border_color,
-      [:thick, :t] => :thick, 
-      [:round, :r] => :round, 
-      [:border, :b] => :border
-    )
+    cvs_reader :x1, :x2, :y1, :y2, :color, :border_color, :thick, :round, :border
 
     # Return the length of the line
     def length
@@ -65,8 +61,9 @@ module Ruby2D
     end
 
     def render
+      # p @x1.get.round, @y1.get.round, @x2.get.round, @y2.get.round, @thick.get.round, @round.get.round, @border.get.round, @color.get, @border_color.get
       self.class.ext_draw([
-                            @x1.get.round, @y1.get.round, @x2.get.round, @y2.get.round, @thick.get, @round.get, @border.get, *@color.get, *@border_color.get
+                            @x1.get.round, @y1.get.round, @x2.get.round, @y2.get.round, @thick.get.round, @round.get.round, @border.get.round, *@color.get, *@border_color.get
                           ])
     end
 

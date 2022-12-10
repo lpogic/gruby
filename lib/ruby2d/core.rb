@@ -37,5 +37,6 @@ unless RUBY_ENGINE == 'mruby'
   require 'ruby2d/compose/fit_grid'
   require 'ruby2d/compose/button'
   require 'ruby2d/compose/note'
+  require 'ruby2d/compose/note_support'
   require 'ruby2d/ruby2d' # load native extension
 end

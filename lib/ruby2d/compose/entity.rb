@@ -6,7 +6,7 @@ module Ruby2D
   # Any object that can be managed by a Ruby2D::Window must be an Entity
   module Entity
     include CommunicatingVesselSystem
-    attr_accessor :parent
+    attr_accessor :parent, :nanny
     
     def emit(type, event = nil)  
     end

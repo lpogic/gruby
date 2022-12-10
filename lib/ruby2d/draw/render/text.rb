@@ -8,26 +8,25 @@ module Ruby2D
     include Renderable
     include Planned
 
-    cvs_accessor :x, :y, :text, :size, :color, :width, :height, :font
-    cvs_reader :left, :right, :top, :bottom
+    cvs_reader :left, :right, :top, :bottom, :x, :y, :text, :size, :color, :width, :height, :font
     attr_accessor :rotate
 
     def initialize(text, size: 20, style: nil, font: nil, rotate: 0, color: nil, **na)
       @x = pot 0
       @y = pot 0
-      @text = pot text
-      @size = pot size
+      @text = compot{_1.to_s}.let(text)
+      @size = pot.let size
       @rotate = rotate
       @color = compot{Color.new _1}.let(color || 'white')
-      @font_style = pot(style)
+      @font_style = pot.let style
       @font = compot(@size, @font_style){Font.load(Font.path(_3), _1, _2)}.let(font || Font.default)
 
       @texture_offset_x = pot 0
       @texture_offset_y = pot 0
       @texture = pot
       @texture.let(@text, @font){create_texture(_1, _2, @texture.get)}
-      @width = pot @texture.as{_1.width}
-      @height = pot @font.as{_1.dimensions[:height]}
+      @width = pot.let @texture.as{_1.width}
+      @height = pot.let @font.as{_1.dimensions[:height]}
       plan **na
     end
 

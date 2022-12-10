@@ -4,30 +4,25 @@ module Ruby2D
         include Planned
      
         def initialize(cols: [], rows: [], **na)
-           @left = pot(na[:left] || 100)
-           @top = pot(na[:top] || 100)
-           @width = pot
-           @height = pot
-           @cols = compot do |cols|
-              let(*cols).sum >> @width
-              [cols]
-           end.set cols.map{pot _1}
-           @rows = compot do |rows|
-              let(*rows).sum >> @height
-              [rows]
-           end.set rows.map{pot _1}
+           @left = pot 100
+           @top = pot 100
+           @width = pot 0
+           @height = pot 0
+           @cols = arrpot.let cols
+           @width << @cols.sum
+           @rows = arrpot.let rows
+           @height << @rows.sum
      
            plan **na
         end
      
-        cvs_accessor :left, :top, :cols, :rows
-        cvs_reader :width, :height, :right, :bottom, :x, :y
+        cvs_reader :width, :height, :right, :bottom, :x, :y, :left, :top, :cols, :rows
      
         def _default_plan(x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil)
          if x
             let(x, width){_1 - _2 * 0.5} >> @left
          elsif left
-           let(left){_1} >> @left
+           left >> @left
          elsif right
            let(right, width){_1 - _2} >> @left
          end
@@ -35,7 +30,7 @@ module Ruby2D
          if y
             let(y, height){_1 - _2 * 0.5} >> @top
          elsif top
-            let(top){_1} >> @top
+            top >> @top
          elsif bottom
             let(bottom, height){_1 - _2} >> @top
          end
@@ -78,7 +73,8 @@ module Ruby2D
            end
         end
      
-        def sector(col, row)
+        def sector(col, row, fixed: true)
+         if fixed
            left = case col
            when Integer then let(*@cols.get[0...col], @left).sum
            when Range then let(*@cols.get[0...col.min], @left).sum
@@ -95,8 +91,26 @@ module Ruby2D
            when Integer then @rows.get[row]
            when Range then let(*@rows.get[row]).sum
            end
+         else
+            left = case col
+            when Integer then let(@cols[...col].sum, @left).sum
+            when Range then let(@cols[...col.min], @left).sum
+            end
+            width = case col
+            when Integer then @cols[col]
+            when Range then @cols[col].sum
+            end
+            top = case row
+            when Integer then let(@rows[...row].sum, @top).sum
+            when Range then let(@rows[...row.min].sum, @top).sum
+            end
+            height = case row
+            when Integer then @rows[row]
+            when Range then @rows[row].sum
+            end
+         end
      
-           Sector.new(left: left, width: width, top: top, height: height)
+         Sector.new(left: left, width: width, top: top, height: height)
         end
      
         alias [] sector

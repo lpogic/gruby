@@ -43,10 +43,7 @@ module Ruby2D
                     }
             end
     
-            cvs_reader(
-                :enabled,
-                :position
-            )
+            cvs_reader :enabled, :position
     
             def render
                 @rect.render if @enabled.get
@@ -79,10 +76,7 @@ module Ruby2D
                 end >> @rect.plan(:left, :width)
             end
     
-            cvs_reader(
-                :enabled,
-                :coordinates
-            )
+            cvs_reader :enabled, :coordinates
     
             def render
                 @rect.render if @enabled.get and @coordinates.get.length > 0
@@ -108,7 +102,7 @@ module Ruby2D
             @editable = pot true
             @width_pad = pot 20
             @box = new_rectangle **narg
-            @text_value = compot{_1.encode('utf-8')}.let text
+            @text_value = compot{_1.encode('utf-8')} << text
     
             @text = new_text '', left: let(@box.left, @width_pad){_1 + _2 / 2}, y: @box.y
             @text_offset = pot 0
@@ -121,7 +115,7 @@ module Ruby2D
                 elsif v > tvl then tvl
                 else v
                 end
-            end.set 0
+            end << 0
             @pen = Pen.new self, @text
             @pen.enabled.let(@keyboard_current, @editable){_1 & _2}
             @selection = pot Selection.new
@@ -131,7 +125,7 @@ module Ruby2D
             @story = LimitedStack.new 50
             @story_index = 0
             
-            place @box, @car, @text, @pen
+            care @box, @car, @text, @pen
     
             on @keyboard_current do |kc|
                 enable_text_input kc

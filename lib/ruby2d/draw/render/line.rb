@@ -15,11 +15,11 @@ module Ruby2D
       @y1 = pot y1
       @x2 = pot x2
       @y2 = pot y2
-      @thick = pot(thick || t || 6)
-      @round = pot(round || r || 0)
-      @border = pot(border || b || 0)
-      @color = compot{Color.new _1}.let color
-      @border_color = compot{Color.new _1}.let border_color
+      @thick = pot.let thick || t || 6
+      @round = pot.let round || r || 0
+      @border = pot.let border || b || 0
+      @color = compot{Color.new _1} << color
+      @border_color = compot{Color.new _1} << border_color
     end
 
     cvs_reader :x1, :x2, :y1, :y2, :color, :border_color, :thick, :round, :border

@@ -12,7 +12,7 @@ module Ruby2D
                    left: nil, right: nil, top: nil, bottom: nil)
       super(x: x, y: y, z: z, round: round, border: border,
             color: color, border_color: border_color, left: left, right: right, top: top, bottom: bottom)
-      @size = pot(size || s || 100)
+      @size = pot.let size || s || 100
       let(@size){[_1, _1]} >> [@width, @height]
     end
 

@@ -20,7 +20,7 @@ module Ruby2D
                 plan[:y] = self.y if not plan_y_defined? plan
                 element.plan **plan
                 plan width: element.width, height: element.height
-                place element
+                care element
             else
                 @_top.append(element, **plan)
             end

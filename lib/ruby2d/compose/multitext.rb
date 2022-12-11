@@ -19,8 +19,8 @@ module Ruby2D
             @parts = compot pull: true do |parts, s|
                 let(*parts.map{_1.text.width}).sum >> @width
                 @height.let(parts.empty? ? 0 : parts[0].text.height)
-                drop *s.get.map{_1.text} if not s.get.nil?
-                place *parts.map{_1.text}
+                leave *s.get.map{_1.text} if not s.get.nil?
+                care *parts.map{_1.text}
                 parts
             end
             self.portions = portions ? portions : [{color: 'white', range: 0..}]

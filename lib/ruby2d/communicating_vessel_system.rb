@@ -23,7 +23,7 @@ module Ruby2D
         end
 
         def arrpot(pull: true)
-            p1 = pot
+            p1 = pot []
             p2 = pot pull: pull
             p3 = pot pull: true
             let(p1) do |pots|
@@ -156,15 +156,13 @@ module Ruby2D
                 case that
                 when Pot
                     apply_outpot that
-                    that
                 when Let
                     apply_outpot *that.inpot
-                    that
                 when Array
                     apply_outpot *that
-                    Let.new that
                 else raise "Invalid right side"
                 end
+                self
             end
 
             def unlock
@@ -262,13 +260,13 @@ module Ruby2D
 
             def >>(pt)
                 CommunicatingVesselSystem.let(self) >> pt
-                pt
+                self
             end
 
             def <<(obj)
                 obj = CommunicatingVesselSystem.let(obj) if not obj.is_a? Let
                 obj >> self
-                obj
+                self
             end
 
             def self.path(sender, receiver)

@@ -1,34 +1,34 @@
 module Ruby2D
     class Button < Widget
 
-        cvs_reader :space_pressed
+        cvs_reader :keyboard_pressed
 
         alias mouse_pressed pressed
 
         def pressed
-            let(mouse_pressed, space_pressed).or
+            let(mouse_pressed, keyboard_pressed).or
         end
     
         def init(text: nil, **na, &on_click)
-            @space_pressed = pot false
+            @keyboard_pressed = pot false
             @box = new_rectangle **na
             @text = new_text text, x: @box.x, y: @box.y
-            place @box, @text
+            care @box, @text
     
             on :click, &on_click if block_given?
 
             on :key_down do |e|
-                @space_pressed.set true if e.key == 'space'
+                @keyboard_pressed.set true if e.key == 'space'
             end
 
             on @keyboard_current do |kc|
-                @space_pressed.set false
+                @keyboard_pressed.set false
             end
 
             on :key_up do |e|
                 if e.key == 'space'
-                    if @space_pressed.get
-                        @space_pressed.set false
+                    if @keyboard_pressed.get
+                        @keyboard_pressed.set false
                         emit :click if not pressed.get
                     end
                 end

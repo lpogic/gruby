@@ -20,7 +20,7 @@ module Ruby2D
         cvs_reader :hovered, :pressed
 
         def initialize(parent, *una, accepts_keyboard: true, **na, &b)
-            @objects = []
+            @objects = arrpot
             @parent = parent
             @event_handlers = {}
             @pot_handlers = []
@@ -78,34 +78,32 @@ module Ruby2D
             @keyboard_current.get
         end
 
-        def place(*objects)
-            objects.each do |o|
-                case o
-                when nil
-                    raise Error, "Cannot add '#{o.class}' to cluster!"
-                when Entity
-                    add_object(o)
-                    o.parent = self
+        def care(*objects)
+            @objects.set{_1.union objects}
+            objects.filter{_1.is_a? Entity}.each do |o|
+                if o.parent and o.parent != self
+                    if o.nanny
+                        raise "Entity already has parent and nanny"
+                    else
+                        o.nanny = self
+                    end
                 else
-                    add_object(o)
+                    o.parent = self
                 end
             end
             objects.size > 1 ? objects : objects[0]
         end
 
-        def drop(*objects)
-            objects.each do |o|
-                if o.nil?
-                    raise Error, "Cannot remove '#{object.class}' from cluster!"
-                else
-                    ix = @objects.index(o)
-                    @objects.delete_at(ix) if ix
-                end
+        def leave(*objects)
+            @objects.set{_1.difference objects}
+            objects.filter{_1.is_a? Entity}.each do |o|
+                o.nanny = nil if o.nanny == self
+                o.parent = nil if o.parent == self
             end
         end
     
-        def clear
-            @objects.clear
+        def leave_all
+            @objects << []
         end
 
         # Generate a new event key (ID)
@@ -257,11 +255,11 @@ module Ruby2D
         end
 
         def contains?(x, y)
-            @objects.filter{_1.is_a? Entity}.any?{|e|e.contains?(x, y)}
+            @objects.get.filter{_1.is_a? Entity}.any?{|e|e.contains?(x, y)}
         end
 
         def update()
-            @objects.reverse.filter{_1.is_a? Entity}.each{|e| e.emit :update}
+            @objects.get.reverse.filter{_1.is_a? Entity}.each{|e| e.emit :update}
         end
 
         def cluster_render
@@ -276,7 +274,7 @@ module Ruby2D
         end
 
         def render
-            @objects.each do |o|
+            @objects.get.each do |o|
                 if o.is_a? Entity
                     o.emit :render
                 else
@@ -293,7 +291,8 @@ module Ruby2D
             end
             return nil if not contains?(e.x, e.y)
             am = nil
-            @objects.reverse.find{|t| t.is_a?(Entity) && (am = t.accept_mouse(e, self))}
+            objects = @objects.get
+            objects.reverse.find{|t| t.is_a?(Entity) && (am = t.accept_mouse(e, self))}
             return am || self
         end
 
@@ -302,15 +301,16 @@ module Ruby2D
         end
 
         def pass_keyboard(current, reverse: false)
+            objects = @objects.get
             if current.nil?
-                ps = reverse ? @objects.reverse : @objects
+                ps = reverse ? objects.reverse : objects
                 ps.filter{_1.is_a? Cluster}.each do |psi|
                     return true if psi.pass_keyboard nil, reverse: reverse
                 end
                 return false
             else
-                i = @objects.find_index(current)
-                ps = reverse ? @objects[...i].reverse : @objects[i + 1..]
+                i = objects.find_index(current)
+                ps = reverse ? objects[...i].reverse : objects[i + 1..]
                 ps.filter{_1.is_a? Cluster}.each do |psi|
                     return true if psi.pass_keyboard nil, reverse: reverse
                 end
@@ -359,8 +359,9 @@ module Ruby2D
 
         # An an object to the window, used by the public `add` method
         def add_object(object)
-            if !@objects.include?(object)
-                @objects.push(object)
+            objects = @objects.get
+            if !objects.include?(object)
+                @objects.set objects.push(object)
                 true
             else
                 false

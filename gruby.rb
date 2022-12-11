@@ -109,7 +109,7 @@ class ColRowContainer < Cluster
    def init(gap: 0, **ona)
       ona[:color] ||= 0
       @body = new_rectangle **ona
-      place @body
+      care @body
       @gap = pot.let gap
    end
 
@@ -118,7 +118,7 @@ class ColRowContainer < Cluster
       plan[:x] = gs.x if not plan_x_defined? plan
       plan[:y] = gs.y if not plan_y_defined? plan
       element.plan **plan
-      place element
+      care element
    end
 
    delegate body: %w[fill plan left top right bottom x y width height color\=]
@@ -129,7 +129,7 @@ class Row < ColRowContainer
 
    def init(gap: 0, **ona)
       super
-      @body.height = ona[:height] || 0
+      let(ona[:height] || 0, @objects){[_1, _2.map{|o| o.height.get}.max].max} >> @body.height
       @grid = Grid.new rows: [@body.height], x: @body.x, y: @body.y# left: @body.left, top: @body.top
       @body.width = @grid.width
    end
@@ -146,7 +146,6 @@ class Row < ColRowContainer
          end
          @last_gap = false
          super
-         let(*@objects.map{_1.height}).max >> @body.height
       end
    end
 end
@@ -155,7 +154,7 @@ class Col < ColRowContainer
 
    def init(gap: 0, **ona)
       super
-      @body.width = ona[:width] || 0
+      let(ona[:width] || 0, @objects){[_1, _2.map{|o| o.width.get}.max].max} >> @body.width
       @grid = Grid.new cols: [@body.width], x: @body.x, y: @body.y
       @body.height = @grid.height
    end
@@ -172,7 +171,7 @@ class Col < ColRowContainer
          end
          @last_gap = false
          super
-         let(*@objects.map{_1.width}).max >> @body.width
+         
       end
    end
 end
@@ -293,7 +292,7 @@ end
 n = note text: 'DODODS'
 n1 = note x: 300, y: 300, editable: false
 ns = NoteSupport.new self
-place ns
+care ns
 on n.keyboard_current do |kc|
    ns.accept_subject nil if not kc
 end
@@ -302,18 +301,21 @@ n.on :click do
       ns.accept_subject nil
    else
       ns.accept_subject n
-      ns.options.set ['AAAAA', 'B', 'C']
+      ns.suggestions.set ['AAAAA', 'B', 'C', 'D', 'e', 'FF']
       ns.on_option_selected do |o|
          n.text.set o
          ns.accept_subject nil
       end
    end
 end
-n.on :key_down do |e|
+n.on :key_type do |e|
    if e.key == 'down' || e.key == 'up'
-      if ns.subject != n
+      if ns.subject == n
+         ns.hover_down if e.key == 'down'
+         ns.hover_up if e.key == 'up'
+      else
          ns.accept_subject n
-         ns.options.set ['AAAAA', 'B', 'C']
+         ns.suggestions.set ['AAAAA', 'B', 'C', 'D', 'e', 'FF']
          ns.on_option_selected do |o|
             n.text.set o
             ns.accept_subject nil
@@ -321,10 +323,24 @@ n.on :key_down do |e|
       end
    end
 end
+n.on :key_down do |e|
+   if e.key == 'return'
+      if ns.subject == n
+         ns.press_hovered
+      end
+   end
+end
+n.on :key_up do |e|
+   if e.key == 'return'
+      if ns.subject == n
+         ns.release_pressed
+      end
+   end
+end
 on n1.keyboard_current do |kc|
    if kc
       ns.accept_subject n1
-      ns.options.set ['1', '2', '3']
+      ns.suggestions.set ['1', '2', '3']
       ns.on_option_selected do |o|
          n1.text.set o
          ns.accept_subject nil

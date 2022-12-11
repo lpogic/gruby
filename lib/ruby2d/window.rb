@@ -46,9 +46,6 @@ module Ruby2D
       # Total number of frames that have been rendered
       @frames = 0
 
-      # Renderable objects currently in the window, like a linear scene graph
-      @objects = []
-
       @mouse_current = nil
       @mouse_owner = self
       @keyboard_current_object = self
@@ -319,18 +316,19 @@ module Ruby2D
     end
 
     def pass_keyboard(current, reverse: false)
+      objects = @objects.get
       if current.nil?
-        ps = reverse ? @objects.reverse : @objects
+        ps = reverse ? objects.reverse : objects
         ps.filter{_1.is_a? Cluster}.each do |psi|
           return true if psi.pass_keyboard nil, reverse: reverse
         end
       else
-        i = @objects.find_index(current)
-        ps = reverse ? @objects[...i].reverse : @objects[i + 1..]
+        i = objects.find_index(current)
+        ps = reverse ? objects[...i].reverse : objects[i + 1..]
         ps.filter{_1.is_a? Cluster}.each do |psi|
           return true if psi.pass_keyboard nil, reverse: reverse
         end
-        ps = reverse ? @objects[i..].reverse : @objects[..i]
+        ps = reverse ? objects[i..].reverse : objects[..i]
         ps.filter{_1.is_a? Cluster}.each do |psi|
           return true if psi.pass_keyboard nil, reverse: reverse
         end

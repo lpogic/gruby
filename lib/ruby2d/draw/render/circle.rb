@@ -14,11 +14,11 @@ module Ruby2D
                    color: 'yellow', border_color: 'black')
       @x = pot.let x
       @y = pot.let y
-      @radius = pot(radius || r || 100)
-      @border = pot(border || b || 0)
+      @radius = pot.let radius || r || 100
+      @border = pot.let border || b || 0
       @sectors = sectors
-      @color = compot{Color.new _1}.let color
-      @border_color = compot{Color.new _1}.let border_color
+      @color = compot{Color.new _1} << color
+      @border_color = compot{Color.new _1} << border_color
     end
 
     attr_accessor :sectors

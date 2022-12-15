@@ -288,25 +288,25 @@ module Ruby2D
 
     private
 
-    # Converts +color_or_set+ as a sequence of colour components; e.g. +[ r1, g1, b1, a1, ...]+
-    # @param [Color, Color::Set] color_or_set
-    # @return an array of r, g, b, a values
-    def colors_to_a(color_or_set)
-      if color_or_set.is_a? Color::Set
-        color_a = []
-        color_or_set.each do |clr|
-          color_a << clr.r << clr.g << clr.b << clr.a
+      # Converts +color_or_set+ as a sequence of colour components; e.g. +[ r1, g1, b1, a1, ...]+
+      # @param [Color, Color::Set] color_or_set
+      # @return an array of r, g, b, a values
+      def colors_to_a(color_or_set)
+        if color_or_set.is_a? Color::Set
+          color_a = []
+          color_or_set.each do |clr|
+            color_a << clr.r << clr.g << clr.b << clr.a
+          end
+          return color_a
         end
-        return color_a
+
+        color_or_set = Color.new(color_or_set) unless color_or_set.is_a? Color
+        color_or_set.to_a
       end
 
-      color_or_set = Color.new(color_or_set) unless color_or_set.is_a? Color
-      color_or_set.to_a
-    end
-
-    def update_texture
-      @texture.delete
-      @texture = Texture.new(@ext_pixel_data, @width, @height)
-    end
+      def update_texture
+        @texture.delete
+        @texture = Texture.new(@ext_pixel_data, @width, @height)
+      end
   end
 end

@@ -7,7 +7,6 @@ module Ruby2D
   # (based on css), a hexadecimal value or an array containing a collection of
   # red, green, blue, and alpha (transparency) values expressed as a Float from 0.0 to 1.0.
   class Color
-
     attr_reader :r, :g, :b, :a
 
     # Based on clrs.cc
@@ -74,21 +73,21 @@ module Ruby2D
         #   !(/^#[0-9A-F]{6}$/i.match(a).nil?)
         color_string.instance_of?(String) &&
           color_string[0] == '#' &&
-          color_string.length == 7
+          (color_string.length == 7 || color_string.length == 9)
       end
 
       # Check if the color is valid
       def valid?(color)
         !color || color == true ||
-        color.is_a?(Color) ||
-        color.is_a?(Numeric) ||           
-        NAMED_COLORS.key?(color) ||     # keyword
-        hex?(color) ||                  # hexadecimal value
-        (                               # Array of Floats from 0.0..1.0
-          color.instance_of?(Array) &&
-          color.length > 0 &&
-          color.all? { |el| el.is_a?(Numeric) }
-        )
+          color.is_a?(Color) ||
+          color.is_a?(Numeric) ||
+          NAMED_COLORS.key?(color) ||     # keyword
+          hex?(color) ||                  # hexadecimal value
+          (                               # Array of Floats from 0.0..1.0
+            color.instance_of?(Array) &&
+            color.length > 0 &&
+            color.all? { |el| el.is_a?(Numeric) }
+          )
       end
     end
 
@@ -104,52 +103,49 @@ module Ruby2D
 
     def to_s(opacity: true)
       c = to_a
-      c.pop if !opacity
-      '#' + c.map{('00' + (_1 * 255).to_i.to_s(16))[-2..]}.join
+      c.pop unless opacity
+      '#' + c.map { ('00' + (_1 * 255).to_i.to_s(16))[-2..] }.join
     end
 
     private
 
-    def init_from_string(color)
-      if color == 'random'
-        init_random_color
-      elsif self.class.hex?(color)
-        @r, @g, @b, @a = hex_to_f(color)
-      else
-        @r, @g, @b, @a = hex_to_f(NAMED_COLORS[color])
-      end
-    end
-
-    def init_random_color
-      @r = rand
-      @g = rand
-      @b = rand
-      @a = 1.0
-    end
-
-    # Convert from Fixnum (0..255) to Float (0.0..1.0)
-    def i_to_f(color_array)
-      b = []
-      color_array.each do |n|
-        b.push(n / 255.0)
-      end
-      b
-    end
-
-    # Convert from hex value (e.g. #FFF000) to Float (0.0..1.0)
-    def hex_to_f(hex_color)
-      hex_color = (hex_color[1..]).chars.each_slice(2).map(&:join)
-      a = []
-
-      hex_color.each do |el|
-        a.push(el.to_i(16))
+      def init_from_string(color)
+        if color == 'random'
+          init_random_color
+        elsif self.class.hex?(color)
+          @r, @g, @b, @a = hex_to_f(color)
+        else
+          @r, @g, @b, @a = hex_to_f(NAMED_COLORS[color])
+        end
       end
 
-      a.push(255)
-      i_to_f(a)
-    end
+      def init_random_color
+        @r = rand
+        @g = rand
+        @b = rand
+        @a = 1.0
+      end
+
+      # Convert from Fixnum (0..255) to Float (0.0..1.0)
+      def i_to_f(color_array)
+        b = []
+        color_array.each do |n|
+          b.push(n / 255.0)
+        end
+        b
+      end
+
+      # Convert from hex value (e.g. #FFF000) to Float (0.0..1.0)
+      def hex_to_f(hex_color)
+        hex_color = (hex_color[1..]).chars.each_slice(2).map(&:join)
+        a = []
+
+        hex_color.each do |el|
+          a.push(el.to_i(16))
+        end
+
+        a.push(255)
+        i_to_f(a)
+      end
   end
-
-  # Allow British English spelling of color
-  Colour = Color
 end

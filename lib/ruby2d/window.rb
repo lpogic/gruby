@@ -6,7 +6,6 @@ module Ruby2D
   # Represents a window on screen, responsible for storing renderable graphics,
   # event handlers, the update loop, showing and closing the window.
   class Window < Arena
-    
     # Event structures
     ResizeEvent           = Struct.new(:width, :height)
     MouseEvent            = Struct.new(:type, :button, :direction, :x, :y, :delta_x, :delta_y)
@@ -56,7 +55,18 @@ module Ruby2D
       _init_event_stores
       _init_event_registrations
       _init_procs_dsl_console
+
+      @caretaker = Cluster.new self
+      class << @caretaker
+        def contains? x, y
+          window.contains? x, y
+        end
+      end
+      @note_support = NoteSupport.new self
+      @objects << [@caretaker, @note_support]
     end
+
+    attr_reader :note_support
 
     # Track open window state in a class instance variable
     @open_window = false
@@ -208,9 +218,9 @@ module Ruby2D
 
       private
 
-      def opened!
-        @open_window = true
-      end
+        def opened!
+          @open_window = true
+        end
     end
 
     def contains?(x, y)
@@ -226,30 +236,30 @@ module Ruby2D
         case style
         when 'default'
           return BasicButtonStyle.new(
-            element: element, 
-            color: Color.new('blue'), 
+            element: element,
+            color: Color.new('blue'),
             color_hovered: Color.new('#1084E9'),
-            color_pressed: Color.new('#0064C9'), 
+            color_pressed: Color.new('#0064C9'),
             text_color: Color.new('white'),
             text_color_pressed: Color.new('#DFDFDF'),
             border_color: Color.new('blue')
           )
         when 'green'
           return BasicButtonStyle.new(
-            element: element, 
-            color: Color.new('#2c9b33'), 
+            element: element,
+            color: Color.new('#2c9b33'),
             color_hovered: Color.new('#23b22d'),
-            color_pressed: Color.new('#2b642f'), 
+            color_pressed: Color.new('#2b642f'),
             text_color: Color.new('white'),
             text_color_pressed: Color.new('#DFDFDF'),
             border_color: Color.new('#2c9b33')
           )
         when 'option'
           return OptionButtonStyle.new(
-            element: element, 
-            color: Color.new('#2c2c2f'), 
+            element: element,
+            color: Color.new('#2c2c2f'),
             color_hovered: Color.new('#4c4c4f'),
-            color_pressed: Color.new('#5c5c5f'), 
+            color_pressed: Color.new('#5c5c5f'),
             text_color: Color.new('white'),
             text_color_pressed: Color.new('#DFDFDF'),
             border_color: Color.new('#2c2c2f')
@@ -259,28 +269,28 @@ module Ruby2D
         case style
         when 'default'
           return BasicNoteStyle.new(
-            element, 
-            Color.new('#3c3c3f'), 
-            Color.new('#4c4c4f'), 
-            Color.new('#4c4c4f'), 
-            Color.new('white'), 
+            element,
+            Color.new('#3c3c3f'),
+            Color.new('#4c4c4f'),
+            Color.new('#4c4c4f'),
+            Color.new('white'),
             Color.new('#DFDFDF'),
             'consola'
           )
         when 'green'
           return BasicNoteStyle.new(
-            element, 
-            Color.new('#2c9b33'), 
-            Color.new('#23b22d'), 
-            Color.new('#2b642f'), 
-            Color.new('white'), 
+            element,
+            Color.new('#2c9b33'),
+            Color.new('#23b22d'),
+            Color.new('#2b642f'),
+            Color.new('white'),
             Color.new('#DFDFDF'),
             'consola'
           )
         when 'text'
           return TextNoteStyle.new(
-            element, 
-            Color.new([0,0,0,0]),
+            element,
+            Color.new([0, 0, 0, 0]),
             Color.new('white'),
             'consola'
           )
@@ -300,11 +310,11 @@ module Ruby2D
     end
 
     def _cvs_x
-      self.width{_1 / 2}
+      self.width { _1 / 2 }
     end
 
     def _cvs_y
-      self.height{_1 / 2}
+      self.height { _1 / 2 }
     end
 
     def keyboard_current_object=(new_keyboard_current)
@@ -319,17 +329,17 @@ module Ruby2D
       objects = @objects.get
       if current.nil?
         ps = reverse ? objects.reverse : objects
-        ps.filter{_1.is_a? Cluster}.each do |psi|
+        ps.filter { _1.is_a? Cluster }.each do |psi|
           return true if psi.pass_keyboard nil, reverse: reverse
         end
       else
         i = objects.find_index(current)
         ps = reverse ? objects[...i].reverse : objects[i + 1..]
-        ps.filter{_1.is_a? Cluster}.each do |psi|
+        ps.filter { _1.is_a? Cluster }.each do |psi|
           return true if psi.pass_keyboard nil, reverse: reverse
         end
         ps = reverse ? objects[i..].reverse : objects[..i]
-        ps.filter{_1.is_a? Cluster}.each do |psi|
+        ps.filter { _1.is_a? Cluster }.each do |psi|
           return true if psi.pass_keyboard nil, reverse: reverse
         end
       end
@@ -362,12 +372,14 @@ module Ruby2D
     # Getters for ruby2d_window_ext_show
     def get_width = @width.get
     def get_height = @height.get
+
     # Setters for ruby2d.c update
     def set_mouse_x x
       if x != @mouse_x.get
         @mouse_x.set x
       end
     end
+
     def set_mouse_y y
       if y != @mouse_y
         @mouse_y.set y
@@ -576,6 +588,18 @@ module Ruby2D
       _clear_event_stores unless @using_dsl
     end
 
+    def care(*objects)
+      @caretaker.care *objects
+    end
+
+    def leave(*objects)
+      @caretaker.leave *objects
+    end
+
+    def leave_all
+      @caretaker.leave_all
+    end
+
     # Render callback method, called by the native and web extentions
     def render_callback
       @rendered = true
@@ -597,10 +621,10 @@ module Ruby2D
         ext_screenshot(path)
       else
         time = if RUBY_ENGINE == 'ruby'
-                 Time.now.utc.strftime '%Y-%m-%d--%H-%M-%S'
-               else
-                 Time.now.utc.to_i
-               end
+          Time.now.utc.strftime '%Y-%m-%d--%H-%M-%S'
+        else
+          Time.now.utc.to_i
+        end
         ext_screenshot("./screenshot-#{time}.png")
       end
     end
@@ -614,330 +638,326 @@ module Ruby2D
 
     private
 
-    def _set_any_window_properties(opts)
-      @background = Color.new(opts[:background]) if Color.valid? opts[:background]
-      @title           = opts[:title]           if opts[:title]
-      @icon            = opts[:icon]            if opts[:icon]
-      @resizable       = opts[:resizable]       if opts[:resizable]
-      @borderless      = opts[:borderless]      if opts[:borderless]
-      @fullscreen      = opts[:fullscreen]      if opts[:fullscreen]
-    end
-
-    def _set_any_window_dimensions(opts)
-      @width.set opts[:width]           if opts[:width]
-      @height.set opts[:height]          if opts[:height]
-      @viewport_width  = opts[:viewport_width]  if opts[:viewport_width]
-      @viewport_height = opts[:viewport_height] if opts[:viewport_height]
-      @highdpi         = opts[:highdpi] unless opts[:highdpi].nil?
-    end
-
-    def _handle_key_down(type, key)
-      # For class pattern
-      @keys_down << key if !@using_dsl && !(@keys_down.include? key)
-
-      # Call event handler
-      e = KeyEvent.new(type, key)
-      c = @keyboard_current_object
-      while c
-          c.emit :key_down, e
-          c = c.parent
+      def _set_any_window_properties(opts)
+        @background = Color.new(opts[:background]) if Color.valid? opts[:background]
+        @title           = opts[:title]           if opts[:title]
+        @icon            = opts[:icon]            if opts[:icon]
+        @resizable       = opts[:resizable]       if opts[:resizable]
+        @borderless      = opts[:borderless]      if opts[:borderless]
+        @fullscreen      = opts[:fullscreen]      if opts[:fullscreen]
       end
-    end
 
-    def _handle_key_held(type, key)
-      # For class pattern
-      @keys_down << key if !@using_dsl && !(@keys_down.include? key)
-
-      # Call event handler
-      e = KeyEvent.new(type, key)
-      c = @keyboard_current_object
-      while c
-          c.emit :key_held, e
-          c = c.parent
+      def _set_any_window_dimensions(opts)
+        @width.set opts[:width] if opts[:width]
+        @height.set opts[:height]          if opts[:height]
+        @viewport_width  = opts[:viewport_width]  if opts[:viewport_width]
+        @viewport_height = opts[:viewport_height] if opts[:viewport_height]
+        @highdpi         = opts[:highdpi] unless opts[:highdpi].nil?
       end
-      if @key_typer.type key
+
+      def _handle_key_down(type, key)
+        # For class pattern
+        @keys_down << key if !@using_dsl && !(@keys_down.include? key)
+
+        # Call event handler
+        e = KeyEvent.new(type, key)
         c = @keyboard_current_object
         while c
-            c.emit :key_type, e
-            c = c.parent
+          c.emit :key_down, e
+          c = c.parent
         end
       end
-    end
 
-    def _handle_key_up(type, key)
-      # For class pattern
-      @keys_down.delete(key) if !@using_dsl && (@keys_down.include? key)
+      def _handle_key_held(type, key)
+        # For class pattern
+        @keys_down << key if !@using_dsl && !(@keys_down.include? key)
 
-      # Call event handler
-      e = KeyEvent.new(type, key)
-      c = @keyboard_current_object
-      while c
+        # Call event handler
+        e = KeyEvent.new(type, key)
+        c = @keyboard_current_object
+        while c
+          c.emit :key_held, e
+          c = c.parent
+        end
+        if @key_typer.type key
+          c = @keyboard_current_object
+          while c
+            c.emit :key_type, e
+            c = c.parent
+          end
+        end
+      end
+
+      def _handle_key_up(type, key)
+        # For class pattern
+        @keys_down.delete(key) if !@using_dsl && (@keys_down.include? key)
+
+        # Call event handler
+        e = KeyEvent.new(type, key)
+        c = @keyboard_current_object
+        while c
           c.emit :key_up, e
           c = c.parent
+        end
+        @key_typer.up key
       end
-      @key_typer.up key
-    end
 
-    def _handle_key_text(type, text)
-
-      # Call event handler
-      e = TextEvent.new(type, text.force_encoding('utf-8'))
-      c = @keyboard_current_object
-      while c
+      def _handle_key_text(type, text)
+        # Call event handler
+        e = TextEvent.new(type, text.force_encoding('utf-8'))
+        c = @keyboard_current_object
+        while c
           c.emit :key_text, e
           c = c.parent
+        end
       end
-    end
 
-    class KeyTyper
-      def initialize(entity)
+      class KeyTyper
+        def initialize(entity)
           @entity = entity
           @functional_keys = {
-              'left shift' => true,
-              'left ctrl' => true,
-              'left alt' => true,
-              'right shift' => true,
-              'right ctrl' => true,
-              'right alt' => true
+            'left shift' => true,
+            'left ctrl' => true,
+            'left alt' => true,
+            'right shift' => true,
+            'right ctrl' => true,
+            'right alt' => true
           }.freeze
           @helds = {}
-      end
+        end
 
-      def type(key)
+        def type(key)
           return if @functional_keys[key]
+
           h = (@helds[key] ||= 0)
           @helds[key] = h + 1
           return h == 0 || (h > 10 && h % 3 == 0)
-      end
+        end
 
-      def up(key)
-        @helds[key] = 0
-      end
-    end
-
-
-    def _handle_mouse_down(type, button, x, y)
-      # For class pattern
-      @mouse_buttons_down << button if !@using_dsl && !(@mouse_buttons_down.include? button)
-
-      # Call event handler
-      e = MouseEvent.new(type, button, nil, x, y, nil, nil)
-      @mouse_current.lineage.each{_1.emit :mouse_down, e}
-    end
-
-    def _handle_mouse_up(type, button, x, y)
-      # For class pattern
-      @mouse_buttons_up << button if !@using_dsl && !(@mouse_buttons_up.include? button)
-
-      # Call event handler
-      e = MouseEvent.new(type, button, nil, x, y, nil, nil)
-      @mouse_current.lineage.each{_1.emit :mouse_up, e}
-    end
-
-    def _handle_mouse_scroll(type, direction, delta_x, delta_y)
-      # For class pattern
-      unless @using_dsl
-        @mouse_scroll_event     = true
-        @mouse_scroll_direction = direction
-        @mouse_scroll_delta_x   = delta_x
-        @mouse_scroll_delta_y   = delta_y
-      end
-
-      # Call event handler
-      e = MouseEvent.new(type, nil, direction, nil, nil, delta_x, delta_y)
-      @mouse_current.lineage.each{_1.emit :mouse_scroll, e}
-    end
-
-    def _handle_mouse_move(type, x, y, delta_x, delta_y)
-      # For class pattern
-      unless @using_dsl
-        @mouse_move_event   = true
-        @mouse_move_delta_x = delta_x
-        @mouse_move_delta_y = delta_y
-      end
-
-      # Call event handler
-      e = MouseEvent.new(type, nil, nil, x, y, delta_x, delta_y)
-      if @mouse_owner.contains?(x, y)
-        new_mouse_current = @mouse_owner.accept_mouse(e, nil)
-        if @mouse_current.nil?
-          new_mouse_current.lineage.each{_1.emit :mouse_in, e}
-          @mouse_current = new_mouse_current
-        elsif new_mouse_current != @mouse_current
-          mc_lineage = @mouse_current.lineage
-          nmc_lineage = new_mouse_current.lineage
-          i = mc_lineage.zip(nmc_lineage).index{|a, b| a != b}
-          mc_lineage[i..].reverse.each{_1.emit :mouse_out, e}
-          mc_lineage[...i].each{_1.emit :mouse_move, e}
-          nmc_lineage[i..].each{_1.emit :mouse_in, e}
-          @mouse_current = new_mouse_current
-        else
-          @mouse_current.lineage.each{_1.emit :mouse_move, e}
+        def up(key)
+          @helds[key] = 0
         end
       end
-    end
 
-    def _handle_controller_axis(which, axis, value)
-      # For class pattern
-      unless @using_dsl
-        @controller_id = which
-        @controller_axes_moved << axis unless @controller_axes_moved.include? axis
-        _set_controller_axis_value axis, value
+      def _handle_mouse_down(type, button, x, y)
+        # For class pattern
+        @mouse_buttons_down << button if !@using_dsl && !(@mouse_buttons_down.include? button)
+
+        # Call event handler
+        e = MouseEvent.new(type, button, nil, x, y, nil, nil)
+        @mouse_current.lineage.each { _1.emit :mouse_down, e }
       end
 
-      # Call event handler
-      emit :controller_axis, ControllerAxisEvent.new(which, axis, value)
-    end
+      def _handle_mouse_up(type, button, x, y)
+        # For class pattern
+        @mouse_buttons_up << button if !@using_dsl && !(@mouse_buttons_up.include? button)
 
-    def _set_controller_axis_value(axis, value)
-      case axis
-      when :left_x
-        @controller_axis_left_x = value
-      when :left_y
-        @controller_axis_left_y = value
-      when :right_x
-        @controller_axis_right_x = value
-      when :right_y
-        @controller_axis_right_y = value
-      end
-    end
-
-    def _handle_controller_button_down(which, button)
-      # For class pattern
-      unless @using_dsl
-        @controller_id = which
-        @controller_buttons_down << button unless @controller_buttons_down.include? button
+        # Call event handler
+        e = MouseEvent.new(type, button, nil, x, y, nil, nil)
+        @mouse_current.lineage.each { _1.emit :mouse_up, e }
       end
 
-      # Call event handler
-      emit :controller_button_down, ControllerButtonEvent.new(which, button)
-    end
+      def _handle_mouse_scroll(type, direction, delta_x, delta_y)
+        # For class pattern
+        unless @using_dsl
+          @mouse_scroll_event     = true
+          @mouse_scroll_direction = direction
+          @mouse_scroll_delta_x   = delta_x
+          @mouse_scroll_delta_y   = delta_y
+        end
 
-    def _handle_controller_button_up(which, button)
-      # For class pattern
-      unless @using_dsl
-        @controller_id = which
-        @controller_buttons_up << button unless @controller_buttons_up.include? button
+        # Call event handler
+        e = MouseEvent.new(type, nil, direction, nil, nil, delta_x, delta_y)
+        @mouse_current.lineage.each { _1.emit :mouse_scroll, e }
       end
 
-      # Call event handler
-      emit :controller_button_up, ControllerButtonEvent.new(which, button)
-    end
+      def _handle_mouse_move(type, x, y, delta_x, delta_y)
+        # For class pattern
+        unless @using_dsl
+          @mouse_move_event   = true
+          @mouse_move_delta_x = delta_x
+          @mouse_move_delta_y = delta_y
+        end
 
-    # --- start exception
-    # Exception from lint check for this method only
-    #
-    # rubocop:disable Lint/RescueException
-    # rubocop:disable Security/Eval
-    def _handle_console_input
-      cmd = $stdin.gets
-      begin
-        res = eval(cmd, TOPLEVEL_BINDING)
-        $stdout.puts "=> #{res.inspect}"
-        $stdout.flush
-      rescue SyntaxError => e
-        $stdout.puts e
-        $stdout.flush
-      rescue Exception => e
-        $stdout.puts e
-        $stdout.flush
+        # Call event handler
+        e = MouseEvent.new(type, nil, nil, x, y, delta_x, delta_y)
+        if @mouse_owner.contains?(x, y)
+          new_mouse_current = @mouse_owner.accept_mouse(e, nil)
+          if @mouse_current.nil?
+            new_mouse_current.lineage.each { _1.emit :mouse_in, e }
+            @mouse_current = new_mouse_current
+          elsif new_mouse_current != @mouse_current
+            mc_lineage = @mouse_current.lineage
+            nmc_lineage = new_mouse_current.lineage
+            i = mc_lineage.zip(nmc_lineage).index { |a, b| a != b }
+            mc_lineage[i..].reverse.each { _1.emit :mouse_out, e }
+            mc_lineage[...i].each { _1.emit :mouse_move, e }
+            nmc_lineage[i..].each { _1.emit :mouse_in, e }
+            @mouse_current = new_mouse_current
+          else
+            @mouse_current.lineage.each { _1.emit :mouse_move, e }
+          end
+        end
       end
-    end
-    # rubocop:enable Lint/RescueException
-    # rubocop:enable Security/Eval
-    # ---- end exception
 
-    def _clear_event_stores
-      @mouse_buttons_down.clear
-      @mouse_buttons_up.clear
-      @mouse_scroll_event = false
-      @mouse_move_event = false
-      @controller_axes_moved.clear
-      @controller_buttons_down.clear
-      @controller_buttons_up.clear
-    end
+      def _handle_controller_axis(which, axis, value)
+        # For class pattern
+        unless @using_dsl
+          @controller_id = which
+          @controller_axes_moved << axis unless @controller_axes_moved.include? axis
+          _set_controller_axis_value axis, value
+        end
 
-    def _init_window_defaults
-      # Window background color
-      @background = Color.new([0.0, 0.0, 0.0, 1.0])
+        # Call event handler
+        emit :controller_axis, ControllerAxisEvent.new(which, axis, value)
+      end
 
-      # Window icon
-      @icon = nil
+      def _set_controller_axis_value(axis, value)
+        case axis
+        when :left_x
+          @controller_axis_left_x = value
+        when :left_y
+          @controller_axis_left_y = value
+        when :right_x
+          @controller_axis_right_x = value
+        when :right_y
+          @controller_axis_right_y = value
+        end
+      end
 
-      # Window characteristics
-      @resizable = false
-      @borderless = false
-      @fullscreen = false
-      @highdpi = false
+      def _handle_controller_button_down(which, button)
+        # For class pattern
+        unless @using_dsl
+          @controller_id = which
+          @controller_buttons_down << button unless @controller_buttons_down.include? button
+        end
 
-      # Size of the window's viewport (the drawable area)
-      @viewport_width = nil
-      @viewport_height = nil
+        # Call event handler
+        emit :controller_button_down, ControllerButtonEvent.new(which, button)
+      end
 
-      # Size of the computer's display
-      @display_width = nil
-      @display_height = nil
-    end
+      def _handle_controller_button_up(which, button)
+        # For class pattern
+        unless @using_dsl
+          @controller_id = which
+          @controller_buttons_up << button unless @controller_buttons_up.include? button
+        end
 
-    def _init_event_stores
-      _init_key_event_stores
-      _init_mouse_event_stores
-      _init_controller_event_stores
-    end
+        # Call event handler
+        emit :controller_button_up, ControllerButtonEvent.new(which, button)
+      end
 
-    def _init_key_event_stores
-      # Event stores for class pattern
-      @keys_down = []
-    end
+      # --- start exception
+      # Exception from lint check for this method only
+      #
+      # rubocop:disable Lint/RescueException
+      # rubocop:disable Security/Eval
+      def _handle_console_input
+        cmd = $stdin.gets
+        begin
+          res = eval(cmd, TOPLEVEL_BINDING)
+          $stdout.puts "=> #{res.inspect}"
+          $stdout.flush
+        rescue SyntaxError => e
+          $stdout.puts e
+          $stdout.flush
+        rescue Exception => e
+          $stdout.puts e
+          $stdout.flush
+        end
+      end
+      # rubocop:enable Lint/RescueException
+      # rubocop:enable Security/Eval
+      # ---- end exception
 
-    def _init_mouse_event_stores
-      @mouse_buttons_down = []
-      @mouse_buttons_up   = []
-      @mouse_scroll_event     = false
-      @mouse_scroll_direction = nil
-      @mouse_scroll_delta_x   = 0
-      @mouse_scroll_delta_y   = 0
-      @mouse_move_event   = false
-      @mouse_move_delta_x = 0
-      @mouse_move_delta_y = 0
-    end
+      def _clear_event_stores
+        @mouse_buttons_down.clear
+        @mouse_buttons_up.clear
+        @mouse_scroll_event = false
+        @mouse_move_event = false
+        @controller_axes_moved.clear
+        @controller_buttons_down.clear
+        @controller_buttons_up.clear
+      end
 
-    def _init_controller_event_stores
-      @controller_id = nil
-      @controller_axes_moved   = []
-      @controller_axis_left_x  = 0
-      @controller_axis_left_y  = 0
-      @controller_axis_right_x = 0
-      @controller_axis_right_y = 0
-      @controller_buttons_down = []
-      @controller_buttons_up   = []
-    end
+      def _init_window_defaults
+        # Window background color
+        @background = Color.new([0.0, 0.0, 0.0, 1.0])
 
-    def _init_event_registrations
-      # Mouse X and Y position in the window
-      @mouse_x = pot 0
-      @mouse_y = pot 0
+        # Window icon
+        @icon = nil
 
-      # Controller axis and button mappings file
-      @controller_mappings = "#{File.expand_path('~')}/.ruby2d/controllers.txt"
-    end
+        # Window characteristics
+        @resizable = false
+        @borderless = false
+        @fullscreen = false
+        @highdpi = false
 
-    
+        # Size of the window's viewport (the drawable area)
+        @viewport_width = nil
+        @viewport_height = nil
 
-    def _init_procs_dsl_console
-    
-      # Detect if window is being used through the DSL or as a class instance
-      @using_dsl = !(method(:update).parameters.empty? || method(:render).parameters.empty?)
+        # Size of the computer's display
+        @display_width = nil
+        @display_height = nil
+      end
 
-      # Whether diagnostic messages should be printed
-      @diagnostics = false
+      def _init_event_stores
+        _init_key_event_stores
+        _init_mouse_event_stores
+        _init_controller_event_stores
+      end
 
-      # Console mode, enabled at command line
-      @console = if RUBY_ENGINE == 'ruby'
-                   ENV['RUBY2D_ENABLE_CONSOLE'] == 'true'
-                 else
-                   false
-                 end
-    end
+      def _init_key_event_stores
+        # Event stores for class pattern
+        @keys_down = []
+      end
+
+      def _init_mouse_event_stores
+        @mouse_buttons_down = []
+        @mouse_buttons_up   = []
+        @mouse_scroll_event     = false
+        @mouse_scroll_direction = nil
+        @mouse_scroll_delta_x   = 0
+        @mouse_scroll_delta_y   = 0
+        @mouse_move_event   = false
+        @mouse_move_delta_x = 0
+        @mouse_move_delta_y = 0
+      end
+
+      def _init_controller_event_stores
+        @controller_id = nil
+        @controller_axes_moved   = []
+        @controller_axis_left_x  = 0
+        @controller_axis_left_y  = 0
+        @controller_axis_right_x = 0
+        @controller_axis_right_y = 0
+        @controller_buttons_down = []
+        @controller_buttons_up   = []
+      end
+
+      def _init_event_registrations
+        # Mouse X and Y position in the window
+        @mouse_x = pot 0
+        @mouse_y = pot 0
+
+        # Controller axis and button mappings file
+        @controller_mappings = "#{File.expand_path('~')}/.ruby2d/controllers.txt"
+      end
+
+      def _init_procs_dsl_console
+        # Detect if window is being used through the DSL or as a class instance
+        @using_dsl = !(method(:update).parameters.empty? || method(:render).parameters.empty?)
+
+        # Whether diagnostic messages should be printed
+        @diagnostics = false
+
+        # Console mode, enabled at command line
+        @console = if RUBY_ENGINE == 'ruby'
+          ENV['RUBY2D_ENABLE_CONSOLE'] == 'true'
+        else
+          false
+        end
+      end
   end
 end

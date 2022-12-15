@@ -7,8 +7,8 @@ module Ruby2D
   module Entity
     include CommunicatingVesselSystem
     attr_accessor :parent, :nanny
-    
-    def emit(type, event = nil)  
+
+    def emit(type, event = nil)
     end
 
     def contains?(x, y)

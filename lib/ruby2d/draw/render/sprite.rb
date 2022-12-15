@@ -207,68 +207,68 @@ module Ruby2D
 
     private
 
-    # Reset the playing animation to the first frame
-    def _reset_playing_animation
-      frames = @animations[@playing_animation]
-      case frames
-      # When animation is a range, play through frames horizontally
-      when Range
-        @first_frame   = frames.first || @defaults[:frame]
-        @current_frame = frames.first || @defaults[:frame]
-        @last_frame    = frames.last
-      # When array...
-      when Array
-        @first_frame   = 0
-        @current_frame = 0
-        @last_frame    = frames.length - 1
+      # Reset the playing animation to the first frame
+      def _reset_playing_animation
+        frames = @animations[@playing_animation]
+        case frames
+        # When animation is a range, play through frames horizontally
+        when Range
+          @first_frame   = frames.first || @defaults[:frame]
+          @current_frame = frames.first || @defaults[:frame]
+          @last_frame    = frames.last
+        # When array...
+        when Array
+          @first_frame   = 0
+          @current_frame = 0
+          @last_frame    = frames.length - 1
+        end
       end
-    end
 
-    # Set the current frame based on the region/portion of image
-    def _set_explicit_frame(frame)
-      @clip_x      = frame[:x]      || @defaults[:clip_x]
-      @clip_y      = frame[:y]      || @defaults[:clip_y]
-      @clip_width  = frame[:width]  || @defaults[:clip_width]
-      @clip_height = frame[:height] || @defaults[:clip_height]
-      @frame_time  = frame[:time]   || @defaults[:frame_time]
-    end
+      # Set the current frame based on the region/portion of image
+      def _set_explicit_frame(frame)
+        @clip_x      = frame[:x]      || @defaults[:clip_x]
+        @clip_y      = frame[:y]      || @defaults[:clip_y]
+        @clip_width  = frame[:width]  || @defaults[:clip_width]
+        @clip_height = frame[:height] || @defaults[:clip_height]
+        @frame_time  = frame[:time]   || @defaults[:frame_time]
+      end
 
-    # initialize texture and clipping, called by constructor
-    def _setup_texture_and_clip_box(atlas, clip_x, clip_y, clip_width, clip_height)
-      # Initialize the sprite texture
-      # Consider input pixmap atlas if supplied to load image file
-      @texture = Image.load_image_as_texture @path, atlas: atlas
-      @img_width = @texture.width
-      @img_height = @texture.height
+      # initialize texture and clipping, called by constructor
+      def _setup_texture_and_clip_box(atlas, clip_x, clip_y, clip_width, clip_height)
+        # Initialize the sprite texture
+        # Consider input pixmap atlas if supplied to load image file
+        @texture = Image.load_image_as_texture @path, atlas: atlas
+        @img_width = @texture.width
+        @img_height = @texture.height
 
-      # The clipping rectangle
-      @clip_x = clip_x
-      @clip_y = clip_y
-      @clip_width  = clip_width  || @img_width
-      @clip_height = clip_height || @img_height
-    end
+        # The clipping rectangle
+        @clip_x = clip_x
+        @clip_y = clip_y
+        @clip_width  = clip_width  || @img_width
+        @clip_height = clip_height || @img_height
+      end
 
-    # initialize animation, called by constructor
-    def _setup_animation
-      @start_time = 0.0
-      @playing = false
-      @last_frame = 0
-      @done_proc = nil
+      # initialize animation, called by constructor
+      def _setup_animation
+        @start_time = 0.0
+        @playing = false
+        @last_frame = 0
+        @done_proc = nil
 
-      # Set the default animation
-      @animations[:default] = 0..(@img_width / @clip_width) - 1
+        # Set the default animation
+        @animations[:default] = 0..(@img_width / @clip_width) - 1
 
-      # Set the sprite defaults
-      @defaults = {
-        animation: @animations.first[0],
-        frame: @current_frame,
-        frame_time: @frame_time,
-        clip_x: @clip_x,
-        clip_y: @clip_y,
-        clip_width: @clip_width,
-        clip_height: @clip_height,
-        loop: @loop
-      }
-    end
+        # Set the sprite defaults
+        @defaults = {
+          animation: @animations.first[0],
+          frame: @current_frame,
+          frame_time: @frame_time,
+          clip_x: @clip_x,
+          clip_y: @clip_y,
+          clip_width: @clip_width,
+          clip_height: @clip_height,
+          loop: @loop
+        }
+      end
   end
 end

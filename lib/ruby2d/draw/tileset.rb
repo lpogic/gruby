@@ -102,40 +102,40 @@ module Ruby2D
 
     private
 
-    def _calculate_tile_crop(tile_def)
-      # Re-use if crop has already been calculated
-      return tile_def.fetch(:scaled_crop) if tile_def.key?(:scaled_crop)
+      def _calculate_tile_crop(tile_def)
+        # Re-use if crop has already been calculated
+        return tile_def.fetch(:scaled_crop) if tile_def.key?(:scaled_crop)
 
-      # Calculate the crop for each tile definition the first time a tile
-      # is placed/set, so that we can later re-use when placing tiles,
-      # avoiding creating the crop object for every placement.
-      tile_def[:scaled_crop] = {
-        x: @scaled_padding + (tile_def.fetch(:x) * (@scaled_spacing + @scaled_tile_width)),
-        y: @scaled_padding + (tile_def.fetch(:y) * (@scaled_spacing + @scaled_tile_height)),
-        width: @scaled_tile_width,
-        height: @scaled_tile_height,
-        image_width: @scaled_width,
-        image_height: @scaled_height
-      }.freeze
-    end
-
-    def _calculate_scaled_sizes
-      @scaled_padding = @padding * @scale
-      @scaled_spacing = @spacing * @scale
-      @scaled_tile_width = @tile_width * @scale
-      @scaled_tile_height = @tile_height * @scale
-      @scaled_width = @width * @scale
-      @scaled_height = @height * @scale
-    end
-
-    def render
-      color = defined?(@color) ? @color : DEFAULT_COLOR
-      @tiles.each do |placement|
-        vertices = placement.fetch(:vertices)
-        @texture.draw(
-          vertices.coordinates, vertices.texture_coordinates, color
-        )
+        # Calculate the crop for each tile definition the first time a tile
+        # is placed/set, so that we can later re-use when placing tiles,
+        # avoiding creating the crop object for every placement.
+        tile_def[:scaled_crop] = {
+          x: @scaled_padding + (tile_def.fetch(:x) * (@scaled_spacing + @scaled_tile_width)),
+          y: @scaled_padding + (tile_def.fetch(:y) * (@scaled_spacing + @scaled_tile_height)),
+          width: @scaled_tile_width,
+          height: @scaled_tile_height,
+          image_width: @scaled_width,
+          image_height: @scaled_height
+        }.freeze
       end
-    end
+
+      def _calculate_scaled_sizes
+        @scaled_padding = @padding * @scale
+        @scaled_spacing = @spacing * @scale
+        @scaled_tile_width = @tile_width * @scale
+        @scaled_tile_height = @tile_height * @scale
+        @scaled_width = @width * @scale
+        @scaled_height = @height * @scale
+      end
+
+      def render
+        color = defined?(@color) ? @color : DEFAULT_COLOR
+        @tiles.each do |placement|
+          vertices = placement.fetch(:vertices)
+          @texture.draw(
+            vertices.coordinates, vertices.texture_coordinates, color
+          )
+        end
+      end
   end
 end

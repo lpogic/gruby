@@ -94,36 +94,36 @@ module Ruby2D
 
     private
 
-    def triangle_area(x1, y1, x2, y2, x3, y3)
-      (x1 * y2 + x2 * y3 + x3 * y1 - x3 * y2 - x1 * y3 - x2 * y1).abs / 2
-    end
+      def triangle_area(x1, y1, x2, y2, x3, y3)
+        (x1 * y2 + x2 * y3 + x3 * y1 - x3 * y2 - x1 * y3 - x2 * y1).abs / 2
+      end
 
-    # Return colours as a memoized array of 3 x colour component arrays
-    def color_components
-      check_if_opacity_changed
-      @color_components ||= if @color.is_a? Color::Set
-                              # Extract colour component arrays; see +def color=+ where colour set
-                              # size is enforced
-                              [
-                                @color[0].to_a, @color[1].to_a, @color[2].to_a
-                              ]
-                            else
-                              # All vertex colours are the same
-                              c_a = @color.to_a
-                              [
-                                c_a, c_a, c_a
-                              ]
-                            end
-    end
+      # Return colours as a memoized array of 3 x colour component arrays
+      def color_components
+        check_if_opacity_changed
+        @color_components ||= if @color.is_a? Color::Set
+          # Extract colour component arrays; see +def color=+ where colour set
+          # size is enforced
+          [
+            @color[0].to_a, @color[1].to_a, @color[2].to_a
+          ]
+        else
+          # All vertex colours are the same
+          c_a = @color.to_a
+          [
+            c_a, c_a, c_a
+          ]
+        end
+      end
 
-    # Invalidate memoized colour components if opacity has been changed via +color=+
-    def check_if_opacity_changed
-      @color_components = nil if @color_components && @color_components.first[3] != @color.opacity
-    end
+      # Invalidate memoized colour components if opacity has been changed via +color=+
+      def check_if_opacity_changed
+        @color_components = nil if @color_components && @color_components.first[3] != @color.opacity
+      end
 
-    # Invalidate the memoized colour components. Called when Line's colour is changed
-    def invalidate_color_components
-      @color_components = nil
-    end
+      # Invalidate the memoized colour components. Called when Line's colour is changed
+      def invalidate_color_components
+        @color_components = nil
+      end
   end
 end

@@ -3,6 +3,7 @@
 # Ruby2D module and native extension loader
 unless RUBY_ENGINE == 'mruby'
   require 'ruby2d/communicating_vessel_system'
+  include Ruby2D::CommunicatingVesselSystem
   require 'ruby2d/planned'
   require 'ruby2d/cli/colorize'
   require 'ruby2d/exceptions'
@@ -11,8 +12,6 @@ unless RUBY_ENGINE == 'mruby'
   require 'ruby2d/compose/entity'
   require 'ruby2d/compose/cluster'
   require 'ruby2d/compose/arena'
-  require 'ruby2d/window'
-  require 'ruby2d/dsl'
   require 'ruby2d/draw/render/quad'
   require 'ruby2d/draw/render/line'
   require 'ruby2d/draw/render/circle'
@@ -38,5 +37,7 @@ unless RUBY_ENGINE == 'mruby'
   require 'ruby2d/compose/button'
   require 'ruby2d/compose/note'
   require 'ruby2d/compose/note_support'
+  require 'ruby2d/window'
+  require 'ruby2d/dsl'
   require 'ruby2d/ruby2d' # load native extension
 end

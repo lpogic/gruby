@@ -7,6 +7,8 @@ AllCops:
     - 'ext/**/*'
     - '**/Rakefile'
     - '**/*.gemspec'
+  NewCops: enable
+  TargetRubyVersion: 3.1
 
 Naming/MethodParameterName:
   inherit_mode:
@@ -43,4 +45,19 @@ Metrics/MethodLength:
 
 Metrics/ParameterLists:
   Max: 16
+
+Layout/LineLength:
+  Max: 200
+
+Layout/IndentationConsistency:
+  EnforcedStyle: indented_internal_methods
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+Layout/MultilineAssignmentLayout:
+  EnforcedStyle: same_line
+
+Layout/EndAlignment:
+  EnforcedStyleAlignWith: variable
   

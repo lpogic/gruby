@@ -14,54 +14,54 @@ module Ruby2D
     def initialize(text, size: 20, style: nil, font: nil, rotate: 0, color: nil, **na)
       @x = pot 0
       @y = pot 0
-      @text = compot{_1.to_s}.let(text)
+      @text = compot { _1.to_s }.let(text)
       @size = pot.let size
       @rotate = rotate
-      @color = compot{Color.new _1}.let(color || 'white')
+      @color = compot { Color.new _1 }.let(color || 'white')
       @font_style = pot.let style
-      @font = compot(@size, @font_style){Font.load(Font.path(_3), _1, _2)}.let(font || Font.default)
+      @font = compot(@size, @font_style) { Font.load(Font.path(_3), _1, _2) }.let(font || Font.default)
 
       @texture_offset_x = pot 0
       @texture_offset_y = pot 0
       @texture = pot
-      @texture.let(@text, @font){create_texture(_1, _2, @texture.get)}
-      @width = pot.let @texture.as{_1.width}
-      @height = pot.let @font.as{_1.dimensions[:height]}
-      plan **na
+      @texture.let(@text, @font) { create_texture(_1, _2, @texture.get) }
+      @width = pot.let @texture.as { _1.width }
+      @height = pot.let @font.as { _1.dimensions[:height] }
+      plan(**na)
     end
 
     def _default_plan(x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil)
       if x
         @x.let x
       elsif left
-        let(left, width){_1 + _2 * 0.5} >> @x
+        let(left, width) { _1 + _2 * 0.5 } >> @x
       elsif right
-        let(right, width){_1 - _2 * 0.5} >> @x
+        let(right, width) { _1 - _2 * 0.5 } >> @x
       end
 
       if y
         @y.let y
       elsif top
-        let(top, height){_1 + _2 * 0.5} >> @y
+        let(top, height) { _1 + _2 * 0.5 } >> @y
       elsif bottom
-        let(bottom, height){_1 - _2 * 0.5} >> @y
+        let(bottom, height) { _1 - _2 * 0.5 } >> @y
       end
     end
 
     def _cvs_left
-      let(@x, @width){_1 - _2 * 0.5}
+      let(@x, @width) { _1 - _2 * 0.5 }
     end
 
     def _cvs_right
-      let(@x, @width){_1 + _2 * 0.5}
+      let(@x, @width) { _1 + _2 * 0.5 }
     end
 
     def _cvs_top
-      let(@y, @height){_1 - _2 * 0.5}
+      let(@y, @height) { _1 - _2 * 0.5 }
     end
 
     def _cvs_bottom
-      let(@y, @height){_1 + _2 * 0.5}
+      let(@y, @height) { _1 + _2 * 0.5 }
     end
 
     def draw(x:, y:, color:, rotate:)
@@ -97,9 +97,9 @@ module Ruby2D
 
     private
 
-    def create_texture(text, font, texture)
-      texture&.delete
-      Texture.new(*Text.ext_load_text(font.ttf_font, text))
-    end
+      def create_texture(text, font, texture)
+        texture&.delete
+        Texture.new(*Text.ext_load_text(font.ttf_font, text))
+      end
   end
 end

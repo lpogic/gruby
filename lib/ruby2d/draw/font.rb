@@ -41,6 +41,7 @@ module Ruby2D
       # @return [nil] if +font_name+ is unknown
       def path(font_name)
         return font_name if font_name.end_with? '.ttf'
+
         all_paths.find { |path| path.downcase.include?(font_name) }
       end
 
@@ -58,79 +59,79 @@ module Ruby2D
 
       private
 
-      # Get all fonts with full file paths
-      def all_paths
-        # memoize so we only calculate once
-        @all_paths ||= platform_font_paths
-      end
-
-      # Compute and return all platform font file paths, removing variants by style
-      def platform_font_paths
-        fonts = find_os_font_files.reject do |f|
-          f.downcase.include?('bold') ||
-            f.downcase.include?('italic')  ||
-            f.downcase.include?('oblique') ||
-            f.downcase.include?('narrow')  ||
-            f.downcase.include?('black')
+        # Get all fonts with full file paths
+        def all_paths
+          # memoize so we only calculate once
+          @all_paths ||= platform_font_paths
         end
-        fonts.sort_by { |f| f.downcase.chomp '.ttf' }
-      end
 
-      # Return all font files in the platform's font location
-      def find_os_font_files
-        if RUBY_ENGINE == 'mruby'
-          # MRuby does not have `Dir` defined
-          `find #{directory} -name *.ttf`.split("\n")
-        else
+        # Compute and return all platform font file paths, removing variants by style
+        def platform_font_paths
+          fonts = find_os_font_files.reject do |f|
+            f.downcase.include?('bold') ||
+              f.downcase.include?('italic')  ||
+              f.downcase.include?('oblique') ||
+              f.downcase.include?('narrow')  ||
+              f.downcase.include?('black')
+          end
+          fonts.sort_by { |f| f.downcase.chomp '.ttf' }
+        end
+
+        # Return all font files in the platform's font location
+        def find_os_font_files
+          if RUBY_ENGINE == 'mruby'
+            # MRuby does not have `Dir` defined
+            `find #{directory} -name *.ttf`.split("\n")
+          else
+            # If MRI and/or non-Bash shell (like cmd.exe)
+            Dir["#{directory}/**/*.ttf"]
+          end
+        end
+
+        # Mapping of OS names to platform-specific font file locations
+        OS_FONT_PATHS = {
+          macos: '/Library/Fonts',
+          linux: '/usr/share/fonts',
+          windows: 'C:/Windows/Fonts',
+          openbsd: '/usr/X11R6/lib/X11/fonts'
+        }.freeze
+
+        # Get the fonts directory for the current platform
+        def directory
           # If MRI and/or non-Bash shell (like cmd.exe)
-          Dir["#{directory}/**/*.ttf"]
+          # memoize so we only calculate once
+          @directory ||= OS_FONT_PATHS[ruby_platform_osname || sys_uname_osname]
         end
-      end
 
-      # Mapping of OS names to platform-specific font file locations
-      OS_FONT_PATHS = {
-        macos: '/Library/Fonts',
-        linux: '/usr/share/fonts',
-        windows: 'C:/Windows/Fonts',
-        openbsd: '/usr/X11R6/lib/X11/fonts'
-      }.freeze
+        # Uses RUBY_PLATFORM to identify OS
+        def ruby_platform_osname
+          return unless Object.const_defined? :RUBY_PLATFORM
 
-      # Get the fonts directory for the current platform
-      def directory
-        # If MRI and/or non-Bash shell (like cmd.exe)
-        # memoize so we only calculate once
-        @directory ||= OS_FONT_PATHS[ruby_platform_osname || sys_uname_osname]
-      end
-
-      # Uses RUBY_PLATFORM to identify OS
-      def ruby_platform_osname
-        return unless Object.const_defined? :RUBY_PLATFORM
-
-        case RUBY_PLATFORM
-        when /darwin/ # macOS
-          :macos
-        when /linux/
-          :linux
-        when /mingw/
-          :windows
-        when /openbsd/
-          :openbsd
+          case RUBY_PLATFORM
+          when /darwin/ # macOS
+            :macos
+          when /linux/
+            :linux
+          when /mingw/
+            :windows
+          when /openbsd/
+            :openbsd
+          end
         end
-      end
 
-      # Uses uname command to identify OS
-      def sys_uname_osname
-        uname = `uname`
-        if uname.include? 'Darwin' # macOS
-          :macos
-        elsif uname.include? 'Linux'
-          :linux
-        elsif uname.include? 'MINGW'
-          :windows
-        elsif uname.include? 'OpenBSD'
-          :openbsd
+        # Uses uname command to identify OS
+        def sys_uname_osname
+          uname = `uname`
+          if uname.include? 'Darwin' # macOS
+            :macos
+          elsif uname.include? 'Linux'
+            :linux
+          elsif uname.include? 'MINGW'
+            :windows
+          elsif uname.include? 'OpenBSD'
+            :openbsd
+          end
         end
-      end
     end
 
     # Private constructor, called internally using +Font.send(:new,...)+
@@ -149,7 +150,7 @@ module Ruby2D
     def size(text)
       w, h = *Font.ext_text_size(@ttf_font, text)
       return {
-        width: w, 
+        width: w,
         height: h
       }
     end
@@ -157,6 +158,7 @@ module Ruby2D
     def nearest(text, w)
       m = measure text, w
       return m[:count] if m[:count] >= text.length
+
       s = size text[..m[:count]]
       return w - m[:width] > s[:width] - w ? m[:count] + 1 : m[:count]
     end

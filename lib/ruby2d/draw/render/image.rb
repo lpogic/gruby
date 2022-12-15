@@ -18,10 +18,10 @@ module Ruby2D
     # @return [Texture] loaded
     def self.load_image_as_texture(path, atlas:)
       pixmap = if atlas
-                 atlas.load_and_keep_image(path, as: path)
-               else
-                 Pixmap.new path
-               end
+        atlas.load_and_keep_image(path, as: path)
+      else
+        Pixmap.new path
+      end
       pixmap.texture
     end
 

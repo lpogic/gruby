@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'ruby2d/core' unless RUBY_ENGINE == 'mruby'
 
 # Create 2D applications, games, and visualizations with ease. Just a few lines of code is enough to get started.
@@ -33,8 +34,8 @@ extend Ruby2D::DSL
 # --- end lint exception
 class Object
   def timems
-      now = Time.now
-      (now.to_i * 1e3 + now.usec / 1e3).to_i
+    now = Time.now
+    (now.to_i * 1e3 + now.usec / 1e3).to_i
   end
 
   def array
@@ -46,6 +47,6 @@ class Array
   alias old_include? include?
 
   def include?(*o)
-    o.all?{old_include? _1}
+    o.all? { old_include? _1 }
   end
 end

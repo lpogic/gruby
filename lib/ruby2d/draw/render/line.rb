@@ -9,7 +9,7 @@ module Ruby2D
     include Planned
 
     def initialize(x1: 0, y1: 0, x2: 100, y2: 100,
-                   t: nil, thick: nil, r: nil, round: nil, b: nil, border: nil, 
+                   t: nil, thick: nil, r: nil, round: nil, b: nil, border: nil,
                    color: 'white', border_color: 'black')
       @x1 = pot x1
       @y1 = pot y1
@@ -18,8 +18,8 @@ module Ruby2D
       @thick = pot.let thick || t || 6
       @round = pot.let round || r || 0
       @border = pot.let border || b || 0
-      @color = compot{Color.new _1} << color
-      @border_color = compot{Color.new _1} << border_color
+      @color = compot { Color.new _1 } << color
+      @border_color = compot { Color.new _1 } << border_color
     end
 
     cvs_reader :x1, :x2, :y1, :y2, :color, :border_color, :thick, :round, :border
@@ -61,17 +61,17 @@ module Ruby2D
     end
 
     def render
-      # p @x1.get.round, @y1.get.round, @x2.get.round, @y2.get.round, @thick.get.round, @round.get.round, @border.get.round, @color.get, @border_color.get
       self.class.ext_draw([
-                            @x1.get.round, @y1.get.round, @x2.get.round, @y2.get.round, @thick.get.round, @round.get.round, @border.get.round, *@color.get, *@border_color.get
+                            @x1.get.round, @y1.get.round, @x2.get.round, @y2.get.round, @thick.get.round,
+                            @round.get.round, @border.get.round, *@color.get, *@border_color.get
                           ])
     end
 
     private
 
-    # Calculate the distance between two points
-    def points_distance(x1, y1, x2, y2)
-      Math.sqrt((x1 - x2).abs2 + (y1 - y2).abs2)
-    end
+      # Calculate the distance between two points
+      def points_distance(x1, y1, x2, y2)
+        Math.sqrt((x1 - x2).abs2 + (y1 - y2).abs2)
+      end
   end
 end

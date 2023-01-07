@@ -3,7 +3,7 @@ module Ruby2D
     include CommunicatingVesselSystem
 
     def plan(*upr, **pr, &linker)
-      upr.each { pr[_1] ||= pot(send(_1), unique: false) }
+      upr.each { pr[_1] ||= pot(send(_1).get) }
       if block_given?
         linker.call(self, **pr)
       else

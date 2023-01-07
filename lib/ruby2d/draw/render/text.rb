@@ -64,15 +64,6 @@ module Ruby2D
       let(@y, @height) { _1 + _2 * 0.5 }
     end
 
-    def draw(x:, y:, color:, rotate:)
-      Window.render_ready_check
-
-      x ||= @rotate
-      color ||= [1.0, 1.0, 1.0, 1.0]
-
-      render(x: x, y: y, color: Color.new(color), rotate: rotate)
-    end
-
     def render(x: @x.get, y: @y.get, color: @color.get, rotate: @rotate)
       txtr = @texture.get
       tw = txtr.width
@@ -89,7 +80,7 @@ module Ruby2D
         x: tw / 2 - w / 2 + tox,
         y: th / 2 - txtr.height / 2 + toy
       }
-      vertices = Vertices.new((x - w / 2).round, (y + h / 2 - txtr.height).round, w, txtr.height, rotate, crop: crop)
+      vertices = Vertices.new((x - w / 2).floor, (y + h / 2 - txtr.height).floor, w, txtr.height, rotate)
       @texture.get.draw(
         vertices.coordinates, vertices.texture_coordinates, color
       )

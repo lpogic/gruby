@@ -1,6 +1,6 @@
 module Ruby2D
   class Arena < Cluster
-    def initialize(parent)
+    def init
       super
       @_top = self
     end
@@ -36,12 +36,12 @@ module Ruby2D
 
     def row(height = nil, **na, &b)
       na[:height] = height if height
-      append(Row.new(**na), **na, &b)
+      append(Row.new(self, **na), **na, &b)
     end
 
     def col(width = nil, **na, &b)
       na[:width] = width if width
-      append(Col.new(**na), **na, &b)
+      append(Col.new(self, **na), **na, &b)
     end
 
     def gap(size)
@@ -61,7 +61,7 @@ module Ruby2D
     end
 
     def rect(**ona)
-      append(new_rectangle(**ona), **ona)
+      append(new_rectangle(**ona, plan: false), **ona)
     end
 
     def circle(**ona)

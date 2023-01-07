@@ -18,8 +18,8 @@ module Ruby2D
 
     cvs_reader :hovered, :pressed
 
-    def initialize(parent, *una, accepts_keyboard: true, **na, &b)
-      @objects = arrpot
+    def initialize(parent, *una, **na, &b)
+      @objects = pot []
       @parent = parent
       @event_handlers = {}
       @pot_handlers = []
@@ -80,7 +80,7 @@ module Ruby2D
     end
 
     def care(*objects, nanny: false)
-      @objects.set { _1.union objects }
+      @objects.set { _1.union(objects) }
       objects.filter { _1.is_a? Entity }.each do |o|
         if nanny
           o.nanny = self
@@ -92,7 +92,7 @@ module Ruby2D
     end
 
     def leave(*objects)
-      @objects.set { _1.difference objects }
+      @objects.set { _1.difference(objects) }
       objects.filter { _1.is_a? Entity }.each do |o|
         o.nanny = nil if o.nanny == self
         o.parent = nil if o.parent == self
@@ -187,8 +187,8 @@ module Ruby2D
       plan[:height] || (plan.keys & [:y, :top, :bottom]).size > 1
     end
 
-    def new_button(text: 'Button', style: 'default', text_size: nil, text_color: nil, round: nil, 
-      r: nil, color: nil, border: nil, b: nil, border_color: nil, **plan, &on_click)
+    def new_button(text: 'Button', style: 'default', text_size: nil, text_color: nil, round: nil,
+                   r: nil, color: nil, border: nil, b: nil, border_color: nil, **plan, &on_click)
 
       btn = Button.new self, text: text, &on_click
       style = make_outfit btn, style
@@ -207,9 +207,9 @@ module Ruby2D
       btn
     end
 
-    def new_note(text: '', style: 'default', text_font: nil, text_size: nil, text_color: nil, 
-      round: nil, r: nil, color: nil, border: nil, b: nil, border_color: nil,
-      width_pad: nil, editable: nil, **plan, &on_click)
+    def new_note(text: '', style: 'default', text_font: nil, text_size: nil, text_color: nil,
+                 round: nil, r: nil, color: nil, border: nil, b: nil, border_color: nil,
+                 width_pad: nil, editable: nil, **plan, &on_click)
 
       tln = Note.new self, text: text, &on_click
       style = make_outfit tln, style

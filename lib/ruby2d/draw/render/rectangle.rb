@@ -13,19 +13,19 @@ module Ruby2D
 
     cvs_reader :left, :right, :top, :bottom, :x, :y, :width, :height
     def initialize(r: nil, round: nil, b: nil, border: nil,
-                   color: 'white', border_color: 'black', **na)
+                   color: 'white', border_color: 'black', plan: true, **na)
       super(r: r, round: round, b: b, border: border, color: color, border_color: border_color)
-      @width = pot.let na[:width] || 200
-      @height = pot.let na[:height] || 100
-      @x = pot.let na[:x] || 200
-      @y = pot.let na[:y] || 100
+      @width = pot 200
+      @height = pot 100
+      @x = pot 200
+      @y = pot 100
 
       let(@x, @y, @width, @height) do |x, y, w, h|
         d = w - h
         d < 0 ? [x, y - d * 0.5, x, y + d * 0.5, w] : [x - d * 0.5, y, x + d * 0.5, y, h]
       end >> [@x1, @y1, @x2, @y2, @thick]
 
-      plan(**na)
+      plan(**na) if plan
       @@instances += 1
     end
 

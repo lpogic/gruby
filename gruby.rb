@@ -96,33 +96,34 @@ on :key_down do |e|
   close if e.key == 'escape'
 end
 window.enable_tab_callback
+Pot.debug = true
 
 class ColRowContainer < Cluster
   def init(gap: 0, **ona)
     ona[:color] ||= 0
-    @body = new_rectangle(**ona)
-    care @body
+    care @body = new_rectangle(**ona)
     @gap = pot.let gap
   end
 
   def append(element, **plan)
-    gs = @grid.sector(@grid.cols.get.length - 1, @grid.rows.get.length - 1)
+    gs = @grid.sector(@grid.cols.get.length - 1, @grid.rows.get.length - 1, fixed: false)
     plan[:x] = gs.x unless plan_x_defined? plan
     plan[:y] = gs.y unless plan_y_defined? plan
     element.plan(**plan)
     care element
   end
 
-  delegate body: %w[fill plan left top right bottom x y width height color\=]
+  delegate body: %w[fill plan left top right bottom x y width height color round]
+  def body = @body
   attr_reader :grid
 end
 
 class Row < ColRowContainer
   def init(gap: 0, **ona)
     super
-    let(ona[:height] || 0, @objects) { [_1, _2.map { |o| o.height.get }.max].max } >> @body.height
-    @grid = Grid.new rows: [@body.height], x: @body.x, y: @body.y # left: @body.left, top: @body.top
-    @body.width = @grid.width
+    let(ona[:height] || 0, @objects.as { [_1 - [@body]] }.arrpot { _1.height }) { [_1, _2.max || 0].max } >> @body.height
+    @grid = Grid.new rows: [@body.height], x: @body.x, y: @body.y
+    @body.width << let(ona[:width] || 0, @grid.width) { [_1, _2].max }
   end
 
   def append(element, **plan)
@@ -144,9 +145,9 @@ end
 class Col < ColRowContainer
   def init(gap: 0, **ona)
     super
-    let(ona[:width] || 0, @objects) { [_1, _2.map { |o| o.width.get }.max].max } >> @body.width
+    let(ona[:width] || 0, @objects.as { [_1 - [@body]] }.arrpot { _1.width }) { [_1, _2.max || 0].max } >> @body.width
     @grid = Grid.new cols: [@body.width], x: @body.x, y: @body.y
-    @body.height = @grid.height
+    @body.height << @grid.height
   end
 
   def append(element, **plan)
@@ -175,7 +176,7 @@ class Gap
 end
 
 class Form < Arena
-  def initialize(**plan)
+  def init(**plan)
     super()
     @body = new_rectangle(**plan)
   end
@@ -204,41 +205,48 @@ class PersonForm < Form
   def build
     margin = pot 8
     nw = pot 80
-    @c0 = col color: [0.5, 0.5, 0.5], round: 8, gap: 6 do |c|
-      gap margin
-      row gap: 5 do
+    @c0 = col do |c|
+       c1 = col color: 'black', round: 8, gap: 5 do
         gap margin
-        col width: nw do text 'Imię:', right: _1.right end
-        @name = note
-        gap margin
+        row gap: 5 do
+          gap margin
+          col width: nw do text 'Imię:', right: _1.right end
+          @name = note
+          gap margin
+        end
+        row gap: 5 do
+          gap margin
+          col width: nw do text 'Nazwisko:', right: _1.right end
+          @surname = note
+          gap margin
+        end
+        row gap: 5 do
+          gap margin
+          col width: nw do text 'Wiek:', right: _1.right end
+          @age = note
+          gap margin
+        end
+        row gap: 5, left: c.left do
+          gap margin
+          col width: nw do text 'Płeć:', right: _1.right end
+          button 'Facet'
+          button 'Babka'
+          gap margin
+        end
+        gap 8
       end
-      row gap: 5 do
-        gap margin
-        col width: nw do text 'Nazwisko:', right: _1.right end
-        @surname = note
-        gap margin
+      @c = col width: c1.width, color: 'yellow', round: 8, gap: 5 do |r|
+        col right: r.right do
+          gap margin
+          row gap: 6 do
+            gap margin
+            @save = button 'Zapisz'
+            @cancel = button 'Anuluj'
+            gap margin
+          end
+          gap margin
+        end
       end
-      row gap: 5 do
-        gap margin
-        col width: nw do text 'Wiek:', right: _1.right end
-        @age = note
-        gap margin
-      end
-      row gap: 5, left: c.left do
-        gap margin
-        col width: nw do text 'Płeć:', right: _1.right end
-        button 'Facet'
-        button 'Kobitka'
-        gap margin
-      end
-      gap 8
-      @c = row gap: 5, right: c.right do
-        gap margin
-        @save = button 'Zapisz'
-        @cancel = button 'Anuluj'
-        gap margin
-      end
-      gap margin
     end
 
     @save.on :click do
@@ -249,7 +257,7 @@ class PersonForm < Form
       @name.text.set ''
       @surname.text.set ''
       @age.text.set ''
-      margin.set { _1 + 1 }
+      margin.set{_1 + 1}
     end
   end
 end
@@ -257,81 +265,32 @@ end
 class OtherForm < Form
   def build
     margin = pot 4
-    col color: [0.5, 0.5, 0.5], round: 12 do |_c|
-      @ok = button 'OKI'
+    c = col color: [0.5, 0.5, 0.5], round: 12 do |_c|
       gap margin
-      @dok = button 'DOKI'
+      @r = row do
+        gap margin
+        @ok = button '+'
+        gap 4
+        @dok = button '-+'
+        gap margin
+      end
+      gap margin
     end
-
-    p @ok.top.get
-    p @dok.top.get
 
     @ok.on :click do
-      margin.set { _1 + 2 }
+      margin.set { _1 + 1 }
+    end
+
+    @dok.on :click do
+      margin.set { _1 - 1 }
     end
   end
 end
 
-# f = OtherForm.new x: window.x, y: window.y
-# f = PersonForm.new x: window.x, y: window.y
-# place f
-
-n = note text: 'DODODS'
-n1 = note x: 300, y: 300, editable: false
-ns = note_support
-sgs = arrpot << (1..50).to_a
-on n.keyboard_current do |kc|
-  ns.accept_subject nil unless kc
-end
-n.on :click do
-  if ns.subject == n
-  # ns.accept_subject nil
-  else
-    ns.accept_subject n
-    ns.suggestions << sgs
-    ns.on_option_selected do |o|
-      n.text << n.text.get.then { _1 + (_1 != '' ? ', ' : '') + o.to_s }
-      sgs.set do
-        _1.delete(o)
-        _1
-      end
-      # n.text << o
-      # ns.accept_subject nil
-    end
-  end
-end
-n.on :key_type do |e|
-  if e.key == 'down' || e.key == 'up'
-    if ns.subject == n
-      ns.hover_down if e.key == 'down'
-      ns.hover_up if e.key == 'up'
-    else
-      ns.accept_subject n
-      ns.suggestions << sgs
-      ns.on_option_selected do |o|
-        n.text.set o
-        ns.accept_subject nil
-      end
-    end
-  end
-end
-n.on :key_down do |e|
-  ns.press_hovered if e.key == 'return' && (ns.subject == n)
-end
-n.on :key_up do |e|
-  ns.release_pressed if e.key == 'return' && (ns.subject == n)
-end
-on n1.keyboard_current do |kc|
-  if kc
-    ns.accept_subject n1
-    ns.suggestions.set %w[1 2 3]
-    ns.on_option_selected do |o|
-      n1.text.set o
-      ns.accept_subject nil
-    end
-  else
-    ns.accept_subject nil
-  end
-end
-
+# f = OtherForm.new self, x: window.x, y: window.y
+f = PersonForm.new self, x: window.x, y: window.y
+care f
+# r = rect round: 8, x: window.mouse_x, y: window.mouse_y
+# l = Line.new(x1: window.x, y1: window.y, x2: window.mouse_x, y2: window.mouse_y, thick: 20, round: 9)
+# care l
 show

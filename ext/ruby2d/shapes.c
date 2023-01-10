@@ -107,11 +107,11 @@ void R2D_DrawQuad(GLfloat x1, GLfloat y1,
 /*
  * Draw a line
  */
-void R2D_DrawLine(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
-                  GLfloat width, GLfloat round, GLfloat border,
+void R2D_DrawLine(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2, GLfloat width, GLfloat border,
+                    GLfloat round_tl, GLfloat round_tr, GLfloat round_bl, GLfloat round_br,
                     GLfloat r, GLfloat g, GLfloat b, GLfloat a,
                     GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba) {
-  R2D_GL_DrawLine(x1, y1, x2, y2, width, round, border, r, g, b, a, br, bg, bb, ba);
+  R2D_GL_DrawLine(x1, y1, x2, y2, width, border, round_tl, round_tr, round_bl, round_br, r, g, b, a, br, bg, bb, ba);
 };
 
 

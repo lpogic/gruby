@@ -288,9 +288,16 @@ class OtherForm < Form
 end
 
 # f = OtherForm.new self, x: window.x, y: window.y
-f = PersonForm.new self, x: window.x, y: window.y
-care f
-# r = rect round: 8, x: window.mouse_x, y: window.mouse_y
+# f = PersonForm.new self, x: window.x, y: window.y
+# care f
+# r = rect round: [20,20,10,10], border: 8, border_color: [0,0,0,0.5], color: [1,1,1,0.5]
+r = rect width: 100, border: 8, border_color: [0,0,0,0.5], color: [1,1,1,0.5]
+r.round << let(r.right, r.bottom, window.mouse_x, window.mouse_y, r.top, r.left){[[
+  Math.sqrt((_6 - _3) ** 2 + (_5 - _4) ** 2),
+  Math.sqrt((_1 - _3) ** 2 + (_5 - _4) ** 2),
+  Math.sqrt((_6 - _3) ** 2 + (_2 - _4) ** 2),
+  Math.sqrt((_1 - _3) ** 2 + (_2 - _4) ** 2)
+  ]]}
 # l = Line.new(x1: window.x, y1: window.y, x2: window.mouse_x, y2: window.mouse_y, thick: 20, round: 9)
 # care l
 show

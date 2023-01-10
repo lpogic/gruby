@@ -384,7 +384,7 @@ int R2D_GL3_Load_Pins() {
     "layout (location = 0) in vec2 pos0;"
     "layout (location = 1) in vec2 pos1;"
     "layout (location = 2) in float thick;"
-    "layout (location = 3) in float rad;"
+    "layout (location = 3) in vec4 rad;"
     "layout (location = 4) in vec4 col;"
     "layout (location = 5) in float border;"
     "layout (location = 6) in vec4 borderCol;"
@@ -397,6 +397,7 @@ int R2D_GL3_Load_Pins() {
         "float height;"
         "vec4 color;"
         "float border;"
+        "vec4 radius;"
         "vec4 borderColor;"
     "} vs_out;"
 
@@ -407,7 +408,7 @@ int R2D_GL3_Load_Pins() {
         "float y = -(pos1.y + pos0.y) / winSize.y + 1;"
         "float length = sqrt(pow(pos1.x - pos0.x, 2.0) + pow(pos1.y - pos0.y, 2.0));"
         "if(thick > 0) {"
-        "  gl_Position = vec4(x, y, rad, 1);"
+        "  gl_Position = vec4(x, y, rad.x, 1);"
         "  if(length > 0) {"
         "    float c = (pos1.x - pos0.x) / length;"
         "    float s = (pos1.y - pos0.y) / length;"
@@ -418,11 +419,12 @@ int R2D_GL3_Load_Pins() {
         "  vs_out.width = (length + thick - border * 2) / winSize.x;"
         "  vs_out.height = (thick - border * 2) / winSize.y;"
         "} else {"
-        "  gl_Position = vec4(x, y, rad, 0);"
+        "  gl_Position = vec4(x, y, rad.x, 0);"
         "  vs_out.rot = mat2(1, 0, 0, 1);"
-        "  vs_out.width = rad / winSize.x;"
-        "  vs_out.height = rad / winSize.y;"
+        "  vs_out.width = rad.x / winSize.x;"
+        "  vs_out.height = rad.x / winSize.y;"
         "}"
+        "vs_out.radius = rad;"
         "vs_out.color = col;"
         "vs_out.border = border;"
         "vs_out.borderColor = borderCol;"
@@ -439,6 +441,7 @@ int R2D_GL3_Load_Pins() {
     "    float height;"
     "    vec4 color;"
     "    float border;"
+    "    vec4 radius;"
     "    vec4 borderColor;"
     "} gs_in[];"
 
@@ -466,145 +469,277 @@ int R2D_GL3_Load_Pins() {
 
     "void emitOrthogonal(vec4 pos) {"
     "  vec4 position = vec4(pos.xy, 0, 1);"
-    "  vec2 r = vec2(pos.z / winSize.x, pos.z / winSize.y);"
+    "  vec2 rtl = vec2(gs_in[0].radius.x / winSize.x, gs_in[0].radius.x / winSize.y);"
+    "  vec2 rtr = vec2(gs_in[0].radius.y / winSize.x, gs_in[0].radius.y / winSize.y);"
+    "  vec2 rbl = vec2(gs_in[0].radius.z / winSize.x, gs_in[0].radius.z / winSize.y);"
+    "  vec2 rbr = vec2(gs_in[0].radius.a / winSize.x, gs_in[0].radius.a / winSize.y);"
     "  vec4 c1 = gs_in[0].color;"
     "  bw = 1;"
     "  bc = gs_in[0].borderColor;"
     "  vec2 b = vec2(2 * gs_in[0].border / winSize.x, 2 * gs_in[0].border / winSize.y);"
     "  float smr = 0.6;"
-    "  vec2 br = b - r;"
     "  if(pos.a > 0) {"
     // TOP
     "    if(b.y > 0) {"
     "      c = bc;"
-    "      emitSymX(position,  gs_in[0].width + br.x, -gs_in[0].height - b.y);"
-    "      if(b.y >= r.y) {"
-    "        emitSymX(position,  gs_in[0].width + br.x, -gs_in[0].height - br.y);"
-    "        emitSymX(position,  gs_in[0].width, -gs_in[0].height);"
+    "      if(b.y >= rtr.y) {"
+    "        emitVertex(position,  gs_in[0].width + b.x - rtr.x,  gs_in[0].height + b.y);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height + b.y);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rtr.x,  gs_in[0].height + b.y - rtr.y);"
+    "        if(b.y >= rtl.y) {"
+    "          emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height + b.y - rtl.y);"
+    "          emitVertex(position,  gs_in[0].width,  gs_in[0].height);"
+    "          emitVertex(position, -gs_in[0].width,  gs_in[0].height);"
+    "        } else {"
+    "          emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height);"
+    "          emitVertex(position,  gs_in[0].width,  gs_in[0].height);"
+    "        }"
     "      } else {"
-    "        emitSymX(position,  gs_in[0].width + br.x, -gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height + b.y);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rtr.x,  gs_in[0].height + b.y);"
+    "        if(b.y >= rtl.y) {"
+    "          emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height + b.y - rtl.y);"
+    "          emitVertex(position,  gs_in[0].width + b.x - rtr.x,  gs_in[0].height);"
+    "          emitVertex(position, -gs_in[0].width,  gs_in[0].height);"
+    "        } else {"
+    "          emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height);"
+    "          emitVertex(position,  gs_in[0].width + b.x - rtr.x,  gs_in[0].height);"
+    "        }"
     "      }"
     "      EndPrimitive();"
     "    }"
     "    c = c1;"
-    "    if(b.y >= r.y) {"
-    "      emitSymX(position,  gs_in[0].width, -gs_in[0].height);"
+    "    if(b.y >= rtr.y) {"
+    "      if(b.y >= rtl.y) {"
+    "        emitVertex(position,  gs_in[0].width,  gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width,  gs_in[0].height);"
+    "      } else {"
+    "        emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height);"
+    "        emitVertex(position,  gs_in[0].width,  gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height + b.y - rtl.y);"
+    "      }"
     "    } else {"
-    "      emitSymX(position,  gs_in[0].width + br.x, -gs_in[0].height);"
-    "      emitSymX(position,  gs_in[0].width + br.x, -gs_in[0].height - br.y);"
+    "      if(b.y >= rtl.y) {"
+    "        emitVertex(position,  gs_in[0].width + b.x - rtr.x,  gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width,  gs_in[0].height);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rtr.x,  gs_in[0].height + b.y - rtr.y);"
+    "      } else {"
+    "        emitVertex(position,  gs_in[0].width + b.x - rtr.x,  gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rtr.x,  gs_in[0].height + b.y - rtr.y);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height + b.y - rtl.y);"
+    "      }"
     "    }"
-    "    emitSymX(position, 0, 0);"
+    "    emitVertex(position, 0, 0);"
     "    EndPrimitive();"
-
     // BOTTOM
     "    if(b.y > 0) {"
     "      c = bc;"
-    "      emitSymX(position,  gs_in[0].width + br.x,  gs_in[0].height + b.y);"
-    "      if(b.y >= r.y) {"
-    "        emitSymX(position,  gs_in[0].width + br.x,  gs_in[0].height + br.y);"
-    "        emitSymX(position,  gs_in[0].width,  gs_in[0].height);"
+    "      if(b.y >= rbr.y) {"
+    "        emitVertex(position,  gs_in[0].width + b.x - rbr.x, -gs_in[0].height - b.y);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rbl.x, -gs_in[0].height - b.y);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rbr.x, -gs_in[0].height - b.y + rbr.y);"
+    "        if(b.y >= rbl.y) {"
+    "          emitVertex(position, -gs_in[0].width - b.x + rbl.x, -gs_in[0].height - b.y + rbl.y);"
+    "          emitVertex(position,  gs_in[0].width, -gs_in[0].height);"
+    "          emitVertex(position, -gs_in[0].width, -gs_in[0].height);"
+    "        } else {"
+    "          emitVertex(position, -gs_in[0].width - b.x + rbl.x, -gs_in[0].height);"
+    "          emitVertex(position,  gs_in[0].width, -gs_in[0].height);"
+    "        }"
     "      } else {"
-    "        emitSymX(position,  gs_in[0].width + br.x,  gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rbl.x, -gs_in[0].height - b.y);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rbr.x, -gs_in[0].height - b.y);"
+    "        if(b.y >= rbl.y) {"
+    "          emitVertex(position, -gs_in[0].width - b.x + rbl.x, -gs_in[0].height - b.y + rbl.y);"
+    "          emitVertex(position,  gs_in[0].width + b.x - rbr.x, -gs_in[0].height);"
+    "          emitVertex(position, -gs_in[0].width, -gs_in[0].height);"
+    "        } else {"
+    "          emitVertex(position, -gs_in[0].width - b.x + rbl.x, -gs_in[0].height);"
+    "          emitVertex(position,  gs_in[0].width + b.x - rbr.x, -gs_in[0].height);"
+    "        }"
     "      }"
     "      EndPrimitive();"
     "    }"
     "    c = c1;"
-    "    if(b.y >= r.y) {"
-    "      emitSymX(position,  gs_in[0].width,  gs_in[0].height);"
+    "    if(b.y >= rbr.y) {"
+    "      if(b.y >= rbl.y) {"
+    "        emitVertex(position,  gs_in[0].width, -gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width, -gs_in[0].height);"
+    "      } else {"
+    "        emitVertex(position, -gs_in[0].width - b.x + rbl.x, -gs_in[0].height);"
+    "        emitVertex(position,  gs_in[0].width, -gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rbl.x, -gs_in[0].height - b.y + rbl.y);"
+    "      }"
     "    } else {"
-    "      emitSymX(position,  gs_in[0].width + br.x,  gs_in[0].height);"
-    "      emitSymX(position,  gs_in[0].width + br.x,  gs_in[0].height + br.y);"
+    "      if(b.y >= rbl.y) {"
+    "        emitVertex(position,  gs_in[0].width + b.x - rbr.x, -gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width, -gs_in[0].height);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rbr.x, -gs_in[0].height - b.y + rbr.y);"
+    "      } else {"
+    "        emitVertex(position,  gs_in[0].width + b.x - rbr.x, -gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rbl.x, -gs_in[0].height);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rbr.x, -gs_in[0].height - b.y + rbr.y);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rbl.x, -gs_in[0].height - b.y + rbl.y);"
+    "      }"
     "    }"
-    "    emitSymX(position, 0, 0);"
+    "    emitVertex(position, 0, 0);"
     "    EndPrimitive();"
-
-  // LEFT
-    "    if(b.x > 0) {"
+    // LEFT
+    "    if(b.y > 0) {"
     "      c = bc;"
-    "      emitSymY(position, -gs_in[0].width - b.x,   gs_in[0].height + br.y);"
-    "      if(b.x >= r.x) {"
-    "        emitSymY(position, -gs_in[0].width - br.x,  gs_in[0].height + br.y);"
-    "        emitSymY(position, -gs_in[0].width,  gs_in[0].height);"
+    "      if(b.x >= rbl.x) {"
+    "        emitVertex(position, -gs_in[0].width - b.x, -gs_in[0].height - b.y + rbl.y);"
+    "        emitVertex(position, -gs_in[0].width - b.x,  gs_in[0].height + b.y - rtl.y);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rbl.x, -gs_in[0].height - b.y + rbl.y);"
+    "        if(b.x >= rtl.x) {"
+    "          emitVertex(position, -gs_in[0].width - b.x + rtl.x, gs_in[0].height + b.y - rtl.y);"
+    "          emitVertex(position, -gs_in[0].width, -gs_in[0].height);"
+    "          emitVertex(position, -gs_in[0].width,  gs_in[0].height);"
+    "        } else {"
+    "          emitVertex(position, -gs_in[0].width,  gs_in[0].height + b.y - rtl.y);"
+    "          emitVertex(position, -gs_in[0].width, -gs_in[0].height);"
+    "        }"
     "      } else {"
-    "        emitSymY(position, -gs_in[0].width,  gs_in[0].height + br.y);"
+    "        emitVertex(position, -gs_in[0].width - b.x,  gs_in[0].height + b.y - rtl.y);"
+    "        emitVertex(position, -gs_in[0].width - b.x, -gs_in[0].height - b.y + rbl.y);"
+    "        if(b.x >= rtl.x) {"
+    "          emitVertex(position, -gs_in[0].width - b.x + rtl.x, gs_in[0].height + b.y - rtl.y);"
+    "          emitVertex(position, -gs_in[0].width, -gs_in[0].height - b.y + rbl.y);"
+    "          emitVertex(position, -gs_in[0].width,  gs_in[0].height);"
+    "        } else {"
+    "          emitVertex(position, -gs_in[0].width,  gs_in[0].height + b.y - rtl.y);"
+    "          emitVertex(position, -gs_in[0].width, -gs_in[0].height - b.y + rbl.y);"
+    "        }"
     "      }"
     "      EndPrimitive();"
     "    }"
     "    c = c1;"
-    "    if(b.y >= r.y) {"
-    "      emitSymY(position,  -gs_in[0].width,   gs_in[0].height);"
+    "    if(b.x >= rbl.x) {"
+    "      if(b.x >= rtl.x) {"
+    "        emitVertex(position, -gs_in[0].width,  gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width, -gs_in[0].height);"
+    "      } else {"
+    "        emitVertex(position, -gs_in[0].width,  gs_in[0].height + b.y - rtl.y);"
+    "        emitVertex(position, -gs_in[0].width, -gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height + b.y - rtl.y);"
+    "      }"
     "    } else {"
-    "      emitSymY(position, -gs_in[0].width,  gs_in[0].height + br.y);"
-    "      emitSymY(position, -gs_in[0].width - br.x,  gs_in[0].height + br.y);"
+    "      if(b.x >= rtl.x) {"
+    "        emitVertex(position, -gs_in[0].width, -gs_in[0].height - b.y + rbl.y);"
+    "        emitVertex(position, -gs_in[0].width,  gs_in[0].height);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rbl.x,  -gs_in[0].height - b.y + rbl.y);"
+    "      } else {"
+    "        emitVertex(position, -gs_in[0].width, -gs_in[0].height - b.y + rbl.y);"
+    "        emitVertex(position, -gs_in[0].width,  gs_in[0].height + b.y - rtl.y);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rbl.x, -gs_in[0].height - b.y + rbl.y);"
+    "        emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height + b.y - rtl.y);"
+    "      }"
     "    }"
-    "    emitSymY(position, 0, 0);"
+    "    emitVertex(position, 0, 0);"
     "    EndPrimitive();"
-
     // RIGHT
-    "    if(b.x > 0) {"
+    "    if(b.y > 0) {"
     "      c = bc;"
-    "      emitSymY(position, gs_in[0].width + b.x,   gs_in[0].height + br.y);"
-    "      if(b.x >= r.x) {"
-    "        emitSymY(position, gs_in[0].width + br.x,  gs_in[0].height + br.y);"
-    "        emitSymY(position, gs_in[0].width,  gs_in[0].height);"
+    "      if(b.x >= rbr.x) {"
+    "        emitVertex(position,  gs_in[0].width + b.x, -gs_in[0].height - b.y + rbr.y);"
+    "        emitVertex(position,  gs_in[0].width + b.x,  gs_in[0].height + b.y - rtr.y);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rbr.x, -gs_in[0].height - b.y + rbr.y);"
+    "        if(b.x >= rtr.x) {"
+    "          emitVertex(position,  gs_in[0].width + b.x - rtr.x, gs_in[0].height + b.y - rtr.y);"
+    "          emitVertex(position,  gs_in[0].width, -gs_in[0].height);"
+    "          emitVertex(position,  gs_in[0].width,  gs_in[0].height);"
+    "        } else {"
+    "          emitVertex(position,  gs_in[0].width,  gs_in[0].height + b.y - rtr.y);"
+    "          emitVertex(position,  gs_in[0].width, -gs_in[0].height);"
+    "        }"
     "      } else {"
-    "        emitSymY(position, gs_in[0].width,  gs_in[0].height + br.y);"
+    "        emitVertex(position,  gs_in[0].width + b.x,  gs_in[0].height + b.y - rtr.y);"
+    "        emitVertex(position,  gs_in[0].width + b.x, -gs_in[0].height - b.y + rbr.y);"
+    "        if(b.x >= rtr.x) {"
+    "          emitVertex(position,  gs_in[0].width + b.x - rtr.x, gs_in[0].height + b.y - rtr.y);"
+    "          emitVertex(position,  gs_in[0].width, -gs_in[0].height - b.y + rbr.y);"
+    "          emitVertex(position,  gs_in[0].width,  gs_in[0].height);"
+    "        } else {"
+    "          emitVertex(position,  gs_in[0].width,  gs_in[0].height + b.y - rtr.y);"
+    "          emitVertex(position,  gs_in[0].width, -gs_in[0].height - b.y + rbr.y);"
+    "        }"
     "      }"
     "      EndPrimitive();"
     "    }"
     "    c = c1;"
-    "    if(b.y >= r.y) {"
-    "      emitSymY(position, gs_in[0].width,   gs_in[0].height);"
+    "    if(b.x >= rbr.x) {"
+    "      if(b.x >= rtr.x) {"
+    "        emitVertex(position,  gs_in[0].width,  gs_in[0].height);"
+    "        emitVertex(position,  gs_in[0].width, -gs_in[0].height);"
+    "      } else {"
+    "        emitVertex(position,  gs_in[0].width,  gs_in[0].height + b.y - rtr.y);"
+    "        emitVertex(position,  gs_in[0].width, -gs_in[0].height);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rtr.x,  gs_in[0].height + b.y - rtr.y);"
+    "      }"
     "    } else {"
-    "      emitSymY(position, gs_in[0].width,  gs_in[0].height + br.y);"
-    "      emitSymY(position, gs_in[0].width + br.x,  gs_in[0].height + br.y);"
+    "      if(b.x >= rtr.x) {"
+    "        emitVertex(position,  gs_in[0].width, -gs_in[0].height - b.y + rbr.y);"
+    "        emitVertex(position,  gs_in[0].width,  gs_in[0].height);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rbr.x,  -gs_in[0].height - b.y + rbr.y);"
+    "      } else {"
+    "        emitVertex(position,  gs_in[0].width, -gs_in[0].height - b.y + rbr.y);"
+    "        emitVertex(position,  gs_in[0].width,  gs_in[0].height + b.y - rtr.y);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rbr.x, -gs_in[0].height - b.y + rbr.y);"
+    "        emitVertex(position,  gs_in[0].width + b.x - rtr.x,  gs_in[0].height + b.y - rtr.y);"
+    "      }"
     "    }"
-    "    emitSymY(position, 0, 0);"
+    "    emitVertex(position, 0, 0);"
     "    EndPrimitive();"
     "  }"
 
-    "   if(pos.z > 0) {"
-    "    vec4 p0;"
-    "    c = c1;"
-    "    bw = -gs_in[0].border;"
-    "    float rad = pos.z / 2.0 - gs_in[0].border;"
+    "  vec4 p0;"
+    "  c = c1;"
+    "  bw = -gs_in[0].border;"
     // TOP-RIGHT
-    "    p0 = position + vec4(gs_in[0].rot * vec2( gs_in[0].width + br.x,  gs_in[0].height + br.y), 0, 0);"
-    "    p = vec4(round((p0.x + 1) * winSize.x / 2 - 0.25), round((p0.y + 1) * winSize.y / 2 + 0.25), rad, smr);"
+    "  if(gs_in[0].radius.y > 0) {"
+    "    p0 = position + vec4(gs_in[0].rot * vec2( gs_in[0].width + b.x - rtr.x,  gs_in[0].height + b.y - rtr.y), 0, 0);"
+    "    p = vec4(round((p0.x + 1) * winSize.x / 2 - 0.25), round((p0.y + 1) * winSize.y / 2 + 0.25), gs_in[0].radius.y / 2.0 - gs_in[0].border, smr);"
     "    gl_Position = p0;"
     "    EmitVertex();"
-    "    emitVertex(position, gs_in[0].width + br.x,  gs_in[0].height + b.y);"
-    "    emitVertex(position, gs_in[0].width + b.x, gs_in[0].height + br.y);"
+    "    emitVertex(position, gs_in[0].width + b.x - rtr.x,  gs_in[0].height + b.y);"
+    "    emitVertex(position, gs_in[0].width + b.x, gs_in[0].height + b.y - rtr.y);"
     "    emitVertex(position, gs_in[0].width + b.x,  gs_in[0].height + b.y);"
     "    EndPrimitive();"
+    "  }"
 
     // BOTTOM-RIGHT
-    "    p0 = position + vec4(gs_in[0].rot * vec2( gs_in[0].width + br.x, -gs_in[0].height - br.y), 0 ,0);"
-    "    p = vec4(round((p0.x + 1) * winSize.x / 2 - 0.25), round((p0.y + 1) * winSize.y / 2 + 0.25), rad, smr);"
+    "  if(gs_in[0].radius.a > 0) {"
+    "    p0 = position + vec4(gs_in[0].rot * vec2( gs_in[0].width + b.x - rbr.x, -gs_in[0].height - b.y + rbr.y), 0 ,0);"
+    "    p = vec4(round((p0.x + 1) * winSize.x / 2 - 0.25), round((p0.y + 1) * winSize.y / 2 + 0.25), gs_in[0].radius.a / 2.0 - gs_in[0].border, smr);"
     "    gl_Position = p0;"
     "    EmitVertex();"
-    "    emitVertex(position, gs_in[0].width + br.x,  -gs_in[0].height - b.y);"
-    "    emitVertex(position, gs_in[0].width + b.x, -gs_in[0].height - br.y);"
+    "    emitVertex(position, gs_in[0].width + b.x - rbr.x,  -gs_in[0].height - b.y);"
+    "    emitVertex(position, gs_in[0].width + b.x, -gs_in[0].height - b.y + rbr.y);"
     "    emitVertex(position, gs_in[0].width + b.x,  -gs_in[0].height - b.y);"
     "    EndPrimitive();"
+    "  }"
 
     // TOP-LEFT
-    "    p0 = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width - br.x,  gs_in[0].height + br.y), 0 ,0);"
-    "    p = vec4(round((p0.x + 1) / 2 * winSize.x - 0.25),  round((p0.y + 1) / 2 * winSize.y + 0.25), rad, smr);"
+    "  if(gs_in[0].radius.x > 0) {"
+    "    p0 = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width - b.x + rtl.x,  gs_in[0].height + b.y - rtl.y), 0 ,0);"
+    "    p = vec4(round((p0.x + 1) / 2 * winSize.x - 0.25),  round((p0.y + 1) / 2 * winSize.y + 0.25), gs_in[0].radius.x / 2.0 - gs_in[0].border, smr);"
     "    gl_Position = p0;"
     "    EmitVertex();"
-    "    emitVertex(position, -gs_in[0].width - br.x,  gs_in[0].height + b.y);"
-    "    emitVertex(position, -gs_in[0].width - b.x, gs_in[0].height + br.y);"
+    "    emitVertex(position, -gs_in[0].width - b.x + rtl.x,  gs_in[0].height + b.y);"
+    "    emitVertex(position, -gs_in[0].width - b.x, gs_in[0].height + b.y - rtl.y);"
     "    emitVertex(position, -gs_in[0].width - b.x,  gs_in[0].height + b.y);"
     "    EndPrimitive();"
+    "  }"
 
     // BOTTOM-LEFT
-    "    p0 = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width - br.x, -gs_in[0].height - br.y), 0 ,0);"
-    "    p = vec4(round((p0.x + 1) * winSize.x / 2 - 0.25), round((p0.y + 1) * winSize.y / 2 + 0.25), rad, smr);"
+    "  if(gs_in[0].radius.z > 0) {"
+    "    p0 = position + vec4(gs_in[0].rot * vec2(-gs_in[0].width - b.x + rbl.x, -gs_in[0].height - b.y + rbl.y), 0 ,0);"
+    "    p = vec4(round((p0.x + 1) * winSize.x / 2 - 0.25), round((p0.y + 1) * winSize.y / 2 + 0.25), gs_in[0].radius.z / 2.0 - gs_in[0].border, smr);"
     "    gl_Position = p0;"
     "    EmitVertex();"
-    "    emitVertex(position, -gs_in[0].width - br.x,  -gs_in[0].height - b.y);"
-    "    emitVertex(position, -gs_in[0].width - b.x, -gs_in[0].height - br.y);"
+    "    emitVertex(position, -gs_in[0].width - b.x + rbl.x,  -gs_in[0].height - b.y);"
+    "    emitVertex(position, -gs_in[0].width - b.x, -gs_in[0].height - b.y + rbl.y);"
     "    emitVertex(position, -gs_in[0].width - b.x,  -gs_in[0].height - b.y);"
     "    EndPrimitive();"
     "  }"
@@ -885,9 +1020,9 @@ int R2D_GL3_Load_Pins() {
   glBindBuffer(GL_ARRAY_BUFFER, pinsVbo);
 
 
-  pinsVboData = (GLfloat *) malloc(R2D_GL3_PINS_VBO_CAPACITY * sizeof(GLfloat) * 15);
+  pinsVboData = (GLfloat *) malloc(R2D_GL3_PINS_VBO_CAPACITY * sizeof(GLfloat) * 18);
   pinsVboCurrent = pinsVboData;
-  glBufferData(GL_ARRAY_BUFFER, R2D_GL3_PINS_VBO_CAPACITY * sizeof(GLfloat) * 15, NULL, GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, R2D_GL3_PINS_VBO_CAPACITY * sizeof(GLfloat) * 18, NULL, GL_DYNAMIC_DRAW);
 
   // Load the vertex, geometry and fragment shaders
   GLuint vertexShader   = R2D_GL_LoadShader(  GL_VERTEX_SHADER, vertexSource, "GL3 Pin Vertex");
@@ -914,25 +1049,25 @@ int R2D_GL3_Load_Pins() {
   // Check if linked
   R2D_GL_CheckLinked(pinsShaderProgram, "GL3 pin shader");
 
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 18 * sizeof(GLfloat), (void*)0); // pos0
   glEnableVertexAttribArray(0);
 
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 18 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat))); // pos1
   glEnableVertexAttribArray(1);
 
-  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)(4 * sizeof(GLfloat)));
+  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 18 * sizeof(GLfloat), (void*)(4 * sizeof(GLfloat))); // thick
   glEnableVertexAttribArray(2);
 
-  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
+  glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 18 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat))); // round
   glEnableVertexAttribArray(3);
 
-  glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
+  glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 18 * sizeof(GLfloat), (void*)(9 * sizeof(GLfloat))); // color
   glEnableVertexAttribArray(4);
 
-  glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)(10 * sizeof(GLfloat)));
+  glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, 18 * sizeof(GLfloat), (void*)(13 * sizeof(GLfloat))); // border
   glEnableVertexAttribArray(5);
 
-  glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 15 * sizeof(GLfloat), (void*)(11 * sizeof(GLfloat)));
+  glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 18 * sizeof(GLfloat), (void*)(14 * sizeof(GLfloat))); // border color
   glEnableVertexAttribArray(6);
 
   glDeleteShader(vertexShader);
@@ -959,7 +1094,7 @@ void R2D_GL3_FlushBuffers() {
 
   glBindVertexArray(pinsVao);
   glBindBuffer(GL_ARRAY_BUFFER, pinsVbo);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, pinsVboIndex * sizeof(GLfloat) * 15, pinsVboData);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, pinsVboIndex * sizeof(GLfloat) * 18, pinsVboData);
 
   GLuint trianglesOffset = 0, ti = 0, texturesOffset = 0, txi = 0, pinsOffset = 0, pi = 0;
   GLuint lastVertex = vertices[0];
@@ -1070,37 +1205,19 @@ void R2D_GL3_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], G
   verticesIndex += 1;
   texturesVboIndex += 1;
   texturesVboCurrent = (GLfloat *)((char *)texturesVboCurrent + (sizeof(GLfloat) * 20));
-
-  // GLfloat v[48] = {
-  //   coordinates[0], coordinates[1], color[0], color[1], color[2], color[3], texture_coordinates[0], texture_coordinates[1],
-  //   coordinates[2], coordinates[3], color[0], color[1], color[2], color[3], texture_coordinates[2], texture_coordinates[3],
-  //   coordinates[4], coordinates[5], color[0], color[1], color[2], color[3], texture_coordinates[4], texture_coordinates[5],
-  //   coordinates[4], coordinates[5], color[0], color[1], color[2], color[3], texture_coordinates[4], texture_coordinates[5],
-  //   coordinates[6], coordinates[7], color[0], color[1], color[2], color[3], texture_coordinates[6], texture_coordinates[7],
-  //   coordinates[0], coordinates[1], color[0], color[1], color[2], color[3], texture_coordinates[0], texture_coordinates[1],
-  // };
-
-  // // Copy the vertex data into the current position of the buffer
-  // memcpy(trianglesVboCurrent, v, sizeof(v));
-
-  // vertices[verticesIndex] = vertices[verticesIndex + 1] = vertices[verticesIndex + 2] = 
-  //   vertices[verticesIndex + 3] = vertices[verticesIndex + 4] = vertices[verticesIndex + 5] = texture_id;
-  // verticesIndex += 6;
-  // trianglesVboIndex += 6;
-  // trianglesVboCurrent = (GLfloat *)((char *)trianglesVboCurrent + (sizeof(GLfloat) * 48));
 }
 
 /*
  * Draw a pin
  */
-void R2D_GL3_DrawPin(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
-                    GLfloat width, GLfloat round, GLfloat border,
+void R2D_GL3_DrawPin(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2, GLfloat width, GLfloat border,
+                    GLfloat round_tl, GLfloat round_tr, GLfloat round_bl, GLfloat round_br,
                     GLfloat r, GLfloat g, GLfloat b, GLfloat a,
                     GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba) {
   // If buffer is full, flush it
   if (pinsVboIndex + 1 >= R2D_GL3_PINS_VBO_CAPACITY) R2D_GL3_FlushBuffers();
 
-  GLfloat v[15] = { x1, y1, x2, y2, width, round, r, g, b, a, border, br, bg, bb, ba};
+  GLfloat v[18] = { x1, y1, x2, y2, width, round_tl, round_tr, round_bl, round_br, r, g, b, a, border, br, bg, bb, ba};
 
   // Copy the vertex data into the current position of the buffer
   memcpy(pinsVboCurrent, v, sizeof(v));
@@ -1108,7 +1225,7 @@ void R2D_GL3_DrawPin(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
   vertices[verticesIndex] = R2D_GL3_PIN_ID;
   verticesIndex += 1;
   pinsVboIndex += 1;
-  pinsVboCurrent = (GLfloat *)((char *)pinsVboCurrent + (sizeof(GLfloat) * 15));
+  pinsVboCurrent = (GLfloat *)((char *)pinsVboCurrent + (sizeof(GLfloat) * 18));
 }
 
 

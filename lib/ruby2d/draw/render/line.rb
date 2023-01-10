@@ -8,16 +8,40 @@ module Ruby2D
     include Renderable
     include Planned
 
+
+    class FloatVector4
+
+      def initialize v
+        @value = case v
+        when Numeric
+          Array.new(4, (v / 2).round * 2)
+        when Array
+          if v.size == 4
+            v.map{(_1 / 2).round * 2}
+          else
+            raise "Invalid size of #{v}"
+          end
+        when FloatVector4
+          v.value
+        else
+          raise "Invalid value #{v}" 
+        end
+      end
+
+      def value = @value
+      def to_a = @value
+    end
+
     def initialize(x1: 0, y1: 0, x2: 100, y2: 100,
-                   t: nil, thick: nil, r: nil, round: nil, b: nil, border: nil,
+                   thick: nil, round: nil, border: nil,
                    color: 'white', border_color: 'black')
       @x1 = pot x1
       @y1 = pot y1
       @x2 = pot x2
       @y2 = pot y2
-      @thick = pot.let thick || t || 6
-      @round = pot.let round || r || 0
-      @border = pot.let border || b || 0
+      @thick = pot.let thick || 6
+      @round = compot{ FloatVector4.new _1 } << (round || 0)
+      @border = pot.let border || 0
       @color = compot { Color.new _1 } << color
       @border_color = compot { Color.new _1 } << border_color
     end
@@ -44,26 +68,12 @@ module Ruby2D
         (((y2 - y1) * x - (x2 - x1) * y + x2 * y1 - y2 * x1).abs / line_len) <= 0.5 * @thick.get
     end
 
-    # Draw a line without creating a Line
-    # @param [Numeric] x1
-    # @param [Numeric] y1
-    # @param [Numeric] x2
-    # @param [Numeric] y2
-    # @param [Numeric] thick The +thick+ or thickness of the line
-    # @param [Numeric] round The roundness of the line
-    # @param [Color] color
-    def self.draw(x1:, y1:, x2:, y2:, thick:, round:, border:, color:, border_color:)
-      Window.render_ready_check
-
-      ext_draw([
-                 x1, y1, x2, y2, thick, round, border, *color, *border_color
-               ])
-    end
-
     def render
+      thick = @thick.get
+      r = @round.get.to_a.map{_1.clamp(0, thick)}
       self.class.ext_draw([
-                            @x1.get, @y1.get, @x2.get, @y2.get, @thick.get,
-                            @round.get, @border.get, *@color.get, *@border_color.get
+                            @x1.get, @y1.get, @x2.get, @y2.get, @thick.get, @border.get, 
+                            *r, *@color.get, *@border_color.get
                           ])
     end
 

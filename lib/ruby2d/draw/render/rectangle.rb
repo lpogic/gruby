@@ -5,16 +5,11 @@
 module Ruby2D
   # A rectangle
   class Rectangle < Line
-    @@instances = 0
-
-    def self.instances
-      @@instances
-    end
 
     cvs_reader :left, :right, :top, :bottom, :x, :y, :width, :height
     def initialize(r: nil, round: nil, b: nil, border: nil,
                    color: 'white', border_color: 'black', plan: true, **na)
-      super(r: r, round: round, b: b, border: border, color: color, border_color: border_color)
+      super(round: round, border: border, color: color, border_color: border_color)
       @width = pot 200
       @height = pot 100
       @x = pot 200
@@ -26,7 +21,6 @@ module Ruby2D
       end >> [@x1, @y1, @x2, @y2, @thick]
 
       plan(**na) if plan
-      @@instances += 1
     end
 
     def _default_plan(x: nil, y: nil, width: nil, height: nil, left: nil, right: nil, top: nil, bottom: nil, **)

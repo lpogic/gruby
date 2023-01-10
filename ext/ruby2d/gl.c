@@ -384,8 +384,8 @@ void R2D_GL_DrawQuad(GLfloat x1, GLfloat y1,
 /*
  * Draw a line
  */
-void R2D_GL_DrawLine(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
-                  GLfloat width, GLfloat round, GLfloat border,
+void R2D_GL_DrawLine(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2, GLfloat width, GLfloat border,
+                    GLfloat round_tl, GLfloat round_tr, GLfloat round_bl, GLfloat round_br,
                     GLfloat r, GLfloat g, GLfloat b, GLfloat a,
                     GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba) {
   #if GLES
@@ -394,7 +394,7 @@ void R2D_GL_DrawLine(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
     if (R2D_GL2) {
       R2D_GL_DrawLineQuad(x1, y1, x2, y2, width, r, g, b, a);
     } else {
-      R2D_GL3_DrawPin(x1, y1, x2, y2, width, round, border, r, g, b, a, br, bg, bb, ba);
+      R2D_GL3_DrawPin(x1, y1, x2, y2, width, border, round_tl, round_tr, round_bl, round_br, r, g, b, a, br, bg, bb, ba);
     }
   #endif
 };
@@ -446,7 +446,7 @@ void R2D_GL_DrawCircle(GLfloat x, GLfloat y, GLfloat radius, GLfloat border, int
     if (R2D_GL2) {
       R2D_GL_DrawCircleTriangles(x, y, radius, sectors, r, g, b, a);
     } else {
-      R2D_GL3_DrawPin(x, y, x, y, 0, radius, border, r, g, b, a, br, bg, bb, ba);
+      R2D_GL3_DrawPin(x, y, x, y, 0, border, radius, radius, radius, radius, r, g, b, a, br, bg, bb, ba);
     }
   #endif
 }

@@ -422,8 +422,8 @@ void R2D_DrawQuad(
  * Draw a line
  */
 void R2D_DrawLine(
-  GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
-  GLfloat width, GLfloat round, GLfloat border,
+  GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2, GLfloat width, GLfloat border,
+  GLfloat round_tl, GLfloat round_tr, GLfloat round_bl, GLfloat round_br,
   GLfloat r, GLfloat g, GLfloat b, GLfloat a,
   GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba
 );
@@ -717,8 +717,8 @@ void R2D_GL_DrawQuad(GLfloat x1, GLfloat y1,
   GLfloat x4, GLfloat y4,
   GLfloat r4, GLfloat g4, GLfloat b4, GLfloat a4);
 void R2D_GL_DrawLine(
-  GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
-  GLfloat width, GLfloat round, GLfloat border,
+  GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2, GLfloat width, GLfloat border,
+  GLfloat round_tl, GLfloat round_tr, GLfloat round_bl, GLfloat round_br,
   GLfloat r, GLfloat g, GLfloat b, GLfloat a,
   GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba);
 void R2D_GL_DrawLineQuad(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
@@ -773,8 +773,8 @@ void R2D_GL_FlushBuffers();
   void R2D_GL2_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], GLfloat color[], int texture_id);
   void R2D_GL3_DrawTexture(GLfloat coordinates[], GLfloat texture_coordinates[], GLfloat color[], int texture_id);
   void R2D_GL3_DrawPin(
-    GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2,
-    GLfloat width, GLfloat round, GLfloat border,
+    GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2, GLfloat width, GLfloat border,
+    GLfloat round_tl, GLfloat round_tr, GLfloat round_bl, GLfloat round_br,
     GLfloat r, GLfloat g, GLfloat b, GLfloat a,
     GLfloat br, GLfloat bg, GLfloat bb, GLfloat ba);
   void R2D_GL3_FlushBuffers();

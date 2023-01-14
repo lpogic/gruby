@@ -71,8 +71,9 @@ module Ruby2D
     def render
       thick = @thick.get
       r = @round.get.to_a.map{_1.clamp(0, thick)}
+      b = @border.get.clamp(0, thick / 2)
       self.class.ext_draw([
-                            @x1.get, @y1.get, @x2.get, @y2.get, @thick.get, @border.get, 
+                            @x1.get, @y1.get, @x2.get, @y2.get, @thick.get, b, 
                             *r, *@color.get, *@border_color.get
                           ])
     end

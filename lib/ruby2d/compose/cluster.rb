@@ -141,6 +141,16 @@ module Ruby2D
       r.length > 1 ? r : r[0]
     end
 
+    def on_key key = nil, type = :key, &b
+      if key.nil?
+        on(type, &b)
+      else
+        on type do |e|
+          b.(e) if key == e.key
+        end
+      end
+    end
+
     # Remove an event handler
     def off(event_descriptor)
       handlers = @event_handlers[event_descriptor.type]
@@ -212,6 +222,29 @@ module Ruby2D
                  width_pad: nil, editable: nil, **plan, &on_click)
 
       tln = Note.new self, text: text, &on_click
+      style = make_outfit tln, style
+      plan[:width] = style.width if not plan_w_defined? plan
+      plan[:height] = style.height if not plan_h_defined? plan
+      plan[:x] = 200 if not plan_x_defined? plan
+      plan[:y] = 100 if not plan_y_defined? plan
+      tln.plan **plan
+      tln.text_font << (text_font || style.text_font)
+      tln.text_size << (text_size || style.text_size)
+      tln.text_color << (text_color || style.text_color)
+      tln.width_pad << (width_pad || style.width_pad)
+      tln.round << (round || r || style.round)
+      tln.color << (color || style.color)
+      tln.border << (border || b || style.border)
+      tln.border_color << (border_color || style.border_color)
+      tln.editable << (editable.nil? ? style.editable : editable)
+      tln
+    end
+
+    def new_ruby_note(text: '', style: 'default', text_font: nil, text_size: nil, text_color: nil,
+      round: nil, r: nil, color: nil, border: nil, b: nil, border_color: nil,
+      width_pad: nil, editable: nil, **plan, &on_click)
+
+      tln = RubyNote.new self, text: text, &on_click
       style = make_outfit tln, style
       plan[:width] = style.width if not plan_w_defined? plan
       plan[:height] = style.height if not plan_h_defined? plan

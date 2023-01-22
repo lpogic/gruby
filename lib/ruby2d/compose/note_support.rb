@@ -111,7 +111,7 @@ module Ruby2D
       delegate grid: %w[x y top bottom left right width]
       cvs_reader :height
 
-      def _cvs_height
+      def cvs_height
         @objects.as { _1.map { |o| o.height.get }.sum }
       end
 
@@ -119,7 +119,7 @@ module Ruby2D
         x.between?(@grid.left.get, @grid.right.get) && y.between?(@grid.top.get, @grid.bottom.get)
       end
 
-      def _default_plan(x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil, width: nil)
+      def default_plan(x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil, width: nil)
         if x and width
           @grid.plan x: x
           @width << width

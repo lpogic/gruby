@@ -7,7 +7,7 @@ module Ruby2D
       if block_given?
         linker.call(self, **pr)
       else
-        _default_plan(**pr)
+        default_plan(**pr)
       end
       upr.map { pr[_1] }
     end

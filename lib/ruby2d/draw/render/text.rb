@@ -26,11 +26,11 @@ module Ruby2D
       @texture = pot
       @texture.let(@text, @font) { create_texture(_1, _2, @texture.get) }
       @width = pot.let @texture.as { _1.width }
-      @height = pot.let @font.as { _1.dimensions[:height] }
+      @height = pot.let @texture.as { _1.height }
       plan(**na)
     end
 
-    def _default_plan(x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil)
+    def default_plan(x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil)
       if x
         @x.let x
       elsif left
@@ -48,19 +48,19 @@ module Ruby2D
       end
     end
 
-    def _cvs_left
+    def cvs_left
       let(@x, @width) { _1 - _2 * 0.5 }
     end
 
-    def _cvs_right
+    def cvs_right
       let(@x, @width) { _1 + _2 * 0.5 }
     end
 
-    def _cvs_top
+    def cvs_top
       let(@y, @height) { _1 - _2 * 0.5 }
     end
 
-    def _cvs_bottom
+    def cvs_bottom
       let(@y, @height) { _1 + _2 * 0.5 }
     end
 
@@ -80,7 +80,7 @@ module Ruby2D
         x: tw / 2 - w / 2 + tox,
         y: th / 2 - txtr.height / 2 + toy
       }
-      vertices = Vertices.new((x - w / 2).floor, (y + h / 2 - txtr.height).floor, w, txtr.height, rotate)
+      vertices = Vertices.new((x - w / 2).round, (y + h / 2 - txtr.height).round, w, txtr.height, rotate)
       @texture.get.draw(
         vertices.coordinates, vertices.texture_coordinates, color
       )

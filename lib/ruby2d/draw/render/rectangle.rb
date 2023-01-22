@@ -23,7 +23,7 @@ module Ruby2D
       plan(**na) if plan
     end
 
-    def _default_plan(x: nil, y: nil, width: nil, height: nil, left: nil, right: nil, top: nil, bottom: nil, **)
+    def default_plan(x: nil, y: nil, width: nil, height: nil, left: nil, right: nil, top: nil, bottom: nil, **)
       if x and width
         @x << x
         @width << width
@@ -71,19 +71,19 @@ module Ruby2D
       end
     end
 
-    def _cvs_left
+    def cvs_left
       let(@x, @width) { _1 - _2 * 0.5 }
     end
 
-    def _cvs_right
+    def cvs_right
       let(@x, @width) { _1 + _2 * 0.5 }
     end
 
-    def _cvs_top
+    def cvs_top
       let(@y, @height) { _1 - _2 * 0.5 }
     end
 
-    def _cvs_bottom
+    def cvs_bottom
       let(@y, @height) { _1 + _2 * 0.5 }
     end
 
@@ -106,6 +106,23 @@ module Ruby2D
 
     def fill(o)
       plan x: o.x, y: o.y, width: o.width, height: o.height
+    end
+
+
+    def self.x_dim?(plan)
+      plan.any_in?(:x, :left, :right)
+    end
+
+    def self.y_dim?(plan)
+      plan.any_in? :y, :top, :bottom
+    end
+
+    def self.w_dim?(plan)
+      plan[:width] || (plan.keys & %i[x left right]).size > 1
+    end
+
+    def self.h_dim?(plan)
+      plan[:height] || (plan.keys & %i[y top bottom]).size > 1
     end
 
     private :length

@@ -4,7 +4,7 @@ module Ruby2D
       super
 
       @tab_pass_keyboard = on :key_down do |e|
-        parent.pass_keyboard self, reverse: shift_down if e.key == 'tab'
+        self.parent.pass_keyboard self, reverse: shift_down if e.key == 'tab'
       end
     end
 

@@ -14,7 +14,7 @@ module Ruby2D
         ns.accept_subject n
         ns.suggestions << sgs
         ns.on_option_selected do |o|
-          n.text << n.text.get.then { _1 + (_1 != '' ? ', ' : '') + o.to_s }
+          n.text << n.text.get.then { _1 + (_1 == '' ? '' : ', ') + o.to_s }
           sgs.set do
             _1.delete(o)
             _1
@@ -24,7 +24,7 @@ module Ruby2D
         end
       end
     end
-    n.on :key_type do |e|
+    n.on :key do |e|
       if e.key == 'down' || e.key == 'up'
         if ns.subject == n
           ns.hover_down if e.key == 'down'

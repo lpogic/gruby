@@ -35,7 +35,7 @@ extend Ruby2D::DSL
 class Object
   def timems
     now = Time.now
-    (now.to_i * 1e3 + now.usec / 1e3).to_i
+    ((now.to_i * 1e3) + (now.usec / 1e3)).to_i
   end
 
   def array
@@ -44,9 +44,24 @@ class Object
 end
 
 class Array
-  alias old_include? include?
+  def all_in?(*o)
+    o.all? { include? _1 }
+  end
 
-  def include?(*o)
-    o.all? { old_include? _1 }
+  def any_in?(*o)
+    o.any? { include? _1 }
+  end
+
+  alias or any?
+  alias and all?
+end
+
+class Hash
+  def all_in?(*o)
+    o.all? { has_key? _1 }
+  end
+
+  def any_in?(*o)
+    o.any? { has_key? _1 }
   end
 end

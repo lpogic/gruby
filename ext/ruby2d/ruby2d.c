@@ -2188,11 +2188,8 @@ void Init_ruby2d() {
   // Ruby2D::Cluster#ext_get_clipboard
   r_define_method(ruby2d_cluster_class, "ext_set_clipboard", ruby2d_cluster_ext_set_clipboard, r_args_req(1));
 
-  // Ruby2D::Arena
-  R_CLASS ruby2d_arena_class = rb_define_class_under(ruby2d_module, "Arena", ruby2d_cluster_class);
-
   // Ruby2D::Window
-  R_CLASS ruby2d_window_class = rb_define_class_under(ruby2d_module, "Window", ruby2d_arena_class);
+  R_CLASS ruby2d_window_class = rb_define_class_under(ruby2d_module, "Window", ruby2d_cluster_class);
 
   // Ruby2D::Window#ext_diagnostics
   r_define_method(ruby2d_window_class, "ext_diagnostics", ruby2d_ext_diagnostics, r_args_req(1));

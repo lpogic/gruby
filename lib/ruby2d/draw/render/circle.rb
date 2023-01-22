@@ -10,15 +10,16 @@ module Ruby2D
     include Renderable
     include Planned
 
-    def initialize(x: 25, y: 25, r: nil, radius: nil, b: nil, border: nil, sectors: 30,
-                   color: 'yellow', border_color: 'black')
-      @x = pot.let x
-      @y = pot.let y
-      @radius = pot.let radius || r || 100
+    def initialize(b: nil, border: nil, sectors: 30,
+                   color: 'yellow', border_color: 'black', plan: true, **na)
+      @x = pot 200
+      @y = pot 200
+      @radius = pot 100
       @border = pot.let border || b || 0
       @sectors = sectors
       @color = compot { Color.new _1 } << color
       @border_color = compot { Color.new _1 } << border_color
+      plan(**na) if plan
     end
 
     attr_accessor :sectors
@@ -30,16 +31,6 @@ module Ruby2D
       (x - @x.get)**2 + (y - @y.get)**2 <= @radius.get**2
     end
 
-    def self.draw(opts = {})
-      Window.render_ready_check
-
-      ext_draw([
-                 opts[:x], opts[:y], opts[:radius], opts[:border], opts[:sectors],
-                 opts[:color][0], opts[:color][1], opts[:color][2], opts[:color][3],
-                 opts[:border_color][0], opts[:border_color][1], opts[:border_color][2], opts[:border_color][3]
-               ])
-    end
-
     def render
       self.class.ext_draw([
                             @x.get, @y.get, @radius.get, @border.get, @sectors,
@@ -47,17 +38,41 @@ module Ruby2D
                           ])
     end
 
-    def _default_plan(x: nil, y: nil, radius: nil, **)
-      if x and radius
-        let(x, radius) { [_1, _2] } >> [@x, @radius]
+    def default_plan(x: nil, y: nil, radius: nil, left: nil, right: nil, top: nil, bottom: nil, **)
+      if radius and left
+        let(radius, left).sum >> @x
+      elsif radius and right
+        let(radius, right){_2 - _1} >> @x
+      elsif x and left
+        let(x, left){_1 - _2} >> @radius
+        x >> @x
+      elsif x and right
+        let(x, right){_2 - _1} >> @radius
+        x >> @x
+      elsif left and right
+        let(left, right){[_2 - _1, (_2 + _1) * 0.5]} >> [@radius, @x]
       elsif x
-        let(x) { _1 } >> @x
+        x >> @x
       end
 
-      if y and radius
-        let(y, radius) { [_1, _2] } >> [@y, @radius]
+      if radius and top
+        let(radius, top).sum >> @y
+      elsif radius and bottom
+        let(radius, bottom){_2 - _1} >> @y
+      elsif y and top
+        let(y, top){_1 - _2} >> @radius
+        y >> @y
+      elsif y and bottom
+        let(y, bottom){_2 - _1} >> @radius
+        y >> @y
+      elsif top and bottom
+        let(top, bottom){[_2 - _1, (_2 + _1) * 0.5]} >> [@radius, @y]
       elsif y
-        let(y) { _1 } >> @y
+        y >> @y
+      end
+
+      if radius
+        radius >> @radius
       end
     end
   end

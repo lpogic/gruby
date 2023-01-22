@@ -9,11 +9,11 @@ module Ruby2D
       attr_reader :start, :length
 
       def empty?
-        return @length <= 0
+        @length <= 0
       end
 
       def end
-        return @start + @length
+        @start + @length
       end
 
       def move(start_offset, length_offset)
@@ -24,8 +24,8 @@ module Ruby2D
         @start...self.end
       end
 
-      def ==(that)
-        start == that.start && length == that.length
+      def ==(other)
+        start == other.start && length == other.length
       end
     end
 
@@ -89,9 +89,7 @@ module Ruby2D
 
       def push(*o)
         super
-        if size > @limit
-          shift(size - @limit)
-        end
+        shift(size - @limit) if size > @limit
       end
     end
 
@@ -99,20 +97,21 @@ module Ruby2D
       super()
       @editable = pot true
       @width_pad = pot 20
-      @box = new_rectangle **narg
+      @box = new_rectangle(**narg)
       @text_value = compot { _1.to_s.encode('utf-8') } << text
 
-      @text = new_text '', left: let(@box.left, @width_pad) { _1 + _2 / 2 }, y: @box.y
+      @text = new_text '', left: let(@box.left, @width_pad) { _1 + (_2 / 2) }, y: @box.y
       @text_offset = pot 0
       @text.text << let(@text_value, @box.width, @text_offset, @width_pad, @text.size,
-                        @text.font) do |tv, bw, to, wp, ts, tf|
+                        @text.font) do |tv, bw, to, wp, _ts, tf|
         t = tv[to..]
         t ? t[0, tf.measure(t, bw - wp)[:count]] : ''
       end
       @pen_position = compot(@text_value.as { _1.length }) do |tvl, v|
         if v < 0 then 0
         elsif v > tvl then tvl
-        else v
+        else
+          v
         end
       end << 0
       @pen = Pen.new self, @text
@@ -130,7 +129,7 @@ module Ruby2D
         enable_text_input kc
       end
 
-      on @pen_position do |pp, ppp|
+      on @pen_position do |pp, _ppp|
         to = @text_offset.get
         if pp - to < 0
           @text_offset.set(pp)
@@ -141,13 +140,13 @@ module Ruby2D
             @text_offset.set(pp - tl)
             @pen.position << tl
           else
-            @pen.position << pp - to
+            @pen.position << (pp - to)
           end
         end
         @selection.set Selection.new(pp) if @selection.get.empty?
       end
 
-      on :key_type do |e|
+      on_key do |e|
         case e.key
         when 'left'
           pen_left(shift_down, ctrl_down ? alt_down ? :class : :word : :character)
@@ -180,12 +179,12 @@ module Ruby2D
         when 'c'
           if ctrl_down
             selection = @selection.get
-            self.clipboard = @text_value.get[selection.range] if not selection.empty?
+            self.clipboard = @text_value.get[selection.range] unless selection.empty?
           end
         when 'x'
           if ctrl_down
             selection = @selection.get
-            if not selection.empty?
+            if !selection.empty?
               c = shift_down ? clipboard : ''
               self.clipboard = @text_value.get[selection.range]
               paste c
@@ -217,7 +216,7 @@ module Ruby2D
         when :left
           @mouse_pen.set true
           tt = @text.text.get
-          x = @text.font.get.nearest(tt, e.x - @box.left.get - @width_pad.get / 2)
+          x = @text.font.get.nearest(tt, e.x - @box.left.get - (@width_pad.get / 2))
           pen_at x + @text_offset.get, shift_down
           mmh = window.on :mouse_move do |e|
             tl = @text.left.get
@@ -226,11 +225,11 @@ module Ruby2D
             elsif @text.right.get < e.x
               pen_right true if e.delta_x > 0
             else
-              x = @text.font.get.nearest(tt, e.x - @box.left.get - @width_pad.get / 2)
+              x = @text.font.get.nearest(tt, e.x - @box.left.get - (@width_pad.get / 2))
               pen_at x + @text_offset.get, true
             end
           end
-          window.on :mouse_up do |ue, muh|
+          window.on :mouse_up do |_ue, muh|
             @mouse_pen.set false
             muh.cancel
             mmh.cancel
@@ -240,17 +239,13 @@ module Ruby2D
           mmh = window.on :mouse_move do |e|
             if e.delta_x < 0
               to = @text_offset.get
-              if to + @text.text.get.length < @text_value.get.length
-                @text_offset.set(to + 1)
-              end
+              @text_offset.set(to + 1) if to + @text.text.get.length < @text_value.get.length
             elsif e.delta_x > 0
               to = @text_offset.get
-              if to > 0
-                @text_offset.set(to - 1)
-              end
+              @text_offset.set(to - 1) if to > 0
             end
           end
-          window.on :mouse_up do |ue, muh|
+          window.on :mouse_up do |_ue, muh|
             @pen.enabled = @keyboard_current
             @pen_position.set { _1 }
             muh.cancel
@@ -260,9 +255,9 @@ module Ruby2D
       end
 
       on :mouse_scroll do |e|
-        if e.delta_x < 0 || e.delta_x == 0 && e.delta_y < 0
+        if e.delta_x < 0 || (e.delta_x == 0 && e.delta_y < 0)
           pen_left(shift_down, ctrl_down ? alt_down ? :class : :word : :character)
-        elsif e.delta_x > 0 || e.delta_x == 0 && e.delta_y > 0
+        elsif e.delta_x > 0 || (e.delta_x == 0 && e.delta_y > 0)
           pen_right(shift_down, ctrl_down ? alt_down ? :class : :word : :character)
         end
       end
@@ -271,7 +266,7 @@ module Ruby2D
         if e.button == :left
           tt = @text.text.get
           to = @text_offset.get
-          x = @text.font.get.nearest(tt, e.x - @box.left.get - @width_pad.get / 2)
+          x = @text.font.get.nearest(tt, e.x - @box.left.get - (@width_pad.get / 2))
           sl = class_step_left @text_value.get, to + x, :character_class
           sr = class_step_right @text_value.get, to + x, :character_class
           @selection.set Selection.new(to + x - sl, sl + sr + 1)
@@ -279,9 +274,7 @@ module Ruby2D
       end
 
       on :triple_click do |e|
-        if e.button == :left
-          select_all
-        end
+        select_all if e.button == :left
       end
     end
 
@@ -289,9 +282,9 @@ module Ruby2D
       "#{self.class} text:\"#{@text_value.get}\""
     end
 
-    delegate box: %w(fill plan x y left top right bottom width height color border_color border round)
-    delegate text: %w(text:text_visible font:text_font size:text_size color:text_color)
-    cvs_reader %w(text_value:text width_pad pen_position editable text_offset keyboard_current)
+    delegate box: %w[fill plan x y left top right bottom width height color border_color border round]
+    delegate text: %w[text:text_visible font:text_font size:text_size color:text_color]
+    cvs_reader %w[text_value:text width_pad pen_position editable text_offset keyboard_current]
 
     def text_object = @text
 
@@ -304,11 +297,9 @@ module Ruby2D
     end
 
     def pass_keyboard(current, reverse: false)
-      if @editable.get
-        super
-      else
-        return false
-      end
+      return false unless @editable.get
+
+      super
     end
 
     def pen_at(position, selection = false)
@@ -317,8 +308,8 @@ module Ruby2D
         pen_right(selection, position - pp)
       elsif pp > position
         pen_left(selection, pp - position)
-      elsif not selection
-        @selection.set(Selection.new pp)
+      elsif !selection
+        @selection.set(Selection.new(pp))
       end
     end
 
@@ -340,13 +331,13 @@ module Ruby2D
               if st <= s.length
                 @selection.set(s.move(0, -st))
               else
-                @selection.set(Selection.new s.end - st, st - s.length)
+                @selection.set(Selection.new(s.end - st, st - s.length))
               end
             else
-              @selection.set(Selection.new pp - st, st)
+              @selection.set(Selection.new(pp - st, st))
             end
           else
-            @selection.set(Selection.new pp - st, st)
+            @selection.set(Selection.new(pp - st, st))
           end
         end
       else
@@ -372,15 +363,15 @@ module Ruby2D
               if st <= s.length
                 @selection.set(s.move(st, -st))
               else
-                @selection.set(Selection.new s.end, st - s.length)
+                @selection.set(Selection.new(s.end, st - s.length))
               end
             elsif pp == s.end
               @selection.set(s.move(0, st))
             else
-              @selection.set(Selection.new pp, st)
+              @selection.set(Selection.new(pp, st))
             end
           else
-            @selection.set(Selection.new pp, st)
+            @selection.set(Selection.new(pp, st))
           end
         end
       else
@@ -394,25 +385,21 @@ module Ruby2D
       pp = @pen_position.get
       tv = @text_value.get
       if direction == :right
-        if pp < tv.length
-          @text_value.set(tv[0, pp] + tv[pp + 1..])
-        end
-      else
-        if pp > 0
-          @text_value.set(tv[0, pp - 1] + tv[pp..])
-          @pen_position.set(pp - 1)
-        end
+        @text_value.set(tv[0, pp] + tv[pp + 1..]) if pp < tv.length
+      elsif pp > 0
+        @text_value.set(tv[0, pp - 1] + tv[pp..])
+        @pen_position.set(pp - 1)
       end
     end
 
     def select_all
       tvl = @text_value.get.length
-      @selection.set(Selection.new 0, tvl)
+      @selection.set(Selection.new(0, tvl))
       @pen_position.set tvl
     end
 
     def paste(str, type = false)
-      return if not @editable.get
+      return unless @editable.get
 
       selection = @selection.get
       tv = @text_value.get
@@ -448,7 +435,7 @@ module Ruby2D
       else
         @text_value.set(tv[...selection.start] + str + tv[selection.end..])
         @pen_position.set(selection.start + str.length)
-        @selection.set(Selection.new @pen_position.get)
+        @selection.set(Selection.new(@pen_position.get))
       end
     end
 
@@ -466,26 +453,26 @@ module Ruby2D
           text.set @text
           selection.set Selection.new
           pen_position.set @front_select.end
-          return true
+          true
         else
           selection.set @back_select
           pen_position.set @back_select.end
-          return false
+          false
         end
       end
 
       def front(text, selection, pen_position, prev_entry)
         front_select = prev_entry.front_select
         back_select = prev_entry.back_select
-        if selection.get == front_select || front_select.empty? && pen_position.get == front_select.end
+        if selection.get == front_select || (front_select.empty? && pen_position.get == front_select.end)
           text.set @text
           selection.set Selection.new
           pen_position.set back_select.end
-          return true
+          true
         else
           selection.set front_select
           pen_position.set front_select.end
-          return false
+          false
         end
       end
     end
@@ -498,19 +485,21 @@ module Ruby2D
 
     def story_push(selection_in_new_text, old_text, selection_in_old_text)
       @story.pop(@story.size - @story_index) if @story.size > @story_index
-      @story.push(PasteStoryEntry.new selection_in_new_text, old_text, selection_in_old_text)
+      @story.push(PasteStoryEntry.new(selection_in_new_text, old_text, selection_in_old_text))
       @story_index = @story.size
     end
 
     def story_back
       close_type_story if @type_story
-      if @story_index > 0
-        @story.push(PasteStoryEntry.new @selection.get, @text_value.get,
-                                        Selection.new) if @story.size == @story_index
-        if @story[@story_index - 1].back(@text_value, @selection, @pen_position)
-          @story_index -= 1
-        end
+      return unless @story_index > 0
+
+      if @story.size == @story_index
+        @story.push(PasteStoryEntry.new(@selection.get, @text_value.get,
+                                        Selection.new))
       end
+      return unless @story[@story_index - 1].back(@text_value, @selection, @pen_position)
+
+      @story_index -= 1
     end
 
     def story_front
@@ -534,9 +523,7 @@ module Ruby2D
 
         cc = character_class(text[start]) == :blank
         cnt = text[start + 1..].each_char.take_while { (character_class(_1) == :blank) == cc }.count
-        if character_class(text[start + cnt + 1]) == :blank
-          cnt += text[start + cnt + 1..].each_char.take_while { character_class(_1) == :blank }.count
-        end
+        cnt += text[start + cnt + 1..].each_char.take_while { character_class(_1) == :blank }.count if character_class(text[start + cnt + 1]) == :blank
         cnt
       end
 
@@ -552,9 +539,7 @@ module Ruby2D
 
         cc = character_class(text[start]) == :blank
         cnt = text[..start - 1].reverse.each_char.take_while { (character_class(_1) == :blank) == cc }.count
-        if character_class(text[start - cnt - 1]) == :blank
-          cnt += text[..start - cnt - 1].reverse.each_char.take_while { character_class(_1) == :blank }.count
-        end
+        cnt += text[..start - cnt - 1].reverse.each_char.take_while { character_class(_1) == :blank }.count if character_class(text[start - cnt - 1]) == :blank
         cnt
       end
 
@@ -597,9 +582,7 @@ module Ruby2D
       14
     end
 
-    def text_font
-      @text_font
-    end
+    attr_reader :text_font
 
     def border
       let @element.keyboard_current do |kc|
@@ -670,9 +653,7 @@ module Ruby2D
       14
     end
 
-    def text_font
-      @text_font
-    end
+    attr_reader :text_font, :color, :text_color
 
     def border
       0
@@ -682,16 +663,8 @@ module Ruby2D
       0
     end
 
-    def color
-      @color
-    end
-
     def border_color
       [0, 0, 0, 0]
-    end
-
-    def text_color
-      @text_color
     end
 
     def height

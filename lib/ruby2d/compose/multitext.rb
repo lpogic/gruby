@@ -32,38 +32,38 @@ module Ruby2D
       @font_path.let f
     end
 
-    def _default_plan(x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil)
+    def default_plan(x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil)
       if x
         @x.let x
       elsif left
-        let(left, width) { _1 + _2 * 0.5 } >> @x
+        let(left, width) { _1 + (_2 * 0.5) } >> @x
       elsif right
-        let(right, width) { _1 - _2 * 0.5 } >> @x
+        let(right, width) { _1 - (_2 * 0.5) } >> @x
       end
 
       if y
         @y.let y
       elsif top
-        let(top, height) { _1 + _2 * 0.5 } >> @y
+        let(top, height) { _1 + (_2 * 0.5) } >> @y
       elsif bottom
-        let(bottom, height) { _1 - _2 * 0.5 } >> @y
+        let(bottom, height) { _1 - (_2 * 0.5) } >> @y
       end
     end
 
-    def _cvs_left
-      let(@x, @width) { _1 - _2 * 0.5 }
+    def cvs_left
+      let(@x, @width) { _1 - (_2 * 0.5) }
     end
 
-    def _cvs_right
-      let(@x, @width) { _1 + _2 * 0.5 }
+    def cvs_right
+      let(@x, @width) { _1 + (_2 * 0.5) }
     end
 
-    def _cvs_top
-      let(@y, @height) { _1 - _2 * 0.5 }
+    def cvs_top
+      let(@y, @height) { _1 - (_2 * 0.5) }
     end
 
-    def _cvs_bottom
-      let(@y, @height) { _1 + _2 * 0.5 }
+    def cvs_bottom
+      let(@y, @height) { _1 + (_2 * 0.5) }
     end
 
     def portions=(portions)
@@ -72,7 +72,7 @@ module Ruby2D
         color = prt[:color]
         text = new_text(let(@text, range) do
                           _1[_2]
-                        end, size: @size, style: @font_style, font: @font_path, color: color, y: @y)
+                        end, size: @size, style: @font_style, font: @font_path, color:, y: @y)
         text.plan :left
         TextPart.new(text, range)
       end

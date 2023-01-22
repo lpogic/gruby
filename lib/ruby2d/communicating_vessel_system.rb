@@ -11,34 +11,34 @@ require 'weakref'
 module Ruby2D
   module CommunicatingVesselSystem
     def pot(v = nil, unique: true, pull: true)
-      return v if not unique and v.is_a?(Pot)
+      return v if !unique and v.is_a?(Pot)
 
       location = Pot.debug ? caller[0] : nil
-      BasicPot.new(pull: pull, location: location).let v
+      BasicPot.new(pull:, location:).let v
     end
 
     def compot(*v, pull: true, &block)
       p1 = CommunicatingVesselSystem.pot
-      p2 = CommunicatingVesselSystem.pot pull: pull
+      p2 = CommunicatingVesselSystem.pot(pull:)
       CommunicatingVesselSystem.let(*v, p1, BasicPot.new(p2), &block).apply_outpot(p2, pull: false)
       p2.recent = true
       location = Pot.debug ? caller[0] : nil
-      Compot.new(p1, p2, location: location)
+      Compot.new(p1, p2, location:)
     end
 
     def arrpot(pull: true, &block)
       p1 = CommunicatingVesselSystem.pot []
-      p2 = CommunicatingVesselSystem.pot pull: pull
+      p2 = CommunicatingVesselSystem.pot(pull:)
       p3 = CommunicatingVesselSystem.pot pull: true
       block ||= proc { _1 }
       CommunicatingVesselSystem.let(p1) do |pots|
         pots = [] if pots.nil?
-        pots = block.(pots.array)
+        pots = block.call(pots.array)
         CommunicatingVesselSystem.let(*pots) { |*a| [a] } >> p2
         [pots]
       end >> p3
       location = Pot.debug ? caller[0] : nil
-      Arrpot.new(p1, p2, p3, location: location)
+      Arrpot.new(p1, p2, p3, location:)
     end
 
     def let(*inpot, out: nil, &block)
@@ -51,14 +51,14 @@ module Ruby2D
       end
       if block_given?
         if out.nil?
-          return Let.new(inpot, &block)
+          Let.new(inpot, &block)
         else
           l = Let.new(inpot, &block)
           l.apply_outpot(*out)
-          return l
+          l
         end
       else
-        return Let.new(inpot) do |*v| v end
+        Let.new(inpot) { |*v| v }
       end
     end
 
@@ -66,14 +66,14 @@ module Ruby2D
       inpot = inpot.map { _1.is_a?(Pot) ? _1 : BasicPot.new.let(_1) }
       if block_given?
         if out.nil?
-          return LetDebug.new(inpot, caller, &block)
+          LetDebug.new(inpot, caller, &block)
         else
           l = LetDebug.new(inpot, caller, &block)
           l.apply_outpot(*out)
-          return l
+          l
         end
       else
-        return LetDebug.new(inpot, caller) do |*v| v end
+        LetDebug.new(inpot, caller) { |*v| v }
       end
     end
 
@@ -84,10 +84,10 @@ module Ruby2D
         @outpot = []
       end
 
-      attr_reader :function
+      attr_reader :function, :inpot
 
       def inspect
-        "Let:#{self.object_id} @inpot=#{@inpot.map { "Pot:" + _1.object_id.to_s }} @outpot=#{@outpot.map { "Pot:" + _1.object_id.to_s }} @function=#{@function}"
+        "Let:#{object_id} @inpot=#{@inpot.map { 'Pot:' + _1.object_id.to_s }} @outpot=#{@outpot.map { 'Pot:' + _1.object_id.to_s }} @function=#{@function}"
       end
 
       def copy
@@ -95,22 +95,23 @@ module Ruby2D
       end
 
       # dla funkcji agregujących np. let(*xes).max,    let(a, b, c).max
-      def method_missing(m, *a, &b)
+      def method_missing(m, *a, &)
         if Array.method_defined? m
-          __compose(m, *a, &b)
+          __compose(m, *a, &)
         else
           super
         end
       end
 
-      def __compose(m, *arg, &b)
+      def __compose(m, *arg, &)
         if @function
           Let.new(@inpot) do |*a|
-            @function.call(*a).array.send(m, *arg, &b)
+            r = *@function.call(*a)
+            r.send(m, *arg, &)
           end
         else
           Let.new(@inpot) do |*a|
-            a.send(m, *arg, &b)
+            a.send(m, *arg, &)
           end
         end
       end
@@ -118,7 +119,7 @@ module Ruby2D
       def as(&b)
         if @function
           Let.new(@inpot) do |*a|
-            b.(*@function.call(*a))
+            b.call(*@function.call(*a))
           end
         else
           Let.new(@inpot, &b)
@@ -126,21 +127,20 @@ module Ruby2D
       end
 
       def apply_outpot(*outpot, pull: true)
-        raise "Connected" if @connected
-        loop_test *outpot
+        raise 'Connected' if @connected
+
+        loop_test(*outpot)
         od = outpot.map do
           _1.set_inlet self
           _1.outdate
         end.reduce(:+)
         @outpot += outpot.map { WeakRef.new _1 }
-        if not @connected
+        unless @connected
           @inpot.each { _1.add_outlet(self) }
           @connected = true
         end
         od.each(&:get) if pull
       end
-
-      def inpot = @inpot
 
       def outpot
         o = []
@@ -149,7 +149,7 @@ module Ruby2D
             begin
               o << wr.__getobj__
               wr
-            rescue
+            rescue StandardError
               o << nil
               nil
             end
@@ -161,26 +161,27 @@ module Ruby2D
         o
       end
 
-      def loop_test *outpot
-        seed = Pot.dfs_next_seed
-        path_found = inpot.map do |i|
-          i.dfs_path(seed: seed).find do |path|
-            outpot.include?(path.last)
-          end
-        end.find(&:itself)
-        raise "Pot loop detected:\n" + path_found.map { _1.inspect }.join("\n") if path_found
+      def loop_test(*outpot)
+        # seed = Pot.dfs_next_seed
+        # path_found = outpot.map do |o|
+        #   o.dfs_path(seed: seed).find do |path|
+        #     inpot.include?(path.last)
+        #   end
+        # end.find(&:itself)
+        # raise "Pot loop detected:\n" + path_found.map { _1.inspect }.join("\n") if path_found
       end
 
-      def >>(that)
-        return copy >> that if @connected
-        case that
+      def >>(other)
+        return copy >> other if @connected
+
+        case other
         when Pot
-          apply_outpot that
+          apply_outpot other
         when Let
-          apply_outpot *that.inpot
+          apply_outpot(*other.inpot)
         when Array
-          apply_outpot *that
-        else raise "Invalid right side"
+          apply_outpot(*other)
+        else raise 'Invalid right side'
         end
         self
       end
@@ -201,7 +202,7 @@ module Ruby2D
         oc.each { _1.recent = true }
         result = get.array
         if outpot.size > 1
-          result.zip(outpot).each { |r, o| o.__set r if not o.nil? }
+          result.zip(outpot).each { |r, o| o.__set r unless o.nil? }
         else
           outpot[0].__set result[0]
         end
@@ -214,7 +215,11 @@ module Ruby2D
 
       def get
         i = @inpot.map(&:get)
-        @function ? @function.call(*i) : i.size > 1 ? i : i[0]
+        if @function
+          @function.call(*i)
+        else
+          i.size > 1 ? i : i[0]
+        end
       end
 
       def close
@@ -222,7 +227,7 @@ module Ruby2D
       end
 
       def open(open = true)
-        raise "Canceled let open" if open and (!@function or !@outpot)
+        raise 'Canceled let open' if open and (!@function or !@outpot)
 
         @closed = !open
       end
@@ -259,8 +264,8 @@ module Ruby2D
         end
       end
 
-      def arrpot(&b)
-        CommunicatingVesselSystem.arrpot { _1.map(&b) } << self
+      def arrpot(&)
+        CommunicatingVesselSystem.arrpot { _1.map(&).compact.flatten } << self
       end
     end
 
@@ -283,13 +288,13 @@ module Ruby2D
 
       def self.debug = @@debug
 
-      def >>(pt)
-        CommunicatingVesselSystem.let(self) >> pt
+      def >>(other)
+        CommunicatingVesselSystem.let(self) >> other
         self
       end
 
       def <<(obj)
-        obj = CommunicatingVesselSystem.let(obj) if not obj.is_a? Let
+        obj = CommunicatingVesselSystem.let(obj) unless obj.is_a? Let
         obj >> self
         self
       end
@@ -308,46 +313,50 @@ module Ruby2D
           @dfs_seed = seed = Pot.dfs_next_seed
         end
         Enumerator.new do |e|
-          e.yield(self, depth) if deeper_later and not exclude_root
+          e.yield(self, depth) if deeper_later and !exclude_root
           if direction == :in
             if inlet
               inlet.inpot.each do |ip|
-                ip.dfs(depth + 1, direction: direction, deeper_later: deeper_later, exclude_root: false, seed: seed).each do |id, dp|
+                ip.dfs(depth + 1, direction:, deeper_later:, exclude_root: false, seed:).each do |id, dp|
                   e.yield(id, dp)
                 end
               end
             end
           elsif direction == :out
             outlet.each do |ol|
-              ol.outpot.compact do |op|
-                op.dfs(depth + 1, direction: direction, deeper_later: deeper_later, exclude_root: false, seed: seed).each do |od, dp|
+              ol.outpot.compact.each do |op|
+                op.dfs(depth + 1, direction:, deeper_later:, exclude_root: false, seed:).each do |od, dp|
                   e.yield(od, dp)
                 end
               end
             end
           end
-          e.yield(self, depth) if not deeper_later and not exclude_root
+          e.yield(self, depth) if !deeper_later and !exclude_root
         end
       end
 
       def dfs_path(direction: :in, seed: nil)
         path = []
         Enumerator.new do |e|
-          dfs(direction: direction, exclude_root: false, seed: seed).each do |pt, d|
+          dfs(direction:, exclude_root: false, seed:).each do |pt, d|
             path[d] = pt
             e.yield(path[..d])
           end
         end
       end
 
+      def affect(affected)
+        dfs(direction: :out, exclude_root: false).any? { _1 == affected }
+      end
+
       def print_inpot_tree
         dfs(direction: :in).map do |pt, d|
-          p " " * d + pt.inspect
+          p (' ' * d) + pt.inspect
         end
       end
 
-      def arrpot(&b)
-        CommunicatingVesselSystem.arrpot { _1.map(&b) } << self
+      def arrpot(&)
+        CommunicatingVesselSystem.arrpot { _1.map(&).compact.flatten } << self
       end
     end
 
@@ -366,20 +375,21 @@ module Ruby2D
         if @location
           "pot #{@location}"
         else
-          "BasicPot:#{self.object_id} @recent=#{@recent} @value=#{@value.inspect} @inlet=#{
-            @inlet ? "Let:" + @inlet.object_id.to_s : "nil"} @outlet=#{@outlet.map { "Let:" + _1.object_id.to_s }}"
+          "BasicPot:#{object_id} @recent=#{@recent} @value=#{@value.inspect} @inlet=#{
+            @inlet ? 'Let:' + @inlet.object_id.to_s : 'nil'} @outlet=#{@outlet.map { 'Let:' + _1.object_id.to_s }}"
         end
       end
 
       def get
-        update if not @recent
+        update unless @recent
         @value
       end
 
       attr_accessor :recent, :value
 
       def nopull
-        pull, @pull = @pull, false
+        pull = @pull
+        @pull = false
         yield
         @pull = pull
       end
@@ -392,8 +402,12 @@ module Ruby2D
       def outdate
         if @recent
           @recent = false
-          pull_down = outlet.map { o = _1.outdate; p _1.function if o.nil?; o }.reduce([], :+)
-          pull_down && !pull_down.empty? ? pull_down : @pull ? [self] : []
+          pull_down = outlet.map { _1.outdate }.reduce([], :+)
+          if pull_down && !pull_down.empty?
+            pull_down
+          else
+            @pull ? [self] : []
+          end
         else
           []
         end
@@ -407,12 +421,10 @@ module Ruby2D
       def outlet
         o = []
         @outlet = @outlet.map do |wr|
-          begin
-            o << wr.__getobj__
-            wr
-          rescue
-            nil
-          end
+          o << wr.__getobj__
+          wr
+        rescue StandardError
+          nil
         end.compact
         o
       end
@@ -426,9 +438,9 @@ module Ruby2D
         self
       end
 
-      def let(*v, &block)
+      def let(*v, &)
         if block_given?
-          l = Let.new(v.map { _1.is_a?(Pot) ? _1 : BasicPot.new.let(_1) }, &block)
+          l = Let.new(v.map { _1.is_a?(Pot) ? _1 : BasicPot.new.let(_1) }, &)
         elsif v[0].is_a? Let
           l = v[0].copy
         elsif v[0].is_a? Pot
@@ -440,8 +452,8 @@ module Ruby2D
         self
       end
 
-      def as(&block)
-        Let.new([self], &block)
+      def as(&)
+        Let.new([self], &)
       end
 
       alias value= set
@@ -451,20 +463,18 @@ module Ruby2D
         @inlet = inlet
       end
 
-      def inlet
-        @inlet
-      end
+      attr_reader :inlet
 
       def dependent?
-        return !!@inlet
+        !!@inlet
       end
 
       def add_outlet(let)
-        @outlet.append(WeakRef.new let) if not outlet.include? let
+        @outlet.append(WeakRef.new(let)) unless outlet.include? let
       end
 
       def delete_outlet(let)
-        @outlet.delete_if { not _1.weakref_alive? or _1.__getobj__ == let }
+        @outlet.delete_if { !_1.weakref_alive? or _1.__getobj__ == let }
       end
     end
 
@@ -480,7 +490,7 @@ module Ruby2D
         if @location
           "compot #{@location}"
         else
-          "Compot:#{self.object_id} @inpot=#{@inpot.inspect} @outpot=#{@outpot.inspect}]"
+          "Compot:#{object_id} @inpot=#{@inpot.inspect} @outpot=#{@outpot.inspect}]"
         end
       end
 
@@ -522,13 +532,13 @@ module Ruby2D
         self
       end
 
-      def let(*v, &block)
-        @inpot.let(*v, &block)
+      def let(...)
+        @inpot.let(...)
         self
       end
 
-      def as(&block)
-        Let.new([self], &block)
+      def as(&)
+        Let.new([self], &)
       end
 
       alias value= set
@@ -561,13 +571,12 @@ module Ruby2D
         @outpot.delete_outlet(let)
       end
 
-      def inpot = @inpot
-      def outpot = @outpot
+      attr_reader :inpot, :outpot
     end
 
     class Arrpot < Compot
       def initialize(inpot, outpot, drainpot, location: nil)
-        super(inpot, outpot, location: location)
+        super(inpot, outpot, location:)
         @drain = drainpot
       end
 
@@ -575,7 +584,7 @@ module Ruby2D
         if @location
           "arrpot #{@location}"
         else
-          "Arrpot:#{self.object_id} @inpot=#{@inpot.inspect} @outpot=#{@outpot.inspect}]"
+          "Arrpot:#{object_id} @inpot=#{@inpot.inspect} @outpot=#{@outpot.inspect}]"
         end
       end
 
@@ -589,14 +598,14 @@ module Ruby2D
         self
       end
 
-      def map(&b)
-        arrpot << self.as { _1.map(&b) }
+      def map(&)
+        arrpot << as { _1.map(&) }
       end
 
       # dla funkcji agregujących np. let(*xes).max,    let(a, b, c).max
-      def method_missing(m, *a, &b)
+      def method_missing(m, *a, &)
         if Array.method_defined? m
-          as { _1.send(m, *a, &b) }
+          as { _1.send(m, *a, &) }
         else
           super
         end
@@ -610,15 +619,15 @@ class Class
     make_reader = proc do |n|
       ns = n.split(':')
       ns[1] ||= ns[0]
-      pt = "c = defined?(self._cvs_#{ns[0]}) ? self._cvs_#{ns[0]} : @#{ns[0]}"
-      self.class_eval("def #{ns[1]}(&b); #{pt}; block_given? ? c.as(&b) : c;end")
+      pt = "c = defined?(self.cvs_#{ns[0]}) ? self.cvs_#{ns[0]} : @#{ns[0]}"
+      class_eval("def #{ns[1]}(&b); #{pt}; block_given? ? c.as(&b) : c;end", __FILE__, __LINE__)
     end
 
     a.each do |n|
       if n.is_a? Array
-        n.each { make_reader.(_1.to_s) }
+        n.each { make_reader.call(_1.to_s) }
       else
-        make_reader.(n.to_s)
+        make_reader.call(n.to_s)
       end
     end
   end

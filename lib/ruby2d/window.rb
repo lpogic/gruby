@@ -5,7 +5,8 @@
 module Ruby2D
   # Represents a window on screen, responsible for storing renderable graphics,
   # event handlers, the update loop, showing and closing the window.
-  class Window < Arena
+  class Window < Cluster
+    include Arena
     # Event structures
     ResizeEvent           = Struct.new(:width, :height)
     MouseEvent            = Struct.new(:type, :button, :direction, :x, :y, :delta_x, :delta_y)
@@ -682,7 +683,7 @@ module Ruby2D
         if @key_typer.type key
           c = @keyboard_current_object
           while c
-            c.emit :key_type, e
+            c.emit :key, e
             c = c.parent
           end
         end

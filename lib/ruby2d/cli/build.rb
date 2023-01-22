@@ -275,7 +275,7 @@ def doctor_web(_mode = nil)
     puts "\nErrors were found!\n\n"
     puts '* Did you install mruby?' if mruby_errors
     if emscripten_errors
-      puts "* Did you run \`./emsdk_env.sh\` ?",
+      puts '* Did you run `./emsdk_env.sh` ?',
            '  For help, check out the "Getting Started" guide on webassembly.org'
     end
     puts "\n"
@@ -314,7 +314,7 @@ def create_macos_bundle
   FileUtils.mkpath 'build/App.app/Contents/Resources'
 
   # Create Info.plist and copy over assets
-  File.open('build/App.app/Contents/Info.plist', 'w') { |f| f.write(info_plist) }
+  File.write('build/App.app/Contents/Info.plist', info_plist)
   FileUtils.cp 'build/app', 'build/App.app/Contents/MacOS/'
   # Consider using an icon:
   #   FileUtils.cp "#{@gem_dir}/assets/app.icns", 'build/App.app/Contents/Resources'

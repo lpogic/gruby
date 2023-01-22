@@ -13,14 +13,14 @@ module Ruby2D
       @rows = arrpot.let rows
       @height << @rows.sum
 
-      plan **na
+      plan(**na)
     end
 
     cvs_reader :width, :height, :right, :bottom, :x, :y, :left, :top, :cols, :rows
 
-    def _default_plan(x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil)
+    def default_plan(x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil)
       if x
-        let(x, width) { _1 - _2 * 0.5 } >> @left
+        let(x, width) { _1 - (_2 * 0.5) } >> @left
       elsif left
         left >> @left
       elsif right
@@ -28,7 +28,7 @@ module Ruby2D
       end
 
       if y
-        let(y, height) { _1 - _2 * 0.5 } >> @top
+        let(y, height) { _1 - (_2 * 0.5) } >> @top
       elsif top
         top >> @top
       elsif bottom
@@ -36,24 +36,24 @@ module Ruby2D
       end
     end
 
-    def _cvs_right
+    def cvs_right
       let(@left, @width) { _1 + _2 }
     end
 
-    def _cvs_bottom
+    def cvs_bottom
       let(@top, @height) { _1 + _2 }
     end
 
-    def _cvs_x
-      let(@left, @width) { _1 + _2 * 0.5 }
+    def cvs_x
+      let(@left, @width) { _1 + (_2 * 0.5) }
     end
 
-    def _cvs_y
-      let(@top, @height) { _1 + _2 * 0.5 }
+    def cvs_y
+      let(@top, @height) { _1 + (_2 * 0.5) }
     end
 
     class Sector
-      hash_init :left, :width, :top, :height, reader: true
+      fast_init :left, :width, :top, :height, reader: true
 
       def right
         let(@left, @width) { _1 + _2 }
@@ -64,11 +64,11 @@ module Ruby2D
       end
 
       def x
-        let(@left, @width) { _1 + _2 * 0.5 }
+        let(@left, @width) { _1 + (_2 * 0.5) }
       end
 
       def y
-        let(@top, @height) { _1 + _2 * 0.5 }
+        let(@top, @height) { _1 + (_2 * 0.5) }
       end
     end
 
@@ -109,7 +109,7 @@ module Ruby2D
         end
       end
 
-      Sector.new(left: left, width: width, top: top, height: height)
+      Sector.new(left:, width:, top:, height:)
     end
 
     alias [] sector

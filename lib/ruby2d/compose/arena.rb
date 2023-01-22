@@ -1,6 +1,6 @@
 module Ruby2D
-  class Arena < Cluster
-    def init
+  module Arena
+    def init(*, **, &)
       super
       @_top = self
     end
@@ -14,8 +14,8 @@ module Ruby2D
 
     def append(element, **plan)
       if @_top == self
-        plan[:x] = x unless plan_x_defined? plan
-        plan[:y] = y unless plan_y_defined? plan
+        plan[:x] = x unless Rectangle.x_dim? plan
+        plan[:y] = y unless Rectangle.y_dim? plan
         element.plan(**plan)
         plan width: element.width, height: element.height
         care element
@@ -34,14 +34,14 @@ module Ruby2D
 
     def plan(**a); end
 
-    def row(height = nil, **na, &b)
+    def row(height = nil, **na, &)
       na[:height] = height if height
-      append(Row.new(self, **na), **na, &b)
+      append(Row.new(self, **na), **na, &)
     end
 
-    def col(width = nil, **na, &b)
+    def col(width = nil, **na, &)
       na[:width] = width if width
-      append(Col.new(self, **na), **na, &b)
+      append(Col.new(self, **na), **na, &)
     end
 
     def gap(size)
@@ -56,7 +56,11 @@ module Ruby2D
       append(new_note(**na), **na)
     end
 
-    def button(t, **na)
+    def ruby_note(**na)
+      append(new_ruby_note(**na), **na)
+    end
+
+    def button(t = 'Button', **na)
       append(new_button(text: t, **na), **na)
     end
 

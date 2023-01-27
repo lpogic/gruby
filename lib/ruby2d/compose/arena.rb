@@ -26,7 +26,7 @@ module Ruby2D
       @_top = element
       if block_given?
         r = yield element
-        element.append(new_note(text: r, style: 'text')) if r.is_a? String
+        element.append(new_note(text: r, outfit: 'text')) if r.is_a? String
       end
       @_top = top
       element
@@ -49,7 +49,7 @@ module Ruby2D
     end
 
     def text(t, **na)
-      append(new_note(text: t, style: 'text', **na.except(:x, :y, :width, :height)), **na)
+      append(new_note(text: t, outfit: 'text', **na.except(:x, :y, :width, :height)), **na)
     end
 
     def note(**na)

@@ -25,7 +25,7 @@ module Ruby2D
           if @buttons[i]
             b = @buttons[i]
           else
-            b = @buttons[i] = new_button(style: 'option')
+            b = @buttons[i] = new_button(outfit: 'option')
             b.disable :accept_keyboard
             b.on :click do
               emit :option_selected, OpitonSelectedEvent.new(i, b)
@@ -243,9 +243,9 @@ module Ruby2D
         subject.nanny = self
         @box.plan x: subject.x, width: subject.width
         let(@options.height, subject.y, subject.height, subject.round) do |obh, sy, sh, sr|
-          r = [4, sr * 0.5].max
+          r = [4, sr.to_a.max * 0.5].max
           [sy + sh * 0.5, sy + (obh + r) * 0.5, sh + obh + r]
-        end >> @options.plan(:top) >> @box.plan(:y, :height)
+        end >> @options.plan(:top) + @box.plan(:y, :height)
         @box.round << subject.round
         @offset << 0
         @enabled.set true

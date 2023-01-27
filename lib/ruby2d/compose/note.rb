@@ -509,6 +509,63 @@ module Ruby2D
       end
     end
 
+    class SupportPack
+      def initialize(note, options)
+        @events = []
+        @events << note.on(note.keyboard_current) do |kc|
+          note.window.note_support.accept_subject nil unless kc
+        end
+        @events << note.on(:click) do
+          ns = note.window.note_support
+          if ns.subject == note
+            ns.accept_subject nil
+          else
+            ns.accept_subject note
+            ns.suggestions << options
+            ns.on_option_selected do |o|
+              note.text << o.to_s
+              ns.accept_subject nil
+            end
+          end
+        end
+        @events << note.on_key do |e|
+          if e.key == 'down' || e.key == 'up'
+            ns = note.window.note_support
+            if ns.subject == note
+              ns.hover_down if e.key == 'down'
+              ns.hover_up if e.key == 'up'
+            else
+              ns.accept_subject note
+              ns.suggestions << options
+              ns.on_option_selected do |o|
+                note.text.set o
+                ns.accept_subject nil
+              end
+            end
+          end
+        end
+        @events << note.on(:key_down) do |e|
+          ns = note.window.note_support
+          ns.press_hovered if e.key == 'return' && (ns.subject == note)
+        end
+        @events << note.on(:key_up) do |e|
+          ns = note.window.note_support
+          ns.release_pressed if e.key == 'return' && (ns.subject == note)
+        end
+      end
+
+      def cancel
+        @events.each{ _1.cancel }
+        @events = []
+      end
+    end
+
+
+    def support(options)
+      @support.cancel if @support
+      @support = SupportPack.new self, options
+    end
+
     private
 
       def class_step_right(text, start, classifier = :strict_character_class)

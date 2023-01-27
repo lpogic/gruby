@@ -179,10 +179,11 @@ end
 
 @b.width << @c.width{_1 - 10}
 
-# @n.support ['alpha', 'beta', 'gamma']
+@n.support ['alpha', 'beta', 'gamma']
 
 @b.on :click do
   @n.width.value += 30
+  @n.support ['arikitiki', 'arikitik', 'panabanalunka']
 end
 
 show

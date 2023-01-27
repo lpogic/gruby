@@ -2,7 +2,9 @@ module Ruby2D
   class Col < ColRowContainer
     def init(gap: 0, **ona)
       super
-      let(ona[:width] || 0, @objects.arrpot { _1 == @body || width.affect(_1.width) ? nil : _1.width }) { [_1, _2.max || 0].max } >> @body.width
+      @width_mix = pot []
+      @width_mix.value <<= ona[:width] if ona[:width]
+      @body.width << @width_mix.arrpot.as{ _1.max || 0 }
       @grid = Grid.new cols: [@body.width], x: @body.x, y: @body.y
       @body.height << @grid.height
     end
@@ -18,9 +20,17 @@ module Ruby2D
           @grid.rows.set { |a| a.empty? ? [element.height] : a + [@gap, element.height] }
         end
         @last_gap = false
-        super
 
+        if plan[:width] == :off
+          plan.delete :width
+        elsif !width.affect(plan[:width])
+          @width_mix.value <<= element.width
+        end
+
+        super
       end
     end
+
+    def width_mix; @width_mix end
   end
 end

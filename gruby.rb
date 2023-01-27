@@ -50,7 +50,7 @@ require 'ruby2d/core'
 include Ruby2D
 extend DSL
 
-set background: 'gray', resizable: true
+set background: 'gray', resizable: true#, width: 300, height: 200
 on :key_down do |e|
   close if e.key == 'escape'
 end
@@ -138,7 +138,6 @@ class PersonForm < Form
       @age.text.set ''
       @margin.set { _1 + 1 }
     end
-    p "XD"
   end
 end
 
@@ -166,17 +165,21 @@ class OtherForm < Form
     end
   end
 end
-note
 
 # f = OtherForm.new self
 # p window
 # f = PersonForm.new window
 # care f
-
-@c = col color: 'yellow' do |c|
+@c = col let(window.x, window.mouse_x){(_1 - _2).abs * 2}, color: 'yellow', x: window.x, y: window.y do |c|
   @n = note
-  @b = button width: c.width{_1 - 5}
+  gap 2
+  @b = button width: :off
+  # @b = button width: c.width{_1 - 5}
 end
+
+@b.width << @c.width{_1 - 10}
+
+# @n.support ['alpha', 'beta', 'gamma']
 
 @b.on :click do
   @n.width.value += 30

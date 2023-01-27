@@ -16,7 +16,7 @@ module Ruby2D
       if @_top == self
         plan[:x] = x unless Rectangle.x_dim? plan
         plan[:y] = y unless Rectangle.y_dim? plan
-        element.plan(**plan)
+        element.plan(**plan.except(:width, :height))
         plan width: element.width, height: element.height
         care element
       else
@@ -49,27 +49,27 @@ module Ruby2D
     end
 
     def text(t, **na)
-      append(new_note(text: t, style: 'text', **na), **na)
+      append(new_note(text: t, style: 'text', **na.except(:x, :y, :width, :height)), **na)
     end
 
     def note(**na)
-      append(new_note(**na), **na)
+      append(new_note(**na.except(:x, :y, :width, :height)), **na)
     end
 
     def ruby_note(**na)
-      append(new_ruby_note(**na), **na)
+      append(new_ruby_note(**na.except(:x, :y, :width, :height)), **na)
     end
 
     def button(t = 'Button', **na)
-      append(new_button(text: t, **na), **na)
+      append(new_button(text: t, **na.except(:x, :y, :width, :height)), **na)
     end
 
     def rect(**ona)
-      append(new_rectangle(**ona, plan: false), **ona)
+      append(new_rectangle(**ona.except(:x, :y, :width, :height)), **ona)
     end
 
     def circle(**ona)
-      append(new_circle(**ona), **ona)
+      append(new_circle(**ona.except(:x, :y, :width, :height)), **ona)
     end
   end
 end

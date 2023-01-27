@@ -8,7 +8,7 @@ module Ruby2D
 
     cvs_reader :left, :right, :top, :bottom, :x, :y, :width, :height
     def initialize(r: nil, round: nil, b: nil, border: nil,
-                   color: 'white', border_color: 'black', plan: true, **na)
+                   color: 'white', border_color: 'black', **na)
       super(round: round, border: border, color: color, border_color: border_color)
       @width = pot 200
       @height = pot 100
@@ -20,7 +20,7 @@ module Ruby2D
         d < 0 ? [x, y - d * 0.5, x, y + d * 0.5, w] : [x - d * 0.5, y, x + d * 0.5, y, h]
       end >> [@x1, @y1, @x2, @y2, @thick]
 
-      plan(**na) if plan
+      plan(**na)
     end
 
     def default_plan(x: nil, y: nil, width: nil, height: nil, left: nil, right: nil, top: nil, bottom: nil, **)

@@ -63,11 +63,22 @@ module Ruby2D
           window.contains? x, y
         end
       end
-      @note_support = NoteSupport.new self
-      @objects << [@caretaker, @note_support]
+      update_objects
     end
 
-    attr_reader :note_support
+    def update_objects
+      objects = [@caretaker]
+      objects << @note_support if @note_support
+      @objects << objects
+    end
+
+    def note_support
+      if !@note_support
+        @note_support = NoteSupport.new self
+        update_objects
+      end
+      @note_support
+    end
 
     # Track open window state in a class instance variable
     @open_window = false
@@ -302,19 +313,19 @@ module Ruby2D
 
     cvs_reader :x, :y, :left, :top, :mouse_x, :mouse_y, :timepot, :width, :height, %w(width:right height:bottom)
 
-    def _cvs_left
+    def cvs_left
       @left ||= locked_pot 0
     end
 
-    def _cvs_top
+    def cvs_top
       @top ||= locked_pot 0
     end
 
-    def _cvs_x
+    def cvs_x
       self.width { _1 / 2 }
     end
 
-    def _cvs_y
+    def cvs_y
       self.height { _1 / 2 }
     end
 

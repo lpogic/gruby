@@ -272,8 +272,6 @@ module Ruby2D
     # end
 
     def emit(type, event = nil)
-      ehh = @event_handlers[type]
-      ehh.each { |eh, pro| pro.call(event, eh) } if ehh
       case type
       when :update
         update
@@ -284,14 +282,18 @@ module Ruby2D
         if @last_double_click_time and click_time - @last_double_click_time < 300
           emit :triple_click, event
           @last_double_click_time = nil
+          return
         elsif @last_click_time and click_time - @last_click_time < 300
           emit :double_click, event
           @last_click_time = nil
           @last_double_click_time = click_time
+          return
         else
           @last_click_time = click_time
         end
       end
+      ehh = @event_handlers[type]
+      ehh.each { |eh, pro| pro.call(event, eh) } if ehh
     end
 
     def contains?(x, y)
@@ -371,17 +373,7 @@ module Ruby2D
       enable_text_input false
     end
 
-    def shift_down
-      window.key_down('left shift') || window.key_down('right shift')
-    end
-
-    def ctrl_down
-      window.key_down('left ctrl') || window.key_down('right ctrl')
-    end
-
-    def alt_down
-      window.key_down('left alt') || window.key_down('right alt')
-    end
+    delegate parent: %w[key_modifiers shift_down ctrl_down alt_down gui_down caps_locked num_locked scroll_locked]
 
     def key_down(key)
       window.key_down(key)

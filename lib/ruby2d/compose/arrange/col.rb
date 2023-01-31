@@ -5,23 +5,23 @@ module Ruby2D
       @width_mix = pot []
       @width_mix.value <<= ona[:width] if ona[:width]
       @body.width << @width_mix.arrpot.as{ _1.max || 0 }
-      @grid = Grid.new cols: [@body.width], x: @body.x, y: @body.y
+      @grid = Grid.new cols: [@body.width], rows: [@start_gap, @end_gap], x: @body.x, y: @body.y
       @body.height << @grid.height
     end
 
     def append(element, **plan)
       if element.is_a? Gap
-        @grid.rows.set { |a| a + [element.size] }
+        @grid.rows.set { |a| a[...-1] + [element.size, a[-1]] }
         @last_gap = true
       else
         if @last_gap
-          @grid.rows.set { |a| a + [element.height] }
+          @grid.rows.set { |a| a[...-1] + [element.height, a[-1]] }
         else
-          @grid.rows.set { |a| a.empty? ? [element.height] : a + [@gap, element.height] }
+          @grid.rows.set { |a| a[...-1] + [@gap, element.height, a[-1]] }
         end
         @last_gap = false
 
-        if plan[:width] == :off
+        if plan[:width] == false
           plan.delete :width
         elsif !width.affect(plan[:width])
           @width_mix.value <<= element.width

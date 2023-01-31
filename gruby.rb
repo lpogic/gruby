@@ -170,20 +170,25 @@ end
 # p window
 # f = PersonForm.new window
 # care f
-@c = col let(window.x, window.mouse_x){(_1 - _2).abs * 2}, color: 'yellow', x: window.x, y: window.y do |c|
-  @n = note
-  gap 2
-  @b = button width: :off
-  # @b = button width: c.width{_1 - 5}
+row color: 'yellow', x: window.x, y: window.y, gap: [2] do
+  @c = col gap: [2] do |c|
+    @n = note
+    gap 0
+    @n1 = note
+    @b = button width: false
+  end
 end
 
 @b.width << @c.width{_1 - 10}
+options = pot [0,1,2]
+@n.support options
+# @n.editable << false
 
-@n.support ['alpha', 'beta', 'gamma']
+@n1.support [nil, :raz, :dwa, :trzy, 123, 133, '.{3}']
 
 @b.on :click do
   @n.width.value += 30
-  @n.support ['arikitiki', 'arikitik', 'panabanalunka']
+  options.value <<= options.get.size
 end
 
 show

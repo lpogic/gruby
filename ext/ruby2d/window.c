@@ -116,7 +116,9 @@ void main_loop() {
       case SDL_KEYDOWN:
         if (window->on_key && e.key.repeat == 0) {
           R2D_Event event = {
-            .type = R2D_KEY_DOWN, .key = SDL_GetScancodeName(e.key.keysym.scancode)
+            .type = R2D_KEY_DOWN, 
+            .key = SDL_GetScancodeName(e.key.keysym.scancode),
+            .direction = e.key.keysym.mod
           };
           window->on_key(event);
         }
@@ -125,7 +127,9 @@ void main_loop() {
       case SDL_KEYUP:
         if (window->on_key) {
           R2D_Event event = {
-            .type = R2D_KEY_UP, .key = SDL_GetScancodeName(e.key.keysym.scancode)
+            .type = R2D_KEY_UP, 
+            .key = SDL_GetScancodeName(e.key.keysym.scancode),
+            .direction = e.key.keysym.mod
           };
           window->on_key(event);
         }

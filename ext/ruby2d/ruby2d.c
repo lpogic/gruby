@@ -1584,7 +1584,7 @@ static void on_key(R2D_Event e) {
       break;
   }
 
-  r_funcall(ruby2d_window, "key_callback", 2, type, r_str_new(e.key));
+  r_funcall(ruby2d_window, "key_callback", 3, type, r_str_new(e.key), INT2NUM(e.direction));
 }
 
 

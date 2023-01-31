@@ -51,6 +51,7 @@ module Ruby2D
       @keyboard_current_object = self
       @tab_callback = nil
       @key_typer = KeyTyper.new self
+      @key_modifiers = 0
 
       _init_window_defaults
       _init_event_stores
@@ -478,7 +479,8 @@ module Ruby2D
     end
 
     # Key callback method, called by the native and web extentions
-    def key_callback(type, key)
+    def key_callback(type, key, mod)
+      @key_modifiers = mod if type == :down || type == :up
       key = key.downcase
 
       # All key events
@@ -497,6 +499,38 @@ module Ruby2D
       when :text
         _handle_key_text type, key
       end
+    end
+
+    def key_modifiers
+      @key_modifiers
+    end
+
+    def shift_down
+      @key_modifiers & 0x3 != 0
+    end
+
+    def ctrl_down
+      @key_modifiers & 0xC0 != 0
+    end
+
+    def alt_down
+      @key_modifiers & 0x300 != 0
+    end
+
+    def gui_down
+      @key_modifiers & 0x400 != 0
+    end
+
+    def caps_locked
+      @key_modifiers & 0x2000 != 0
+    end
+
+    def num_locked
+      @key_modifiers & 0x1000 != 0
+    end
+
+    def scroll_locked
+      @key_modifiers & 0x8000 != 0
     end
 
     # Mouse down event method for class pattern

@@ -170,16 +170,20 @@ module Ruby2D
           end
         when 'home'
           pen_left(shift_down, @pen_position.get)
+        when 'keypad 7'
+          pen_left(shift_down, @pen_position.get) if not num_locked
         when 'end'
           pen_right(shift_down, @text_value.get.length - @pen_position.get)
+        when 'keypad 1'
+          pen_right(shift_down, @text_value.get.length - @pen_position.get) if not num_locked
         when 'a'
           select_all if ctrl_down
         when 'v'
           paste clipboard if ctrl_down
         when 'c'
           if ctrl_down
-            selection = @selection.get
-            self.clipboard = @text_value.get[selection.range] unless selection.empty?
+            text = get_selected
+            self.clipboard = text if text != ''
           end
         when 'x'
           if ctrl_down
@@ -398,6 +402,11 @@ module Ruby2D
       @pen_position.set tvl
     end
 
+    def get_selected
+      selection = @selection.get
+      selection.empty? ? '' : @text_value.get[selection.range]
+    end
+
     def paste(str, type = false)
       return unless @editable.get
 
@@ -510,38 +519,64 @@ module Ruby2D
     end
 
     class SupportPack
-      def initialize(note, options)
+      def initialize(note, options, filter)
         @events = []
         @events << note.on(note.keyboard_current) do |kc|
           note.window.note_support.accept_subject nil unless kc
         end
-        @events << note.on(:click) do
+        @events << note.on(:click, :double_click) do
           ns = note.window.note_support
           if ns.subject == note
             ns.accept_subject nil
           else
             ns.accept_subject note
-            ns.suggestions << options
+            ns.suggestions << let(options, note.text) do |op, txt|
+              [op.filter(&filter.curry[txt])]
+            end
             ns.on_option_selected do |o|
-              note.text << o.to_s
+              note.select_all
+              note.paste o.to_s
+              note.select_all
               ns.accept_subject nil
             end
+          end
+        end
+        @events << note.on(:double_click) do
+          ns = note.window.note_support
+          if ns.subject != note
+            ns.accept_subject note
+            ns.suggestions << let(options, note.text) do |op, txt|
+              [op.filter(&filter.curry[txt])]
+            end
+            ns.on_option_selected do |o|
+              note.select_all
+              note.paste o.to_s
+              note.select_all
+              ns.accept_subject nil
+            end
+          end
+          if note.get_selected == ''
+            note.select_all
+            note.paste ''
           end
         end
         @events << note.on_key do |e|
           if e.key == 'down' || e.key == 'up'
             ns = note.window.note_support
-            if ns.subject == note
-              ns.hover_down if e.key == 'down'
-              ns.hover_up if e.key == 'up'
-            else
+            if ns.subject != note
               ns.accept_subject note
-              ns.suggestions << options
+              ns.suggestions << let(options, note.text) do |op, txt|
+                [op.filter(&filter.curry[txt])]
+              end
               ns.on_option_selected do |o|
-                note.text.set o
+                note.select_all
+              note.paste o.to_s
+                note.select_all
                 ns.accept_subject nil
               end
             end
+            ns.hover_down if e.key == 'down'
+            ns.hover_up if e.key == 'up'
           end
         end
         @events << note.on(:key_down) do |e|
@@ -561,9 +596,30 @@ module Ruby2D
     end
 
 
-    def support(options)
+    def support(options, filter: :default)
       @support.cancel if @support
-      @support = SupportPack.new self, options
+      filter = case filter
+      when :include_nocase
+        proc{|txt, item| item.to_s.downcase.include? txt.downcase}
+      when :include
+        proc{|txt, item| item.to_s.include? txt}
+      when :start_with_nocase
+        proc{|txt, item| item.to_s.downcase.start_with? txt.downcase}
+      when :match, :regexp
+        proc{|txt, item| item.to_s.match? txt}
+      when :include_nocase_match, :default
+        proc do |txt, item| 
+          str = item.to_s
+          begin
+            str.downcase.include? txt.downcase or str.match? txt
+          rescue RegexpError
+            false
+          end
+        end
+      else
+        filter.to_proc
+      end
+      @support = SupportPack.new self, options, filter
     end
 
     private

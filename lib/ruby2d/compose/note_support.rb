@@ -168,7 +168,7 @@ module Ruby2D
           rt = @rail.top.get
           rh = @rail.height.get
           ch = @car.height.get
-          oy = @car.contains?(e.x, e.y) ? e.y - @car.top.get : ch
+          oy = @car.contains?(e.x, e.y) ? e.y - @car.top.get : ch / 2
           l = let(window.mouse_y) do |my|
             t = (my - oy).clamp(rt, rt + rh - ch)
             parent._offset_scroll (t - rt) / (rh - ch)

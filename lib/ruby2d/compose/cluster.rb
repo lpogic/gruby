@@ -177,99 +177,58 @@ module Ruby2D
       Text.new(text, **args)
     end
 
-    def make_outfit(element, outfit)
-      parent.make_outfit(element, outfit)
+    def outfit(key, type)
+      parent.outfit(key, type)
     end
 
     def new_button(text: 'Button', outfit: 'default', text_size: nil, text_color: nil, round: nil,
                    r: nil, color: nil, border: nil, b: nil, border_color: nil, **plan, &on_click)
 
       btn = Button.new self, text: text, &on_click
-      outfit = make_outfit btn, outfit
+      outfit = btn.dress outfit, **plan
       plan[:x] = 200 if not Rectangle.x_dim? plan
       plan[:y] = 100 if not Rectangle.y_dim? plan
       plan[:width] = outfit.width if not Rectangle.w_dim? plan
       plan[:height] = outfit.height if not Rectangle.h_dim? plan
       btn.plan **plan
-      btn.text_size << (text_size || outfit.text_size)
-      btn.text_color << (text_color || outfit.text_color)
-      btn.round << (round || r || outfit.round)
-      btn.color << (color || outfit.color)
-      btn.border << (border || b || outfit.border)
-      btn.border_color << (border_color || outfit.border_color)
-      outfit.text_x
       btn
     end
 
-    def new_note(text: '', outfit: 'default', text_font: nil, text_size: nil, text_color: nil,
-                 round: nil, r: nil, color: nil, border: nil, b: nil, border_color: nil,
-                 width_pad: nil, editable: nil, **plan, &on_click)
+    def new_note(text: '', outfit: 'default', **plan, &on_click)
 
-      tln = Note.new self, text: text, &on_click
-      outfit = make_outfit tln, outfit
+      note = Note.new self, text: text, &on_click
+      outfit = note.dress outfit, **plan
       plan[:width] = outfit.width if not Rectangle.w_dim? plan
       plan[:height] = outfit.height if not Rectangle.h_dim? plan
       plan[:x] = 200 if not Rectangle.x_dim? plan
       plan[:y] = 100 if not Rectangle.y_dim? plan
-      tln.plan **plan
-      tln.text_font << (text_font || outfit.text_font)
-      tln.text_size << (text_size || outfit.text_size)
-      tln.text_color << (text_color || outfit.text_color)
-      tln.width_pad << (width_pad || outfit.width_pad)
-      tln.round << (round || r || outfit.round)
-      tln.color << (color || outfit.color)
-      tln.border << (border || b || outfit.border)
-      tln.border_color << (border_color || outfit.border_color)
-      tln.editable << (editable.nil? ? outfit.editable : editable)
-      tln
+      note.plan **plan
+      note
     end
 
-    def new_ruby_note(text: '', outfit: 'default', text_font: nil, text_size: nil, text_color: nil,
-      round: nil, r: nil, color: nil, border: nil, b: nil, border_color: nil,
-      width_pad: nil, editable: nil, **plan, &on_click)
+    def new_ruby_note(text: '', of: 'default', **plan, &on_click)
 
-      tln = RubyNote.new self, text: text, &on_click
-      outfit = make_outfit tln, outfit
+      note = RubyNote.new self, text: text, &on_click
+      outfit = note.dress outfit, **plan
       plan[:width] = outfit.width if not Rectangle.w_dim? plan
       plan[:height] = outfit.height if not Rectangle.h_dim? plan
       plan[:x] = 200 if not Rectangle.x_dim? plan
       plan[:y] = 100 if not Rectangle.y_dim? plan
-      tln.plan **plan
-      tln.text_font << (text_font || outfit.text_font)
-      tln.text_size << (text_size || outfit.text_size)
-      tln.text_color << (text_color || outfit.text_color)
-      tln.width_pad << (width_pad || outfit.width_pad)
-      tln.round << (round || r || outfit.round)
-      tln.color << (color || outfit.color)
-      tln.border << (border || b || outfit.border)
-      tln.border_color << (border_color || outfit.border_color)
-      tln.editable << (editable.nil? ? outfit.editable : editable)
-      tln
+      note.plan **plan
+      note
     end
 
-    # def new_album(outfit: 'default', **params text_font: nil, text_size: nil, text_color: nil,
-    #   round: nil, r: nil, color: nil, border: nil, b: nil, border_color: nil,
-    #   width_pad: nil, editable: nil, **plan)
+    def new_album(options: [], outfit: 'default', **plan, &on_click)
 
-    #   album = Album.new self
-    #   outfit = make_outfit Album, outfit if not outfit.is_a? AlbumOutfit
-    #   outfit.override 
-    #   plan[:width] = outfit.width if not Rectangle.w_dim? plan
-    #   plan[:height] = outfit.height if not Rectangle.h_dim? plan
-    #   plan[:x] = 200 if not Rectangle.x_dim? plan
-    #   plan[:y] = 100 if not Rectangle.y_dim? plan
-    #   album.plan **plan
-    #   album.text_font << (text_font || outfit.text_font)
-    #   album.text_size << (text_size || outfit.text_size)
-    #   album.text_color << (text_color || outfit.text_color)
-    #   album.width_pad << (width_pad || outfit.width_pad)
-    #   album.round << (round || r || outfit.round)
-    #   album.color << (color || outfit.color)
-    #   album.border << (border || b || outfit.border)
-    #   album.border_color << (border_color || outfit.border_color)
-    #   album.editable << (editable.nil? ? outfit.editable : editable)
-    #   album
-    # end
+      album = Album.new self, options: options, &on_click
+      outfit = album.dress outfit, **plan
+      plan[:width] = outfit.width if not Rectangle.w_dim? plan
+      plan[:height] = outfit.height if not Rectangle.h_dim? plan
+      plan[:x] = 200 if not Rectangle.x_dim? plan
+      plan[:y] = 100 if not Rectangle.y_dim? plan
+      album.plan **plan
+      album
+    end
 
     def emit(type, event = nil)
       case type

@@ -243,73 +243,12 @@ module Ruby2D
     def window = self
     def lineage = [self]
 
-    def make_outfit(element, style = 'default')
-      case element
-      when Button
-        case style
-        when 'default'
-          return BasicButtonStyle.new(
-            element: element,
-            color: Color.new('blue'),
-            color_hovered: Color.new('#1084E9'),
-            color_pressed: Color.new('#0064C9'),
-            text_color: Color.new('white'),
-            text_color_pressed: Color.new('#DFDFDF'),
-            border_color: Color.new('blue')
-          )
-        when 'green'
-          return BasicButtonStyle.new(
-            element: element,
-            color: Color.new('#2c9b33'),
-            color_hovered: Color.new('#23b22d'),
-            color_pressed: Color.new('#2b642f'),
-            text_color: Color.new('white'),
-            text_color_pressed: Color.new('#DFDFDF'),
-            border_color: Color.new('#2c9b33')
-          )
-        when 'option'
-          return OptionButtonStyle.new(
-            element: element,
-            color: Color.new('#2c2c2f'),
-            color_hovered: Color.new('#4c4c4f'),
-            color_pressed: Color.new('#5c5c5f'),
-            text_color: Color.new('white'),
-            text_color_pressed: Color.new('#DFDFDF'),
-            border_color: Color.new('#2c2c2f')
-          )
-        end
-      when Note
-        case style
-        when 'default'
-          return BasicNoteStyle.new(
-            element,
-            Color.new('#3c3c3f'),
-            Color.new('#4c4c4f'),
-            Color.new('#4c4c4f'),
-            Color.new('white'),
-            Color.new('#DFDFDF'),
-            'consola'
-          )
-        when 'green'
-          return BasicNoteStyle.new(
-            element,
-            Color.new('#2c9b33'),
-            Color.new('#23b22d'),
-            Color.new('#2b642f'),
-            Color.new('white'),
-            Color.new('#DFDFDF'),
-            'consola'
-          )
-        when 'text'
-          return TextNoteStyle.new(
-            element,
-            Color.new([0, 0, 0, 0]),
-            Color.new('white'),
-            'consola'
-          )
-        end
+    def outfit(*path)
+      if path.empty?
+        @outfit
+      else
+        @outfit._dig(*path) || raise("#{path} outfit not found!")
       end
-      raise "Unsupported style '#{style}' used for element #{element.class}"
     end
 
     cvs_reader :x, :y, :left, :top, :mouse_x, :mouse_y, :timepot, :width, :height, %w(width:right height:bottom)
@@ -634,6 +573,18 @@ module Ruby2D
       _clear_event_stores unless @using_dsl
     end
 
+    def close_confirm
+      !@close_confirm || @close_confirm.call
+    end
+
+    def close_confirm=(cc)
+      @close_confirm = cc
+    end
+
+    def close_callback
+      emit :close
+    end
+
     def care(*objects)
       @caretaker.care *objects
     end
@@ -676,8 +627,8 @@ module Ruby2D
     end
 
     # Close the window
-    def close
-      ext_close
+    def close(confirm_required: true)
+      ext_close if !confirm_required || close_confirm
     end
 
     # Private instance methods
@@ -946,6 +897,8 @@ module Ruby2D
         # Size of the computer's display
         @display_width = nil
         @display_height = nil
+
+        @outfit = OutfitRoot.new(eval(File.read(Ruby2D.assets 'outfit.rb')))
       end
 
       def _init_event_stores

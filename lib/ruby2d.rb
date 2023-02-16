@@ -14,8 +14,12 @@ module Ruby2D
     end
   end
 
-  def self.assets
-    "#{gem_dir}/assets"
+  def self.assets(path = nil)
+    if path
+       "#{gem_dir}/assets/#{path}"
+    else 
+      "#{gem_dir}/assets"
+    end
   end
 
   def self.test_media
@@ -32,36 +36,3 @@ include Ruby2D
 extend Ruby2D::DSL
 # rubocop:enable Style/MixinUsage
 # --- end lint exception
-class Object
-  def timems
-    now = Time.now
-    ((now.to_i * 1e3) + (now.usec / 1e3)).to_i
-  end
-
-  def array
-    is_a?(Array) ? self : [self]
-  end
-end
-
-class Array
-  def all_in?(*o)
-    o.all? { include? _1 }
-  end
-
-  def any_in?(*o)
-    o.any? { include? _1 }
-  end
-
-  alias or any?
-  alias and all?
-end
-
-class Hash
-  def all_in?(*o)
-    o.all? { has_key? _1 }
-  end
-
-  def any_in?(*o)
-    o.any? { has_key? _1 }
-  end
-end

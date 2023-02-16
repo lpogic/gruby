@@ -56,7 +56,7 @@ module Ruby2D
         @text = text
         @tl = @text.text { _1.length }
         @coordinates = pot Selection.new
-        @rect = new_rectangle border: 0, round: 0, color: '#36921b', y: text.y, height: text.size
+        @rect = new_rectangle border: 0, round: 0, color: '#16720b', y: text.y, height: text.size
         let(@coordinates, @text.left, @text.text, @text.font) do |c, tl, t, f|
           if c.start < 0
             s = 0
@@ -268,12 +268,15 @@ module Ruby2D
 
       on :double_click do |e|
         if e.button == :left
-          tt = @text.text.get
-          to = @text_offset.get
-          x = @text.font.get.nearest(tt, e.x - @box.left.get - (@width_pad.get / 2))
-          sl = class_step_left @text_value.get, to + x, :character_class
-          sr = class_step_right @text_value.get, to + x, :character_class
-          @selection.set Selection.new(to + x - sl, sl + sr + 1)
+          if @text.right.get >= e.x
+            tt = @text.text.get
+            to = @text_offset.get
+            tv = @text_value.get
+            x = @text.font.get.nearest(tt, e.x - @box.left.get - (@width_pad.get / 2), bound: :gap)
+            sl = class_step_left tv, to + x, :character_class
+            sr = class_step_right tv, to + x, :character_class
+            @selection.set Selection.new(to + x - sl, sl + sr + 1)
+          end
         end
       end
 
@@ -435,7 +438,6 @@ module Ruby2D
         end
       else
         close_type_story if @type_story
-        story_push(selection, tv, Selection.new(selection.start))
       end
       if selection.empty?
         pp = @pen_position.get
@@ -446,6 +448,7 @@ module Ruby2D
         @pen_position.set(selection.start + str.length)
         @selection.set(Selection.new(@pen_position.get))
       end
+      story_push(selection, tv, Selection.new(selection.start)) if !type && @text_value != tv
     end
 
     class PasteStoryEntry
@@ -458,7 +461,7 @@ module Ruby2D
       attr_accessor :front_select, :back_select
 
       def back(text, selection, pen_position)
-        if selection.get == @back_select
+        if selection.get == @back_select || (@back_select.empty? && pen_position.get == front_select.end)
           text.set @text
           selection.set Selection.new
           pen_position.set @front_select.end
@@ -521,27 +524,7 @@ module Ruby2D
     class SupportPack
       def initialize(note, options, filter)
         @events = []
-        @events << note.on(note.keyboard_current) do |kc|
-          note.window.note_support.accept_subject nil unless kc
-        end
-        @events << note.on(:click, :double_click) do
-          ns = note.window.note_support
-          if ns.subject == note
-            ns.accept_subject nil
-          else
-            ns.accept_subject note
-            ns.suggestions << let(options, note.text) do |op, txt|
-              [op.filter(&filter.curry[txt])]
-            end
-            ns.on_option_selected do |o|
-              note.select_all
-              note.paste o.to_s
-              note.select_all
-              ns.accept_subject nil
-            end
-          end
-        end
-        @events << note.on(:double_click) do
+        show_option_buttons_box = proc do
           ns = note.window.note_support
           if ns.subject != note
             ns.accept_subject note
@@ -555,6 +538,15 @@ module Ruby2D
               ns.accept_subject nil
             end
           end
+        end
+        @events << note.on(note.keyboard_current) do |kc|
+          note.window.note_support.accept_subject nil unless kc
+        end
+        @events << note.on(:click) do
+          show_option_buttons_box.call
+        end
+        @events << note.on(:double_click) do
+          show_option_buttons_box.call
           if note.get_selected == ''
             note.select_all
             note.paste ''
@@ -562,19 +554,8 @@ module Ruby2D
         end
         @events << note.on_key do |e|
           if e.key == 'down' || e.key == 'up'
+            show_option_buttons_box.call
             ns = note.window.note_support
-            if ns.subject != note
-              ns.accept_subject note
-              ns.suggestions << let(options, note.text) do |op, txt|
-                [op.filter(&filter.curry[txt])]
-              end
-              ns.on_option_selected do |o|
-                note.select_all
-              note.paste o.to_s
-                note.select_all
-                ns.accept_subject nil
-              end
-            end
             ns.hover_down if e.key == 'down'
             ns.hover_up if e.key == 'up'
           end
@@ -676,124 +657,140 @@ module Ruby2D
       end
   end
 
-  class BasicNoteStyle
-    include CommunicatingVesselSystem
-
-    def initialize(element,
-                   color, color_hovered, color_pressed,
-                   text_color, text_color_pressed, text_font)
-      @element = element
-      @color = color
-      @color_hovered = color_hovered
-      @color_pressed = color_pressed
-      @text_color = text_color
-      @text_color_pressed = text_color_pressed
-      @text_font = text_font
-    end
-
-    def text_size
-      14
-    end
-
-    attr_reader :text_font
-
-    def border
-      let @element.keyboard_current do |kc|
-        kc ? 1 : 0
+  class NoteOutfit < Outfit
+    def hatch
+      if @seed
+        @seed.color << color
+        @seed.border_color << border_color
+        @seed.text_color << text_color
+        @seed.border << border
+        @seed.round << round
+        @seed.width_pad << width_pad
+        @seed.text_size << text_size
+        @seed.text_font << text_font
+        @seed.editable << editable
+        @seed
       end
-    end
-
-    def round
-      8
-    end
-
-    def color
-      let @element.hovered, @element.pressed do |h, pr|
-        if pr
-          @color_pressed
-        elsif h
-          @color_hovered
-        else
-          @color
-        end
-      end
-    end
-
-    def border_color
-      let @element.keyboard_current do |kc|
-        kc ? Color.new('#7b00ae') : Color.new('black')
-      end
-    end
-
-    def text_color
-      let @element.pressed do |pr|
-        if pr
-          @text_color_pressed
-        else
-          @text_color
-        end
-      end
-    end
-
-    def height
-      let(@element.text_object.height) { _1 + 10 }
-    end
-
-    def width_pad
-      20
-    end
-
-    def width
-      200
-    end
-
-    def editable
-      true
     end
   end
 
-  class TextNoteStyle
-    include CommunicatingVesselSystem
+  class BasicNoteOutfit < NoteOutfit
 
-    def initialize(element, color, text_color, text_font)
-      @element = element
-      @color = color
-      @text_color = text_color
-      @text_font = text_font
+    def_struct(
+      :background_color, 
+      :background_color_hovered, 
+      :text_color, 
+      :text_color_pressed, 
+      :text_font,
+      :text_size,
+      :border_color, 
+      :border_color_keyboard_current,
+      accessors: true
+    )
+
+    def color(c = nil, hc = nil, color: @background_color, hovered: @background_color_hovered)
+      c = c || color || '#3c3c3f'
+      ch = ch || hovered || '#4c4c4f'
+      let_if @seed.hovered, ch, c
     end
 
-    def text_size
-      14
+    def text_color(c = nil, cp = nil, color: @text_color, pressed: @text_color_pressed)
+      c = c || color || 'white'
+      cp = cp || pressed || '#DFDFDF'
+      let_if @seed.pressed, cp, c
     end
 
-    attr_reader :text_font, :color, :text_color
-
-    def border
-      0
+    def border_color(c = nil, ckc = nil, color: @border_color, keyboard_current: @border_color_keyboard_current)
+      c = c || color || 0
+      ckc = ckc || keyboard_current || '#7b00ae'
+      let_if @seed.keyboard_current, ckc, c
     end
 
-    def round
-      0
+    def border(b = nil, border: nil)
+      b || border || let_if(@seed.keyboard_current, 1, 0)
     end
 
-    def border_color
-      [0, 0, 0, 0]
+    def text_font(tf = nil, text_font: @text_font)
+      tf || text_font || 'consola'
     end
 
-    def height
-      @element.text_object.height.as { _1 + 3 }
+    def text_size(ts = nil, text_size: @text_size)
+      ts || text_size || 16
     end
 
-    def width_pad
-      0
+    def height(h = nil, height: nil)
+      h || height || @seed.text_object.height{ _1 + 10 }
     end
 
-    def width
-      let(@element.text_font, @element.text) { _1.size(_2)[:width] + 1 }
+    def width(w = nil, width: nil)
+      w || width || 200
     end
 
-    def editable
-      false
+    def round(r = nil, round: nil)
+      r || round || 12
+    end
+
+    def width_pad(wp = nil, width_pad: nil)
+      wp || width_pad || 20
+    end
+
+    def editable(e = nil, editable: nil)
+      e == nil ? editable == nil ? true : editable : e
+    end
+  end
+
+  class TextNoteOutfit < NoteOutfit
+
+    def_struct(
+      :background_color,
+      :text_color,
+      :text_font,
+      :text_size,
+      accessors: true
+    )
+
+    def color(c = nil, color: @background_color)
+      c || color || [0, 0, 0, 0]
+    end
+
+    def text_color(c = nil, color: @text_color)
+      c || color || 'white'
+    end
+
+    def border_color(c = nil, color: @border_color)
+      c || color || [0, 0, 0, 0]
+    end
+
+    def border(b = nil, border: nil)
+      b || border || 0
+    end
+
+    def text_font(tf = nil, text_font: @text_font)
+      tf || text_font || 'consola'
+    end
+
+    def text_size(ts = nil, text_size: @text_size)
+      ts || text_size || 16
+    end
+
+    def height(h = nil, height: nil)
+      h || height || @seed.text_object.height{ _1 + 3 }
+    end
+
+    def width(w = nil, width: nil)
+      w || width || let(@seed.text_font, @seed.text) { _1.size(_2)[:width] + 1 }
+    end
+
+    def round(r = nil, round: nil)
+      r || round || 0
+    end
+
+    def width_pad(wp = nil, width_pad: nil)
+      wp || width_pad || 0
+    end
+
+    def editable(e = nil, editable: nil)
+      e == nil ? editable == nil ? false : editable : e
     end
   end
 end

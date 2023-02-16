@@ -80,10 +80,14 @@ module Ruby2D
         x: tw / 2 - w / 2 + tox,
         y: th / 2 - txtr.height / 2 + toy
       }
-      vertices = Vertices.new((x - w / 2).round, (y + h / 2 - txtr.height).round, w, txtr.height, rotate)
+      vertices = Vertices.new((x - w / 2).floor, (y + h / 2 - txtr.height).floor, w, txtr.height, rotate)
       @texture.get.draw(
         vertices.coordinates, vertices.texture_coordinates, color
       )
+    end
+
+    def contains?(x, y)
+      (self.x.get - x).abs * 2 < width.get && (self.y.get - y).abs * 2 < height.get
     end
 
     private

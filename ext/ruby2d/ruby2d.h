@@ -254,6 +254,8 @@ typedef void (*R2D_On_Key)(R2D_Event e);
 typedef void (*R2D_On_Mouse)(R2D_Event e);
 typedef void (*R2D_On_Controller)(R2D_Event e);
 typedef void (*R2D_On_Resize)(R2D_Event e);
+typedef void (*R2D_On_Close)();
+typedef int (*R2D_Close_Confirm)();
 
 // R2D_GL_Point, for graphics calculations
 typedef struct {
@@ -307,6 +309,8 @@ typedef struct {
   R2D_On_Mouse on_mouse;
   R2D_On_Controller on_controller;
   R2D_On_Resize on_resize;
+  R2D_On_Close on_close;
+  R2D_Close_Confirm close_confirm;
   bool vsync;
   int fps_cap;
   R2D_Color background;

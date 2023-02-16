@@ -62,6 +62,12 @@ module Ruby2D
       end
     end
 
+    def let_if(a, b, c)
+      let a, b, c do |av, bv, cv|
+        av ? bv : cv
+      end
+    end
+
     def let_debug(*inpot, out: nil, &block)
       inpot = inpot.map { _1.is_a?(Pot) ? _1 : BasicPot.new.let(_1) }
       if block_given?

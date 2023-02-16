@@ -9,7 +9,7 @@ module Ruby2D
 
     # Add a contains method stub
     def contains?(x, y)
-      x >= @x && x <= (@x + @width) && y >= @y && y <= (@y + @height)
+      false
     end
   end
 end

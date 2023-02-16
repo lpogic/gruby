@@ -1,5 +1,6 @@
 module Kernel
   alias original_require require
+  alias original_load load
 
   def require(name)
     if name == 'ruby2d/ruby2d'
@@ -10,39 +11,31 @@ module Kernel
       original_require name
     end
   end
-end
 
-class Object
-  def timems
-    now = Time.now
-    ((now.to_i * 1e3) + (now.usec / 1e3)).to_i
-  end
-
-  def array
-    is_a?(Array) ? self : [self]
+  def load(name)
+    if name.start_with?('ruby2d')
+      original_load "./lib/#{name}"
+    else
+      original_load name
+    end
   end
 end
 
-class Array
-  def all_in?(*o)
-    o.all? { include? _1 }
+module Ruby2D
+  def self.gem_dir
+    '.'
   end
 
-  def any_in?(*o)
-    o.any? { include? _1 }
+  def self.assets(path = nil)
+    if path
+       "#{gem_dir}/assets/#{path}"
+    else 
+      "#{gem_dir}/assets"
+    end
   end
 
-  alias or any?
-  alias and all?
-end
-
-class Hash
-  def all_in?(*o)
-    o.all? { has_key? _1 }
-  end
-
-  def any_in?(*o)
-    o.any? { has_key? _1 }
+  def self.test_media
+    "#{gem_dir}/assets/test_media"
   end
 end
 
@@ -50,12 +43,12 @@ require 'ruby2d/core'
 include Ruby2D
 extend DSL
 
-set background: 'gray', resizable: true#, width: 300, height: 200
+set background: 'gray', resizable: true, title: ARGV[0] || 'Ruby2D'#, diagnostics: true
 on :key_down do |e|
-  close if e.key == 'escape'
+  close confirm_required: true if e.key == 'escape'
 end
 window.enable_tab_callback
-Pot.debug = true
+# Pot.debug = true
 
 class Form < Cluster
   include Arena
@@ -172,23 +165,25 @@ end
 # care f
 row color: 'yellow', x: window.x, y: window.y, gap: [2] do
   @c = col gap: [2] do |c|
+    @n1 = album %w[magnez potas siarka wodór tlen azot węgiel]
     @n = note
-    gap 0
-    @n1 = note
-    @b = button width: false
+    row width: c.width do |r|
+      @b1 = button "Anuluj", left: r.left
+      @b = button "Zapisz", right: r.right
+    end
   end
 end
 
-@b.width << @c.width{_1 - 10}
-options = pot [0,1,2]
-@n.support options
-# @n.editable << false
-
-@n1.support [nil, :raz, :dwa, :trzy, 123, 133, '.{3}']
-
 @b.on :click do
-  @n.width.value += 30
-  options.value <<= options.get.size
+  begin
+    c = '#' + (1..6).map{rand(16).to_s(16)}.join
+    @n1.text << c
+    @a << c
+  rescue
+  end
 end
+
+@n.support %w[12 14 16 20 24]
+
 
 show

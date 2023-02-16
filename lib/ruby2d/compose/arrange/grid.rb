@@ -53,7 +53,7 @@ module Ruby2D
     end
 
     class Sector
-      fast_init :left, :width, :top, :height, reader: true
+      def_struct :left, :width, :top, :height, readers: true
 
       def right
         let(@left, @width) { _1 + _2 }

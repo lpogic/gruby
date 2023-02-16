@@ -37,6 +37,8 @@ R2D_Window *R2D_CreateWindow(const char *title, int width, int height,
   window->on_mouse        = NULL;
   window->on_controller   = NULL;
   window->on_resize       = NULL;
+  window->on_close        = NULL;
+  window->close_confirm   = NULL;
 
   window->vsync           = true;
   window->fps_cap         = 60;
@@ -250,7 +252,9 @@ void main_loop() {
         break;
 
       case SDL_QUIT:
-        R2D_Close(window);
+        if(window->close_confirm && window->close_confirm()) {
+          R2D_Close(window);
+        }
         break;
     }
   }
@@ -455,6 +459,9 @@ void R2D_Screenshot(R2D_Window *window, const char *path) {
 int R2D_Close(R2D_Window *window) {
   if (!window->close) {
     R2D_Log(R2D_INFO, "Closing window");
+    if(window->on_close) {
+      window->on_close();
+    }
     window->close = true;
   }
   return 0;

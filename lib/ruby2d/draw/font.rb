@@ -155,12 +155,16 @@ module Ruby2D
       }
     end
 
-    def nearest(text, w)
+    def nearest(text, w, bound: :letter)
       m = measure text, w
       return m[:count] if m[:count] >= text.length
 
       s = size text[..m[:count]]
-      return w - m[:width] > s[:width] - w ? m[:count] + 1 : m[:count]
+      if bound == :letter
+        return w - m[:width] > s[:width] - w ? m[:count] + 1 : m[:count]
+      else
+        return m[:count]
+      end
     end
 
     def dimensions

@@ -1748,6 +1748,24 @@ void on_resize(R2D_Event e) {
   );
 }
 
+/*
+ * Ruby 2D native `on_close` callback function
+ */
+void on_close() {
+
+  r_funcall(
+    ruby2d_window, "close_callback", 0
+  );
+}
+
+/*
+ * Ruby 2D native `close_confirm` callback function
+ */
+int close_confirm(R2D_Event e) {
+
+  return RTEST(r_funcall(ruby2d_window, "close_confirm", 0));
+}
+
 
 /*
  * Ruby 2D native `update` callback function
@@ -1895,6 +1913,8 @@ static R_VAL ruby2d_window_ext_show(R_VAL self) {
   ruby2d_c_window->on_mouse        = on_mouse;
   ruby2d_c_window->on_controller   = on_controller;
   ruby2d_c_window->on_resize       = on_resize;
+  ruby2d_c_window->on_close        = on_close;
+  ruby2d_c_window->close_confirm   = close_confirm;
 
   R2D_Show(ruby2d_c_window);
 

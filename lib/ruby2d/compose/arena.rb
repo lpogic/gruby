@@ -60,6 +60,10 @@ module Ruby2D
       append(new_ruby_note(**na.except(:x, :y, :width, :height)), **na)
     end
 
+    def album(options = [], **na)
+      append(new_album(options: options, **na.except(:x, :y, :width, :height)), **na)
+    end
+
     def button(t = 'Button', **na)
       append(new_button(text: t, **na.except(:x, :y, :width, :height)), **na)
     end

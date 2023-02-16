@@ -16,5 +16,14 @@ module Ruby2D
       window.keyboard_current_object = self
       true
     end
+
+    def dress(outfit, **params)
+      outfit = self.outfit self.class, *outfit if not outfit.is_a? Outfit
+      @outfit = outfit.lay self, **params
+    end
+
+    def outfit(*path)
+      path.empty? ? @outfit : parent.outfit(*path)
+    end
   end
 end

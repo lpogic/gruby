@@ -36,10 +36,10 @@ module Ruby2D
         @text = text
         @position = compot(@text.text { _1.length }) { _1.clamp(0, _2) }.set 0
         @rect = new_rectangle border: 0, round: 0, color: [0, 0, 0, 0.5],
-                              y: text.y, height: text.size, width: 2,
-                              left: let(@position, @text.left, @text.text) { |pos, l, t|
-                                      pos <= 0 ? l : l + text.font.get.size(t[0, pos])[:width]
-                                    }
+          y: text.y, height: text.size, width: 2,
+          left: let(@position, @text.left, @text.text) { |pos, l, t|
+                  (pos <= 0) ? l : l + text.font.get.size(t[0, pos])[:width]
+                }
       end
 
       cvs_reader :enabled, :position
@@ -56,7 +56,7 @@ module Ruby2D
         @text = text
         @tl = @text.text { _1.length }
         @coordinates = pot Selection.new
-        @rect = new_rectangle border: 0, round: 0, color: '#16720b', y: text.y, height: text.size
+        @rect = new_rectangle border: 0, round: 0, color: "#16720b", y: text.y, height: text.size
         let(@coordinates, @text.left, @text.text, @text.font) do |c, tl, t, f|
           if c.start < 0
             s = 0
@@ -65,7 +65,7 @@ module Ruby2D
             s = c.start
             l = [c.length, t.length - s].min
           end
-          if l > 0 and s < t.length and s + l <= t.length
+          if (l > 0) && (s < t.length) && (s + l <= t.length)
             w = f.size(t[s, l])[:width]
             lw = f.size(t[0, s + l])[:width]
             [tl + lw - w, w]
@@ -78,11 +78,11 @@ module Ruby2D
       cvs_reader :enabled, :coordinates
 
       def render
-        @rect.render if @enabled.get and @coordinates.get.length > 0
+        @rect.render if @enabled.get && (@coordinates.get.length > 0)
       end
     end
 
-    class LimitedStack < Array
+    class Ring < Array
       def initialize(limit)
         @limit = limit
       end
@@ -93,26 +93,22 @@ module Ruby2D
       end
     end
 
-    def init(text: '', **narg)
+    def init(text: "", **narg)
       super()
       @editable = pot true
       @width_pad = pot 20
       @box = new_rectangle(**narg)
-      @text_value = compot { _1.to_s.encode('utf-8') } << text
+      @text_value = compot { _1.to_s.encode("utf-8") } << text
 
-      @text = new_text '', left: let(@box.left, @width_pad) { _1 + (_2 / 2) }, y: @box.y
+      @text = new_text "", left: let(@box.left, @width_pad) { _1 + (_2 / 2) }, y: @box.y
       @text_offset = pot 0
-      @text.text << let(@text_value, @box.width, @text_offset, @width_pad, @text.size,
-                        @text.font) do |tv, bw, to, wp, _ts, tf|
+      @text.text << let(@text_value, @box.width, @text_offset, @width_pad,
+        @text.font) do |tv, bw, to, wp, tf|
         t = tv[to..]
-        t ? t[0, tf.measure(t, bw - wp)[:count]] : ''
+        t ? t[0, tf.measure(t, bw - wp)[:count]] : ""
       end
       @pen_position = compot(@text_value.as { _1.length }) do |tvl, v|
-        if v < 0 then 0
-        elsif v > tvl then tvl
-        else
-          v
-        end
+        v.clamp(0, tvl)
       end << 0
       @pen = Pen.new self, @text
       @pen.enabled.let(@keyboard_current, @editable) { _1 & _2 }
@@ -120,7 +116,7 @@ module Ruby2D
       @car = Car.new self, @text
       @car.enabled << @keyboard_current
       @car.coordinates << let(@selection, @text_offset) { _1.move(-_2, 0) }
-      @story = LimitedStack.new 50
+      @story = Ring.new 50
       @story_index = 0
 
       care @box, @car, @text, @pen
@@ -148,55 +144,63 @@ module Ruby2D
 
       on_key do |e|
         case e.key
-        when 'left'
-          pen_left(shift_down, ctrl_down ? alt_down ? :class : :word : :character)
-        when 'right'
-          pen_right(shift_down, ctrl_down ? alt_down ? :class : :word : :character)
-        when 'backspace'
+        when "left"
+          pen_left(shift_down, if ctrl_down
+            alt_down ? :class : :word
+          else
+            :character
+                               end)
+        when "right"
+          pen_right(shift_down, if ctrl_down
+            alt_down ? :class : :word
+          else
+            :character
+                                end)
+        when "backspace"
           if @editable.get
             if @selection.get.empty?
               pen_erase(:left)
             else
-              paste ''
+              paste ""
             end
           end
-        when 'delete'
+        when "delete"
           if @editable.get
             if @selection.get.empty?
               pen_erase(:right)
             else
-              paste ''
+              paste ""
             end
           end
-        when 'home'
+        when "home"
           pen_left(shift_down, @pen_position.get)
-        when 'keypad 7'
-          pen_left(shift_down, @pen_position.get) if not num_locked
-        when 'end'
+        when "keypad 7"
+          pen_left(shift_down, @pen_position.get) if !num_locked
+        when "end"
           pen_right(shift_down, @text_value.get.length - @pen_position.get)
-        when 'keypad 1'
-          pen_right(shift_down, @text_value.get.length - @pen_position.get) if not num_locked
-        when 'a'
+        when "keypad 1"
+          pen_right(shift_down, @text_value.get.length - @pen_position.get) if !num_locked
+        when "a"
           select_all if ctrl_down
-        when 'v'
+        when "v"
           paste clipboard if ctrl_down
-        when 'c'
+        when "c"
           if ctrl_down
             text = get_selected
-            self.clipboard = text if text != ''
+            self.clipboard = text if text != ""
           end
-        when 'x'
+        when "x"
           if ctrl_down
             selection = @selection.get
             if !selection.empty?
-              c = shift_down ? clipboard : ''
+              c = shift_down ? clipboard : ""
               self.clipboard = @text_value.get[selection.range]
               paste c
             elsif shift_down
               paste clipboard
             end
           end
-        when 'z'
+        when "z"
           if ctrl_down
             if shift_down
               story_front
@@ -260,9 +264,17 @@ module Ruby2D
 
       on :mouse_scroll do |e|
         if e.delta_x < 0 || (e.delta_x == 0 && e.delta_y < 0)
-          pen_left(shift_down, ctrl_down ? alt_down ? :class : :word : :character)
+          pen_left(shift_down, if ctrl_down
+            alt_down ? :class : :word
+          else
+            :character
+                               end)
         elsif e.delta_x > 0 || (e.delta_x == 0 && e.delta_y > 0)
-          pen_right(shift_down, ctrl_down ? alt_down ? :class : :word : :character)
+          pen_right(shift_down, if ctrl_down
+            alt_down ? :class : :word
+          else
+            :character
+                                end)
         end
       end
 
@@ -323,10 +335,10 @@ module Ruby2D
     def pen_left(selection = false, step = :character)
       pp = @pen_position.get
       st = case step
-           when Integer then step
-           when :character then 1
-           when :class then class_step_left(@text_value.get, pp - 1) + 1
-           when :word then word_step_left(@text_value.get, pp - 1) + 1
+      when Integer then step
+      when :character then 1
+      when :class then class_step_left(@text_value.get, pp - 1) + 1
+      when :word then word_step_left(@text_value.get, pp - 1) + 1
       end
       if selection
         if pp > 0
@@ -357,10 +369,10 @@ module Ruby2D
     def pen_right(selection = false, step = :character)
       pp = @pen_position.get
       st = case step
-           when Integer then step
-           when :character then 1
-           when :class then class_step_right(@text_value.get, pp) + 1
-           when :word then word_step_right(@text_value.get, pp) + 1
+      when Integer then step
+      when :character then 1
+      when :class then class_step_right(@text_value.get, pp) + 1
+      when :word then word_step_right(@text_value.get, pp) + 1
       end
       if selection
         if pp < @text_value.get.length
@@ -407,7 +419,7 @@ module Ruby2D
 
     def get_selected
       selection = @selection.get
-      selection.empty? ? '' : @text_value.get[selection.range]
+      selection.empty? ? "" : @text_value.get[selection.range]
     end
 
     def paste(str, type = false)
@@ -417,7 +429,7 @@ module Ruby2D
       tv = @text_value.get
       if type
         if @type_story
-          if @type_story[:start] + @type_story[:length] == @pen_position.get and selection.empty?
+          if (@type_story[:start] + @type_story[:length] == @pen_position.get) && selection.empty?
             @type_story[:length] += 1
           else
             close_type_story
@@ -436,16 +448,18 @@ module Ruby2D
             start_selection: selection
           }
         end
-      else
-        close_type_story if @type_story
+      elsif @type_story
+        close_type_story
       end
       if selection.empty?
         pp = @pen_position.get
         @text_value.set(tv[...pp] + str + tv[pp..])
         @pen_position.set(pp + str.length)
       else
-        @text_value.set(tv[...selection.start] + str + tv[selection.end..])
-        @pen_position.set(selection.start + str.length)
+        ntv = tv[...selection.start] + str + tv[selection.end..]
+        @text_value.set(ntv)
+        @pen_position.set(0)
+        pen_at selection.start + str.length
         @selection.set(Selection.new(@pen_position.get))
       end
       story_push(selection, tv, Selection.new(selection.start)) if !type && @text_value != tv
@@ -491,7 +505,7 @@ module Ruby2D
 
     def close_type_story
       story_push(Selection.new(@type_story[:start], @type_story[:length]), @type_story[:text],
-                 @type_story[:start_selection])
+        @type_story[:start_selection])
       @type_story = nil
     end
 
@@ -507,7 +521,7 @@ module Ruby2D
 
       if @story.size == @story_index
         @story.push(PasteStoryEntry.new(@selection.get, @text_value.get,
-                                        Selection.new))
+          Selection.new))
       end
       return unless @story[@story_index - 1].back(@text_value, @selection, @pen_position)
 
@@ -516,7 +530,7 @@ module Ruby2D
 
     def story_front
       if @story_index + 1 < @story.size && @story[@story_index + 1].front(@text_value, @selection, @pen_position,
-                                                                          @story[@story_index])
+        @story[@story_index])
         @story_index += 1
       end
     end
@@ -547,49 +561,48 @@ module Ruby2D
         end
         @events << note.on(:double_click) do
           show_option_buttons_box.call
-          if note.get_selected == ''
+          if note.get_selected == ""
             note.select_all
-            note.paste ''
+            note.paste ""
           end
         end
         @events << note.on_key do |e|
-          if e.key == 'down' || e.key == 'up'
+          if e.key == "down" || e.key == "up"
             show_option_buttons_box.call
             ns = note.window.note_support
-            ns.hover_down if e.key == 'down'
-            ns.hover_up if e.key == 'up'
+            ns.hover_down if e.key == "down"
+            ns.hover_up if e.key == "up"
           end
         end
         @events << note.on(:key_down) do |e|
           ns = note.window.note_support
-          ns.press_hovered if e.key == 'return' && (ns.subject == note)
+          ns.press_hovered if e.key == "return" && (ns.subject == note)
         end
         @events << note.on(:key_up) do |e|
           ns = note.window.note_support
-          ns.release_pressed if e.key == 'return' && (ns.subject == note)
+          ns.release_pressed if e.key == "return" && (ns.subject == note)
         end
       end
 
       def cancel
-        @events.each{ _1.cancel }
+        @events.each { _1.cancel }
         @events = []
       end
     end
 
-
     def support(options, filter: :default)
-      @support.cancel if @support
+      @support&.cancel
       filter = case filter
       when :include_nocase
-        proc{|txt, item| item.to_s.downcase.include? txt.downcase}
+        proc { |txt, item| item.to_s.downcase.include? txt.downcase }
       when :include
-        proc{|txt, item| item.to_s.include? txt}
+        proc { |txt, item| item.to_s.include? txt }
       when :start_with_nocase
-        proc{|txt, item| item.to_s.downcase.start_with? txt.downcase}
+        proc { |txt, item| item.to_s.downcase.start_with? txt.downcase }
       when :match, :regexp
-        proc{|txt, item| item.to_s.match? txt}
+        proc { |txt, item| item.to_s.match? txt }
       when :include_nocase_match, :default
-        proc do |txt, item| 
+        proc do |txt, item|
           str = item.to_s
           begin
             str.downcase.include? txt.downcase or str.match? txt
@@ -605,56 +618,56 @@ module Ruby2D
 
     private
 
-      def class_step_right(text, start, classifier = :strict_character_class)
-        return 0 if start + 1 >= text.length
+    def class_step_right(text, start, classifier = :strict_character_class)
+      return 0 if start + 1 >= text.length
 
-        cc = send(classifier, text[start])
-        text[start + 1..].each_char.take_while { send(classifier, _1) == cc }.count
+      cc = send(classifier, text[start])
+      text[start + 1..].each_char.take_while { send(classifier, _1) == cc }.count
+    end
+
+    def word_step_right(text, start)
+      return 0 if start + 1 >= text.length
+
+      cc = character_class(text[start]) == :blank
+      cnt = text[start + 1..].each_char.take_while { (character_class(_1) == :blank) == cc }.count
+      cnt += text[start + cnt + 1..].each_char.take_while { character_class(_1) == :blank }.count if character_class(text[start + cnt + 1]) == :blank
+      cnt
+    end
+
+    def class_step_left(text, start, classifier = :strict_character_class)
+      return 0 if start <= 0
+
+      cc = send(classifier, text[start])
+      text[..start - 1].reverse.each_char.take_while { send(classifier, _1) == cc }.count
+    end
+
+    def word_step_left(text, start)
+      return 0 if start <= 0
+
+      cc = character_class(text[start]) == :blank
+      cnt = text[..start - 1].reverse.each_char.take_while { (character_class(_1) == :blank) == cc }.count
+      cnt += text[..start - cnt - 1].reverse.each_char.take_while { character_class(_1) == :blank }.count if character_class(text[start - cnt - 1]) == :blank
+      cnt
+    end
+
+    def strict_character_class(ch)
+      case ch
+      when /\p{Ll}/ then :loweralpha
+      when /\p{Lu}/ then :upperalpha
+      when /\p{Nd}/ then :digit
+      when /\p{Blank}/ then :blank
+      else :other
       end
+    end
 
-      def word_step_right(text, start)
-        return 0 if start + 1 >= text.length
-
-        cc = character_class(text[start]) == :blank
-        cnt = text[start + 1..].each_char.take_while { (character_class(_1) == :blank) == cc }.count
-        cnt += text[start + cnt + 1..].each_char.take_while { character_class(_1) == :blank }.count if character_class(text[start + cnt + 1]) == :blank
-        cnt
+    def character_class(ch)
+      case ch
+      when /[\p{L}_]/ then :alpha
+      when /\p{Nd}/ then :digit
+      when /\p{Blank}/ then :blank
+      else :other
       end
-
-      def class_step_left(text, start, classifier = :strict_character_class)
-        return 0 if start <= 0
-
-        cc = send(classifier, text[start])
-        text[..start - 1].reverse.each_char.take_while { send(classifier, _1) == cc }.count
-      end
-
-      def word_step_left(text, start)
-        return 0 if start <= 0
-
-        cc = character_class(text[start]) == :blank
-        cnt = text[..start - 1].reverse.each_char.take_while { (character_class(_1) == :blank) == cc }.count
-        cnt += text[..start - cnt - 1].reverse.each_char.take_while { character_class(_1) == :blank }.count if character_class(text[start - cnt - 1]) == :blank
-        cnt
-      end
-
-      def strict_character_class(ch)
-        case ch
-        when /\p{Ll}/ then :loweralpha
-        when /\p{Lu}/ then :upperalpha
-        when /\p{Nd}/ then :digit
-        when /\p{Blank}/ then :blank
-        else :other
-        end
-      end
-
-      def character_class(ch)
-        case ch
-        when /[\p{L}_]/ then :alpha
-        when /\p{Nd}/ then :digit
-        when /\p{Blank}/ then :blank
-        else :other
-        end
-      end
+    end
   end
 
   class NoteOutfit < Outfit
@@ -675,34 +688,33 @@ module Ruby2D
   end
 
   class BasicNoteOutfit < NoteOutfit
-
     def_struct(
-      :background_color, 
-      :background_color_hovered, 
-      :text_color, 
-      :text_color_pressed, 
+      :background_color,
+      :background_color_hovered,
+      :text_color,
+      :text_color_pressed,
       :text_font,
       :text_size,
-      :border_color, 
+      :border_color,
       :border_color_keyboard_current,
       accessors: true
     )
 
     def color(c = nil, hc = nil, color: @background_color, hovered: @background_color_hovered)
-      c = c || color || '#3c3c3f'
-      ch = ch || hovered || '#4c4c4f'
+      c = c || color || "#3c3c3f"
+      ch = ch || hovered || "#4c4c4f"
       let_if @seed.hovered, ch, c
     end
 
     def text_color(c = nil, cp = nil, color: @text_color, pressed: @text_color_pressed)
-      c = c || color || 'white'
-      cp = cp || pressed || '#DFDFDF'
+      c = c || color || "white"
+      cp = cp || pressed || "#DFDFDF"
       let_if @seed.pressed, cp, c
     end
 
     def border_color(c = nil, ckc = nil, color: @border_color, keyboard_current: @border_color_keyboard_current)
       c = c || color || 0
-      ckc = ckc || keyboard_current || '#7b00ae'
+      ckc = ckc || keyboard_current || "#7b00ae"
       let_if @seed.keyboard_current, ckc, c
     end
 
@@ -711,7 +723,7 @@ module Ruby2D
     end
 
     def text_font(tf = nil, text_font: @text_font)
-      tf || text_font || 'consola'
+      tf || text_font || "consola"
     end
 
     def text_size(ts = nil, text_size: @text_size)
@@ -719,7 +731,7 @@ module Ruby2D
     end
 
     def height(h = nil, height: nil)
-      h || height || @seed.text_object.height{ _1 + 10 }
+      h || height || @seed.text_object.height { _1 + 10 }
     end
 
     def width(w = nil, width: nil)
@@ -735,12 +747,15 @@ module Ruby2D
     end
 
     def editable(e = nil, editable: nil)
-      e == nil ? editable == nil ? true : editable : e
+      if e.nil?
+        editable.nil? ? true : editable
+      else
+        e
+      end
     end
   end
 
   class TextNoteOutfit < NoteOutfit
-
     def_struct(
       :background_color,
       :text_color,
@@ -754,7 +769,7 @@ module Ruby2D
     end
 
     def text_color(c = nil, color: @text_color)
-      c || color || 'white'
+      c || color || "white"
     end
 
     def border_color(c = nil, color: @border_color)
@@ -766,15 +781,15 @@ module Ruby2D
     end
 
     def text_font(tf = nil, text_font: @text_font)
-      tf || text_font || 'consola'
+      tf || text_font || "rubik-regular"
     end
 
     def text_size(ts = nil, text_size: @text_size)
-      ts || text_size || 16
+      ts || text_size || 14
     end
 
     def height(h = nil, height: nil)
-      h || height || @seed.text_object.height{ _1 + 3 }
+      h || height || @seed.text_object.height { _1 + 3 }
     end
 
     def width(w = nil, width: nil)
@@ -790,7 +805,11 @@ module Ruby2D
     end
 
     def editable(e = nil, editable: nil)
-      e == nil ? editable == nil ? false : editable : e
+      if e.nil?
+        editable.nil? ? false : editable
+      else
+        e
+      end
     end
   end
 end

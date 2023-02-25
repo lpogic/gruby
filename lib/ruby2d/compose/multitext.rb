@@ -22,7 +22,7 @@ module Ruby2D
         care(*parts.map { _1.text })
         parts
       end
-      self.portions = portions || [{ color: 'white', range: 0.. }]
+      self.portions = portions || [{color: "white", range: 0..}]
       plan(**na)
     end
 

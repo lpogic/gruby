@@ -2,6 +2,6 @@
 
 # Enable the interactive console
 
-require 'io/wait'
+require "io/wait"
 
-ENV['RUBY2D_ENABLE_CONSOLE'] = 'true'
+ENV["RUBY2D_ENABLE_CONSOLE"] = "true"

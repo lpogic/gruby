@@ -5,7 +5,7 @@ rb_file = ARGV[1]
 
 # Check if source file provided is good
 if !rb_file
-  puts 'Provide a Ruby file to run'
+  puts "Provide a Ruby file to run"
   exit 1
 elsif !File.exist? rb_file
   puts "Can't find file: #{rb_file}"
@@ -13,9 +13,9 @@ elsif !File.exist? rb_file
 end
 
 # Add libraries
-require 'open3'
-require 'readline'
-require 'io/wait'
+require "open3"
+require "readline"
+require "io/wait"
 
 line = 1 # the current line number
 
@@ -28,8 +28,8 @@ loop do
   cmd = Readline.readline("ruby2d:#{line}> ", true)
 
   # Quit if command is 'exit'
-  if cmd == 'exit'
-    Process.kill 'INT', wait_thr.pid
+  if cmd == "exit"
+    Process.kill "INT", wait_thr.pid
     wait_thr.value
     exit
   end
@@ -54,7 +54,7 @@ loop do
   # Rescue exception if can't send commands to the Ruby 2D window
   rescue Errno::EPIPE
     puts "Can't connect to the window (was it closed?)",
-         'For help, see: ruby2d.com/learn/console'
+      "For help, see: ruby2d.com/learn/console"
     exit 1
   end
 end

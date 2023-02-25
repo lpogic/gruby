@@ -1,14 +1,15 @@
-require 'rspec/core/rake_task'
-require 'rubocop/rake_task'
-require_relative 'lib/ruby2d/cli/colorize'
-require_relative 'lib/ruby2d/version'
+require "rspec/core/rake_task"
+# require 'rubocop/rake_task'
+require "standard/rake"
+require_relative "lib/ruby2d/cli/colorize"
+require_relative "lib/ruby2d/version"
 
 $RUBY2D_DEV_MODE = false
 
 # Helpers ######################################################################
 
 def get_args
-  ARGV.each { |a| task a.to_sym do ; end }
+  ARGV.each { |a| task a.to_sym do; end }
 end
 
 def print_task(task)
@@ -28,13 +29,13 @@ end
 
 # Tasks ########################################################################
 
-task default: 'all'
+task default: "all"
 
 desc "Run default tasks using user-installed libraries"
 task :release do
-  puts '📦 Building gem release'.info
+  puts "📦 Building gem release".info
   $RUBY2D_DEV_MODE = false
-  Rake::Task['all'].invoke
+  Rake::Task["all"].invoke
 end
 
 desc "Uninstall gem"
@@ -46,13 +47,13 @@ end
 desc "Build gem"
 task :build do
   print_task "Building"
-  run_cmd "gem build ruby2d.gemspec --verbose #{if $RUBY2D_DEV_MODE then '-- dev' end}"
+  run_cmd "gem build ruby2d.gemspec --verbose #{if $RUBY2D_DEV_MODE then "-- dev" end}"
 end
 
 desc "Install gem"
 task :install do
   print_task "Installing"
-  run_cmd "gem install ruby2d-#{Ruby2D::VERSION}.gem --local --verbose #{if $RUBY2D_DEV_MODE then '-- dev' end}"
+  run_cmd "gem install ruby2d-#{Ruby2D::VERSION}.gem --local --verbose #{if $RUBY2D_DEV_MODE then "-- dev" end}"
 end
 
 desc "Update submodules"
@@ -60,22 +61,22 @@ task :update do
   run_cmd "git submodule update --remote"
 end
 
-desc 'Run a Rubocop lint'
-RuboCop::RakeTask.new(:lint) do |t|
-  print_task 'Running Rubocop'
-  t.options = ['--parallel', '--display-cop-names']
-end
+# desc 'Run a Rubocop lint'
+# RuboCop::RakeTask.new(:lint) do |t|
+#   print_task 'Running Rubocop'
+#   t.options = ['--parallel', '--display-cop-names']
+# end
 
 desc "Run the RSpec tests"
 RSpec::Core::RakeTask.new do |t|
   print_task "Running RSpec"
   t.pattern = "test/*spec.rb"
   if $RUBY2D_DEV_MODE
-    ENV['RUBY2D_DEV_MODE'] = 'true'
+    ENV["RUBY2D_DEV_MODE"] = "true"
   end
 end
 
-task :test => 'test:cruby'
+task test: "test:cruby"
 
 namespace :test do
   desc "Run test using CRuby (MRI)"
@@ -87,7 +88,7 @@ namespace :test do
   end
 
   desc "An alias to CRuby"
-  task :mri => :cruby
+  task mri: :cruby
 
   desc "Run test using mruby"
   task :mruby do
@@ -109,7 +110,7 @@ namespace :test do
     result = run_cmd "ruby2d build --web test/#{test_file}.rb --debug"
     unless result then exit(1) end
 
-    open_cmd = 'open'
+    open_cmd = "open"
     case RUBY_PLATFORM
     when /linux/
       open_cmd = "xdg-#{open_cmd}"
@@ -128,21 +129,23 @@ namespace :test do
   desc "Run the iOS test"
   task :ios do
     print_task "Running iOS test"
-    run_apple_test('ios')
+    run_apple_test("ios")
   end
 
   desc "Run the tvOS test"
   task :tvos do
     print_task "Running tvOS test"
-    run_apple_test('tvos')
+    run_apple_test("tvos")
   end
-
 end
 
 desc "Uninstall, build, install, and test"
 task :all do
-  Rake::Task['uninstall'].invoke
-  Rake::Task['build'].invoke
-  Rake::Task['install'].invoke
-  Rake::Task['spec'].invoke
+  Rake::Task["uninstall"].invoke
+  Rake::Task["build"].invoke
+  Rake::Task["install"].invoke
+  Rake::Task["spec"].invoke
 end
+
+desc "Fix formatting"
+task fix: "standard:fix"

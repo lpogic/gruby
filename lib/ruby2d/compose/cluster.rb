@@ -18,14 +18,13 @@ module Ruby2D
 
     cvs_reader :hovered, :pressed
 
-    def initialize(parent, *una, **na, &b)
+    def initialize(parent, *una, club: nil, **na, &b)
       @objects = pot []
       @parent = parent
       @event_handlers = {}
       @pot_handlers = []
+      @club = club
 
-      # Unique ID for the input event being registered
-      @event_key = 0
       @keyboard_current = pot false
       @hovered = pot false
       @pressed = pot false
@@ -36,7 +35,7 @@ module Ruby2D
       on :mouse_up do |e|
         if @pressed.get
           @pressed.set false
-          emit :click, e if not pressed.get
+          emit :click, e if !pressed.get
         end
       end
       on :mouse_in do
@@ -53,7 +52,7 @@ module Ruby2D
     def handle_mouse_down e
       @hovered.set true
       @pressed.set true
-      window.keyboard_current_object = self if window.mouse_current == self and not @accept_keyboard_disabled
+      window.keyboard_current_object = self if (window.mouse_current == self) && !@accept_keyboard_disabled
     end
 
     def disable(*keys)
@@ -61,16 +60,16 @@ module Ruby2D
         case k
         when :accept_keyboard
           @accept_keyboard_disabled = true
-        else raise 'Unknown switch ' + k.to_s
+        else raise "Unknown switch " + k.to_s
         end
       end
     end
 
-    def init
+    def init(*)
     end
 
     def inspect
-      "#{self.class}:id:#{self.object_id}"
+      "#{self.class}:id:#{object_id}"
     end
 
     cvs_reader :keyboard_current
@@ -88,7 +87,7 @@ module Ruby2D
           o.parent = self
         end
       end
-      objects.size > 1 ? objects : objects[0]
+      (objects.size > 1) ? objects : objects[0]
     end
 
     def leave(*objects)
@@ -103,11 +102,6 @@ module Ruby2D
       @objects << []
     end
 
-    # Generate a new event key (ID)
-    def new_event_key
-      @event_key = @event_key.next
-    end
-
     def pull
       pt = pot
       @pot_handlers << pt
@@ -117,11 +111,10 @@ module Ruby2D
     # Set an event handler
     def on(*events, &proc)
       r = []
-      return r if not block_given?
+      return r if !proc
 
       events.each do |event|
         if event.is_a? Symbol
-          event_id = new_event_key
           ed = EventDescriptor.new(event, self)
           (@event_handlers[event] ||= {})[ed] = proc
           r << ed
@@ -138,7 +131,7 @@ module Ruby2D
           raise "Only Symbols/Pots allowed"
         end
       end
-      r.length > 1 ? r : r[0]
+      (r.length > 1) ? r : r[0]
     end
 
     def on_key key = nil, type = :key, &b
@@ -146,7 +139,7 @@ module Ruby2D
         on(type, &b)
       else
         on type do |e|
-          b.(e) if key == e.key
+          b.call(e) if key == e.key
         end
       end
     end
@@ -154,7 +147,7 @@ module Ruby2D
     # Remove an event handler
     def off(event_descriptor)
       handlers = @event_handlers[event_descriptor.type]
-      handlers.delete(event_descriptor) if handlers
+      handlers&.delete(event_descriptor)
     end
 
     def new_square(**args)
@@ -177,56 +170,53 @@ module Ruby2D
       Text.new(text, **args)
     end
 
-    def outfit(key, type)
-      parent.outfit(key, type)
+    def outfit(*path)
+      parent.outfit(*path)
     end
 
-    def new_button(text: 'Button', outfit: 'default', text_size: nil, text_color: nil, round: nil,
-                   r: nil, color: nil, border: nil, b: nil, border_color: nil, **plan, &on_click)
+    def new_button(text: "Button", outfit: "default", club: nil, text_size: nil, text_color: nil, round: nil,
+      r: nil, color: nil, border: nil, b: nil, border_color: nil, **plan, &on_click)
 
-      btn = Button.new self, text: text, &on_click
+      btn = Button.new self, text: text, club: club, &on_click
       outfit = btn.dress outfit, **plan
-      plan[:x] = 200 if not Rectangle.x_dim? plan
-      plan[:y] = 100 if not Rectangle.y_dim? plan
-      plan[:width] = outfit.width if not Rectangle.w_dim? plan
-      plan[:height] = outfit.height if not Rectangle.h_dim? plan
-      btn.plan **plan
+      plan[:x] = 200 if !Rectangle.x_dim? plan
+      plan[:y] = 100 if !Rectangle.y_dim? plan
+      plan[:width] = outfit.width if !Rectangle.w_dim? plan
+      plan[:height] = outfit.height if !Rectangle.h_dim? plan
+      btn.plan(**plan)
       btn
     end
 
-    def new_note(text: '', outfit: 'default', **plan, &on_click)
-
-      note = Note.new self, text: text, &on_click
+    def new_note(text: "", outfit: "default", club: nil, **plan, &on_click)
+      note = Note.new self, text: text, club: club, &on_click
       outfit = note.dress outfit, **plan
-      plan[:width] = outfit.width if not Rectangle.w_dim? plan
-      plan[:height] = outfit.height if not Rectangle.h_dim? plan
-      plan[:x] = 200 if not Rectangle.x_dim? plan
-      plan[:y] = 100 if not Rectangle.y_dim? plan
-      note.plan **plan
+      plan[:width] = outfit.width if !Rectangle.w_dim? plan
+      plan[:height] = outfit.height if !Rectangle.h_dim? plan
+      plan[:x] = 200 if !Rectangle.x_dim? plan
+      plan[:y] = 100 if !Rectangle.y_dim? plan
+      note.plan(**plan)
       note
     end
 
-    def new_ruby_note(text: '', of: 'default', **plan, &on_click)
-
-      note = RubyNote.new self, text: text, &on_click
+    def new_ruby_note(text: "", outfit: "default", club: nil, **plan, &on_click)
+      note = RubyNote.new self, text: text, club: club, &on_click
       outfit = note.dress outfit, **plan
-      plan[:width] = outfit.width if not Rectangle.w_dim? plan
-      plan[:height] = outfit.height if not Rectangle.h_dim? plan
-      plan[:x] = 200 if not Rectangle.x_dim? plan
-      plan[:y] = 100 if not Rectangle.y_dim? plan
-      note.plan **plan
+      plan[:width] = outfit.width if !Rectangle.w_dim? plan
+      plan[:height] = outfit.height if !Rectangle.h_dim? plan
+      plan[:x] = 200 if !Rectangle.x_dim? plan
+      plan[:y] = 100 if !Rectangle.y_dim? plan
+      note.plan(**plan)
       note
     end
 
-    def new_album(options: [], outfit: 'default', **plan, &on_click)
-
-      album = Album.new self, options: options, &on_click
+    def new_album(options: [], outfit: "default", club: nil, **plan, &on_click)
+      album = Album.new self, options: options, club: club, &on_click
       outfit = album.dress outfit, **plan
-      plan[:width] = outfit.width if not Rectangle.w_dim? plan
-      plan[:height] = outfit.height if not Rectangle.h_dim? plan
-      plan[:x] = 200 if not Rectangle.x_dim? plan
-      plan[:y] = 100 if not Rectangle.y_dim? plan
-      album.plan **plan
+      plan[:width] = outfit.width if !Rectangle.w_dim? plan
+      plan[:height] = outfit.height if !Rectangle.h_dim? plan
+      plan[:x] = 200 if !Rectangle.x_dim? plan
+      plan[:y] = 100 if !Rectangle.y_dim? plan
+      album.plan(**plan)
       album
     end
 
@@ -238,36 +228,77 @@ module Ruby2D
         cluster_render
       when :click
         click_time = timems
-        if @last_double_click_time and click_time - @last_double_click_time < 300
+        if @last_double_click_time && (click_time - @last_double_click_time < 300)
           emit :triple_click, event
           @last_double_click_time = nil
-          return
-        elsif @last_click_time and click_time - @last_click_time < 300
+        elsif @last_click_time && (click_time - @last_click_time < 300)
           emit :double_click, event
-          @last_click_time = nil
           @last_double_click_time = click_time
-          return
-        else
-          @last_click_time = click_time
         end
+        @last_click_time = click_time
       end
       ehh = @event_handlers[type]
-      ehh.each { |eh, pro| pro.call(event, eh) } if ehh
+      ehh&.each { |eh, pro| pro.call(event, eh) }
+    end
+
+    class Club
+      def initialize
+        @array = []
+      end
+
+      def to_ary
+        @array
+      end
+
+      def append(e)
+        @array.append e
+      end
+
+      def <<(e)
+        @array << e
+      end
+
+      def method_missing(m, *una, **na, &b)
+        @array.each{
+          _1.send(m, *una, **na, &b)
+        }
+        return self
+      end
+
+      def method_missing_respond?(m)
+        @array.all{_1.method_missing_respond?(m)}
+      end
+    end
+
+    def get_club
+      @club
+    end
+
+    def club(club_name, club_instance: nil)
+      club_instance ||= Club.new
+      clubbers = @objects.get.filter{ _1.is_a? Cluster }
+      clubbers.each do |c|
+        club_instance << c if c.get_club == club_name
+      end
+      clubbers.each do |c|
+        c.club club_name, club_instance: club_instance
+      end
+      club_instance
     end
 
     def contains?(x, y)
       @objects.get.filter { _1.is_a? Entity }.any? { |e| e.contains?(x, y) }
     end
 
-    def update()
+    def update
       @objects.get.reverse.filter { _1.is_a? Entity }.each { |e| e.emit :update }
     end
 
     def cluster_render
       if @nanny
-        return if not @nanny.rendered
-      else
-        return if not @parent.rendered
+        return if !@nanny.rendered
+      elsif !@parent.rendered
+        return
       end
       @rendered = true
       render
@@ -287,15 +318,15 @@ module Ruby2D
     def accept_mouse(e, invoker)
       if @nanny
         return nil if invoker != @nanny
-      else
-        return nil if invoker != @parent
+      elsif invoker != @parent
+        return nil
       end
-      return nil if not contains?(e.x, e.y)
+      return nil if !contains?(e.x, e.y)
 
       am = nil
       objects = @objects.get
       objects.reverse.find { |t| t.is_a?(Entity) && (am = t.accept_mouse(e, self)) }
-      return am || self
+      am || self
     end
 
     def accept_keyboard(current = true)
@@ -309,14 +340,14 @@ module Ruby2D
         ps.filter { _1.is_a? Cluster }.each do |psi|
           return true if psi.pass_keyboard nil, reverse: reverse
         end
-        return false
+        false
       else
         i = objects.find_index(current)
         ps = reverse ? objects[...i].reverse : objects[i + 1..]
         ps.filter { _1.is_a? Cluster }.each do |psi|
           return true if psi.pass_keyboard nil, reverse: reverse
         end
-        return parent.pass_keyboard self, reverse: reverse
+        parent.pass_keyboard self, reverse: reverse
       end
     end
 
@@ -339,25 +370,25 @@ module Ruby2D
     end
 
     def clipboard
-      ext_get_clipboard.force_encoding('utf-8')
+      ext_get_clipboard.force_encoding("utf-8")
     end
 
     def clipboard=(c)
       ext_set_clipboard c
-      c
+      return c
     end
 
     private
 
-      # An an object to the window, used by the public `add` method
-      def add_object(object)
-        objects = @objects.get
-        if !objects.include?(object)
-          @objects.set objects.push(object)
-          true
-        else
-          false
-        end
+    # An an object to the window, used by the public `add` method
+    def add_object(object)
+      objects = @objects.get
+      if !objects.include?(object)
+        @objects.set objects.push(object)
+        true
+      else
+        false
       end
+    end
   end
 end

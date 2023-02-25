@@ -1,5 +1,7 @@
 module Ruby2D
   class ColRowContainer < Cluster
+    include Arena
+
     def init(gap: 0, **ona)
       ona[:color] ||= 0
       care @body = new_rectangle(**ona)
@@ -10,16 +12,26 @@ module Ruby2D
       @last_gap = true
     end
 
-    def append(element, **plan)
+    def append(element, **plan, &b)
       gs = @grid.sector(@grid.cols.get.length - 2, @grid.rows.get.length - 2, fixed: false)
       plan[:x] = gs.x unless Rectangle.x_dim? plan
       plan[:y] = gs.y unless Rectangle.y_dim? plan
       element.plan(**plan)
       care element
+      if block_given? && element.is_a?(Arena)
+        @@build_stack.push element
+        element.build(&b)
+        @@build_stack.pop
+      end
+      return element
     end
 
     delegate body: %w[fill plan left top right bottom x y width height color round]
     attr_reader :body, :grid
+
+    def gap(size)
+      send_current(__method__, size) || append(Gap.new(size))
+    end
 
     def gap=(gap)
       if gap.is_a? Array

@@ -4,12 +4,12 @@ module Ruby2D
       super
       @height_mix = pot []
       @height_mix.value <<= ona[:height] if ona[:height]
-      @body.height << @height_mix.arrpot.as{ _1.max || 0 }
+      @body.height << @height_mix.arrpot.as { _1.max || 0 }
       @grid = Grid.new rows: [@body.height], cols: [@start_gap, @end_gap], x: @body.x, y: @body.y
       @body.width << @grid.width
     end
 
-    def append(element, **plan)
+    def append(element, **plan, &b)
       if element.is_a? Gap
         @grid.cols.set { |a| a[...-1] + [element.size, a[-1]] }
         @last_gap = true
@@ -29,8 +29,9 @@ module Ruby2D
 
         super
       end
+      return element
     end
 
-    def height_mix; @height_mix end
+    attr_reader :height_mix
   end
 end

@@ -7,22 +7,22 @@ class String
   end
 
   def bold
-    ruby2d_colorize('1')
+    ruby2d_colorize("1")
   end
 
   def info
-    ruby2d_colorize('1;34')
+    ruby2d_colorize("1;34")
   end
 
   def warn
-    ruby2d_colorize('1;33')
+    ruby2d_colorize("1;33")
   end
 
   def success
-    ruby2d_colorize('1;32')
+    ruby2d_colorize("1;32")
   end
 
   def error
-    ruby2d_colorize('1;31')
+    ruby2d_colorize("1;31")
   end
 end

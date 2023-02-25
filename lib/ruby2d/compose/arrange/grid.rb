@@ -75,44 +75,44 @@ module Ruby2D
     def sector(col, row, fixed: true)
       if fixed
         left = case col
-               when Integer then let(*@cols.get[0...col], @left).sum
-               when Range then let(*@cols.get[0...col.min], @left).sum
+        when Integer then let(*@cols.get[0...col], @left).sum
+        when Range then let(*@cols.get[0...col.min], @left).sum
         end
         width = case col
-                when Integer then @cols.get[col]
-                when Range then let(*@cols.get[col]).sum
+        when Integer then @cols.get[col]
+        when Range then let(*@cols.get[col]).sum
         end
         top = case row
-              when Integer then let(*@rows.get[0...row], @top).sum
-              when Range then let(*@rows.get[0...row.min], @top).sum
+        when Integer then let(*@rows.get[0...row], @top).sum
+        when Range then let(*@rows.get[0...row.min], @top).sum
         end
         height = case row
-                 when Integer then @rows.get[row]
-                 when Range then let(*@rows.get[row]).sum
+        when Integer then @rows.get[row]
+        when Range then let(*@rows.get[row]).sum
         end
       else
         left = case col
-               when Integer then let(@cols[...col].sum, @left).sum
-               when Range then let(@cols[...col.min], @left).sum
+        when Integer then let(@cols[...col].sum, @left).sum
+        when Range then let(@cols[...col.min], @left).sum
         end
         width = case col
-                when Integer then @cols[col]
-                when Range then @cols[col].sum
+        when Integer then @cols[col]
+        when Range then @cols[col].sum
         end
         top = case row
-              when Integer then let(@rows[...row].sum, @top).sum
-              when Range then let(@rows[...row.min].sum, @top).sum
+        when Integer then let(@rows[...row].sum, @top).sum
+        when Range then let(@rows[...row.min].sum, @top).sum
         end
         height = case row
-                 when Integer then @rows[row]
-                 when Range then @rows[row].sum
+        when Integer then @rows[row]
+        when Range then @rows[row].sum
         end
       end
 
       Sector.new(left:, width:, top:, height:)
     end
 
-    alias [] sector
+    alias_method :[], :sector
 
     def col(index)
       @cols.get[index]

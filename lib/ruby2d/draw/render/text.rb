@@ -19,7 +19,11 @@ module Ruby2D
       @rotate = rotate
       @color = compot { Color.new _1 }.let(color || 'white')
       @font_style = pot.let style
-      @font = compot(@size, @font_style) { Font.load(Font.path(_3), _1, _2) }.let(font || Font.default)
+      @font = compot(@size, @font_style) do 
+        path = Font.path(_3)
+        raise "Font #{_3} not found" if path.nil?
+        Font.load(path, _1, _2)
+      end.let(font || Font.default)
 
       @texture_offset_x = pot 0
       @texture_offset_y = pot 0

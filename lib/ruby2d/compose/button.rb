@@ -2,7 +2,7 @@ module Ruby2D
   class Button < Widget
     cvs_reader :keyboard_pressed
 
-    alias mouse_pressed pressed
+    alias_method :mouse_pressed, :pressed
 
     def pressed
       let(mouse_pressed, keyboard_pressed).or
@@ -14,10 +14,10 @@ module Ruby2D
       @text = new_text text, x: @box.x, y: @box.y
       care @box, @text
 
-      on :click, &on_click if block_given?
+      on :click, &on_click if on_click
 
       on :key_down do |e|
-        @keyboard_pressed.set true if e.key == 'space'
+        @keyboard_pressed.set true if e.key == "space"
       end
 
       on @keyboard_current do |_kc|
@@ -25,7 +25,7 @@ module Ruby2D
       end
 
       on :key_up do |e|
-        if e.key == 'space' && @keyboard_pressed.get
+        if e.key == "space" && @keyboard_pressed.get
           @keyboard_pressed.set false
           emit :click unless pressed.get
         end
@@ -53,40 +53,44 @@ module Ruby2D
     end
   end
 
-
   class BasicButtonOutfit < ButtonOutfit
-
     def_struct(
-      :background_color, 
-      :background_color_hovered, 
+      :background_color,
+      :background_color_hovered,
       :background_color_pressed,
-      :text_color, 
-      :text_color_pressed, 
+      :text_color,
+      :text_color_pressed,
       :text_font,
       :text_size,
-      :border_color, 
+      :border_color,
       :border_color_keyboard_current,
       accessors: true
     )
 
     def color(c = nil, hc = nil, color: @background_color, hovered: @background_color_hovered, pressed: @background_color_pressed)
-      c = c || color || 'blue'
-      ch = ch || hovered || '#1084E9'
-      cp = cp || pressed || '#0064C9'
+      c = c || color || "blue"
+      ch = ch || hovered || "#1084E9"
+      cp = cp || pressed || "#0064C9"
       let(@seed.hovered, @seed.pressed, c, ch, cp) do
-        if _2 then _5 elsif _1 then _4 else _3 end
+        if _2
+          _5
+        elsif _1
+          _4
+        else
+          _3
+        end
       end
     end
 
     def text_color(c = nil, pc = nil, color: @text_color, pressed: @text_color_pressed)
-      c = c || color || 'white'
-      cp = cp || pressed || '#DFDFDF'
+      c = c || color || "white"
+      cp = cp || pressed || "#DFDFDF"
       let_if @seed.pressed, cp, c
     end
 
     def border_color(c = nil, ckc = nil, color: @border_color, keyboard_current: @border_color_keyboard_current)
-      c = c || color || 'blue'
-      ckc = ckc || keyboard_current || '#7b00ae'
+      c = c || color || "blue"
+      ckc = ckc || keyboard_current || "#7b00ae"
       let_if @seed.keyboard_current, ckc, c
     end
 
@@ -95,7 +99,7 @@ module Ruby2D
     end
 
     def text_font(tf = nil, text_font: @text_font)
-      tf || text_font || 'consola'
+      tf || text_font || "consola"
     end
 
     def text_size(ts = nil, text_size: @text_size)
@@ -103,11 +107,11 @@ module Ruby2D
     end
 
     def height(h = nil, height: nil)
-      h || height || @seed.text_object.height{ _1 + 10 }
+      h || height || @seed.text_object.height { _1 + 10 }
     end
 
     def width(w = nil, width: nil)
-      w || width || @seed.text_object.width{ _1 + 20 }
+      w || width || @seed.text_object.width { _1 + 20 }
     end
 
     def round(r = nil, round: nil)
@@ -116,16 +120,15 @@ module Ruby2D
   end
 
   class OptionButtonOutfit < ButtonOutfit
-
     def_struct(
-      :background_color, 
-      :background_color_hovered, 
+      :background_color,
+      :background_color_hovered,
       :background_color_pressed,
-      :text_color, 
-      :text_color_pressed, 
+      :text_color,
+      :text_color_pressed,
       :text_font,
       :text_size,
-      :border_color, 
+      :border_color,
       :border_color_keyboard_current,
       accessors: true
     )
@@ -149,23 +152,29 @@ module Ruby2D
     end
 
     def color(c = nil, hc = nil, color: @background_color, hovered: @background_color_hovered, pressed: @background_color_pressed)
-      c = c || color || '#2c2c2f'
-      ch = ch || hovered || '#4c4c4f'
-      cp = cp || pressed || '#5c5c5f'
+      c = c || color || "#2c2c2f"
+      ch = ch || hovered || "#4c4c4f"
+      cp = cp || pressed || "#5c5c5f"
       let(@seed.hovered, @seed.pressed, c, ch, cp) do
-        if _2 then _5 elsif _1 then _4 else _3 end
+        if _2
+          _5
+        elsif _1
+          _4
+        else
+          _3
+        end
       end
     end
 
     def text_color(c = nil, pc = nil, color: @text_color, pressed: @text_color_pressed)
-      c = c || color || 'white'
-      cp = cp || pressed || '#DFDFDF'
+      c = c || color || "white"
+      cp = cp || pressed || "#DFDFDF"
       let_if @seed.pressed, cp, c
     end
 
     def border_color(c = nil, ckc = nil, color: @border_color, keyboard_current: @border_color_keyboard_current)
-      c = c || color || '#2c2c2f'
-      ckc = ckc || keyboard_current || '#7b00ae'
+      c = c || color || "#2c2c2f"
+      ckc = ckc || keyboard_current || "#7b00ae"
       let_if @seed.keyboard_current, ckc, c
     end
 
@@ -174,7 +183,7 @@ module Ruby2D
     end
 
     def text_font(tf = nil, text_font: @text_font)
-      tf || text_font || 'consola'
+      tf || text_font || "consola"
     end
 
     def text_size(ts = nil, text_size: @text_size)
@@ -182,7 +191,7 @@ module Ruby2D
     end
 
     def height(h = nil, height: nil)
-      h || height || @seed.text_object.height{ _1 + 10 }
+      h || height || @seed.text_object.height { _1 + 10 }
     end
 
     def width(w = nil, width: nil)

@@ -1,23 +1,23 @@
 # frozen_string_literal: true
 
-require 'ruby2d/core' unless RUBY_ENGINE == 'mruby'
+require "ruby2d/core" unless RUBY_ENGINE == "mruby"
 
 # Create 2D applications, games, and visualizations with ease. Just a few lines of code is enough to get started.
 # Visit https://www.ruby2d.com for more information.
 module Ruby2D
   def self.gem_dir
     # mruby doesn't define `Gem`
-    if RUBY_ENGINE == 'mruby'
+    if RUBY_ENGINE == "mruby"
       `ruby -e "print Gem::Specification.find_by_name('ruby2d').gem_dir"`
     else
-      Gem::Specification.find_by_name('ruby2d').gem_dir
+      Gem::Specification.find_by_name("ruby2d").gem_dir
     end
   end
 
   def self.assets(path = nil)
     if path
-       "#{gem_dir}/assets/#{path}"
-    else 
+      "#{gem_dir}/assets/#{path}"
+    else
       "#{gem_dir}/assets"
     end
   end

@@ -7,7 +7,7 @@ module Ruby2D
                     t = self.text.get
                     select_all
                     paste eval(t).to_s
-                rescue SyntaxError
+                rescue Exception
                 end
             end
         end

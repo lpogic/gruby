@@ -3,7 +3,7 @@ module Ruby2D
     def init(gap: 0, **ona)
       super
       @height_mix = pot []
-      @height_mix.value <<= ona[:height] if ona[:height]
+      @height_mix.val <<= ona[:height] if ona[:height]
       @body.height << @height_mix.arrpot.as { _1.max || 0 }
       @grid = Grid.new rows: [@body.height], cols: [@start_gap, @end_gap], x: @body.x, y: @body.y
       @body.width << @grid.width
@@ -24,7 +24,7 @@ module Ruby2D
         if plan[:height] == false
           plan.delete :height
         elsif !height.affect(plan[:height])
-          @height_mix.value <<= element.height
+          @height_mix.val <<= element.height
         end
 
         super

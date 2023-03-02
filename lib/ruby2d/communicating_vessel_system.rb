@@ -1,7 +1,7 @@
-# SYSTEM ZMIENNYCH POWIĄZANYCH TYPU PUSH
+# SYSTEM ZMIENNYCH POWIĄZANYCH
 
 # Zmienne wyjściowe (outpot) muszą być podane jawnie, a nie jako efekt uboczny np {@a.set _1}, ponieważ przy zmianie wejścia (inlet), stare musi zostać odpięte.
-# Zmiennych połączonych na stałe ta zasada nie dotyczy (compot, arrpot)
+# Algorytm sprawdzający cykle również bazuje na tym założeniu.
 #
 #  let:outpot ==weakref==> pot:outlet ==weakref==> let
 #  let:inpot ==hardref==> pot:inlet ==hardref==> let
@@ -10,38 +10,37 @@ require "weakref"
 
 module Ruby2D
   module CommunicatingVesselSystem
-    def pot(v = nil, unique: true, pull: true)
-      return v if !unique && v.is_a?(Pot)
+    def pot(value = nil, unique: true, pull: true)
+      return value if !unique && v.is_a?(Pot)
 
       location = Pot.debug ? caller(1..1).first : nil
-      BasicPot.new(pull:, location:).let v
+      BasicPot.new(pull:, location:).let value
     end
 
     def compot(*v, pull: true, &block)
       p1 = CommunicatingVesselSystem.pot
       p2 = CommunicatingVesselSystem.pot(pull:)
-      CommunicatingVesselSystem.let(*v, p1, BasicPot.new(p2), &block).apply_outpot(p2, pull: false)
-      p2.recent = true
+      CommunicatingVesselSystem.let(*v, p1, BasicPot.new(p2), &block)._connect(p2, pull: false)
+      p2._recent = true
       location = Pot.debug ? caller(1..1).first : nil
       Compot.new(p1, p2, location:)
     end
 
-    def arrpot(pull: true, collecting: true, &block)
+    def arrpot(pull: true, &block)
       p1 = CommunicatingVesselSystem.pot []
       p2 = CommunicatingVesselSystem.pot(pull:)
       p3 = CommunicatingVesselSystem.pot pull: true
       block ||= proc { _1 }
       CommunicatingVesselSystem.let(p1) do |pots|
-        pots = [] if pots.nil?
-        pots = block.call(pots.array)
-        CommunicatingVesselSystem.let(*pots, collecting: collecting) { |*a| [a] } >> p2
-        [pots]
+        pots = block.call(Array(pots))
+        CommunicatingVesselSystem.let(*pots){|*a| a} >> p2
+        pots
       end >> p3
       location = Pot.debug ? caller(1..1).first : nil
       Arrpot.new(p1, p2, p3, location:)
     end
 
-    def let(*inpot, out: nil, collecting: true, &block)
+    def let(*inpot, &)
       inpot = inpot.map do |i|
         case i
         when Pot then i
@@ -49,17 +48,7 @@ module Ruby2D
         else BasicPot.new.let(i)
         end
       end
-      if block
-        if out.nil?
-          Let.new(inpot, collecting: collecting, &block)
-        else
-          l = Let.new(inpot, collecting: collecting, &block)
-          l.apply_outpot(*out)
-          l
-        end
-      else
-        Let.new(inpot, collecting: collecting) { |*v| v }
-      end
+      Let.new(inpot, &)
     end
 
     def let_if(a, b, c)
@@ -68,71 +57,42 @@ module Ruby2D
       end
     end
 
-    def let_debug(*inpot, out: nil, &block)
-      inpot = inpot.map { _1.is_a?(Pot) ? _1 : BasicPot.new.let(_1) }
-      if block
-        if out.nil?
-          LetDebug.new(inpot, caller, &block)
-        else
-          l = LetDebug.new(inpot, caller, &block)
-          l.apply_outpot(*out)
-          l
-        end
-      else
-        LetDebug.new(inpot, caller) { |*v| v }
-      end
-    end
-
     class Let
-      class ConnectionDuplicateError < StandardError
+      class DuplicatedConnectionError < StandardError
       end
 
       class DisconnectedLetUpdate < StandardError
       end
 
-      def initialize(inpot, collecting: true, &block)
+      def initialize(inpot, &block)
         @function = block
         @inpot = inpot
-        @outpot = []
-        @collecting = collecting
+        @connected = false
       end
 
-      attr_reader :function, :inpot
-
-      def inspect
-        "Let:#{object_id} @inpot=#{@inpot.map { "Pot:" + _1.object_id.to_s }} @outpot=#{@outpot.map { "Pot:" + _1.object_id.to_s }} @function=#{@function}"
-      end
-
-      def copy
-        Let.new @inpot, &@function
-      end
-
-      def respond_to_missing?(m)
-        m == :to_ary || Array.method_defined?(m) || super
-      end
-
-      # dla funkcji agregujących np. let(*xes).max,    let(a, b, c).max
-      def method_missing(m, *a, &)
-        if m == :to_ary
-          super
-        elsif Array.method_defined? m
-          __compose(m, *a, &)
-        else
-          super
-        end
-      end
-
-      def __compose(m, *arg, &)
+      def get
+        i = @inpot.map(&:get)
         if @function
-          Let.new(@inpot) do |*a|
-            r = *@function.call(*a)
-            r.send(m, *arg, &)
-          end
+          return @function.call(*i)
         else
-          Let.new(@inpot) do |*a|
-            a.send(m, *arg, &)
-          end
+          return i.size > 1 ? i : i[0]
         end
+      end
+
+      def >>(target)
+        return copy >> target if @connected
+
+        case target
+        when Pot
+          _connect target
+        when Let
+          _connect target.inpot # co z funkcją z jednym wejściem
+        when Array
+          raise "Only Pot, Let or Array of Pots allowed as the right side" if not target.all?{_1.is_a? Pot}
+          _connect target
+        else raise "Only Pot, Let or Array of Pots allowed as the right side"
+        end
+        self
       end
 
       def as(&b)
@@ -145,145 +105,158 @@ module Ruby2D
         end
       end
 
-      def apply_outpot(*outpot, pull: true)
-        raise ConnectionDuplicateError if @connected
-
-        loop_test(*outpot)
-        od = outpot.map do
-          _1.set_inlet self
-          _1.outdate
-        end.reduce(:+)
-        @outpot += outpot.map { WeakRef.new _1 }
-        unless @connected
-          @inpot.each { _1.add_outlet(self) }
-          @connected = true
-        end
-        od.each(&:get) if pull
+      def pot
+        pt = BasicPot.new
+        self >> pt
+        return pt
       end
 
-      def outpot
-        o = []
-        @outpot = @outpot.map do |wr|
-          if wr
-            begin
-              o << wr.__getobj__
-              wr
-            rescue
+      def arrpot(&)
+        CommunicatingVesselSystem.arrpot { _1.map(&).compact.flatten } << self
+      end
+
+      def inspect
+        outpot = _outpot
+        "Let:#{object_id}(" + 
+        "@inpot=#{@inpot.map { "Pot:" + _1.object_id.to_s }} " + 
+        "@connected=#{@connected} " +
+        (@connected ? "@outpot=#{outpot.nil? ? 'nil' : outpot.is_a?(Array) ? outpot.map { "Pot:" + _1.object_id.to_s } : outpot.object_id} " : "") + 
+        "@function=#{@function}" +
+        ")"
+      end
+
+      def respond_to_missing?(m, include_all)
+        m == :to_ary || Array.method_defined?(m) || super
+      end
+
+      # dla funkcji agregujących np. let(*xes).max,    let(a, b, c).max
+      def method_missing(m, *a, &)
+        if m == :to_ary
+          super
+        elsif Array.method_defined? m
+          _compose(m, *a, &)
+        else
+          super
+        end
+      end
+
+      def _function
+        @function
+      end
+
+      def _inpot
+        @inpot
+      end
+
+      def _copy
+        Let.new @inpot, &@function
+      end
+
+      def _compose(m, *arg, &)
+        if @function
+          Let.new(@inpot) do |*a|
+            r = *@function.call(*a)
+            r.send(m, *arg, &)
+          end
+        else
+          Let.new(@inpot) do |*a|
+            a.send(m, *arg, &)
+          end
+        end
+      end
+
+      def _connect(outpot, pull: true)
+        raise DuplicatedConnectionError if @connected
+
+        ao = Array(outpot)
+        _loop_test(*ao)
+        to_pull = ao.map do
+          _1._set_inlet self
+          _1._outdate
+        end.reduce(:+)
+        @outpot = outpot.is_a?(Array) ? outpot.map { WeakRef.new _1 } : WeakRef.new(outpot)
+        @inpot.each { _1._add_outlet(self) }
+        @connected = true
+        to_pull.each(&:get) if pull
+      end
+
+      def _outpot
+        o = nil
+        if @outpot.is_a? Array
+          o = []
+          @outpot = @outpot.map do |wr|
+            if wr
+              begin
+                o << wr.__getobj__
+                wr
+              rescue
+                o << nil
+                nil
+              end
+            else
               o << nil
               nil
             end
-          else
-            o << nil
-            nil
+          end
+        elsif not @outpot.nil?
+          begin
+            o = @outpot.__getobj__
+          rescue
+            @outpot = nil
           end
         end
-        o
+        return o
       end
 
-      def loop_test(*outpot)
-        seed = Pot.dfs_next_seed
-        path_found = inpot.map do |i|
-          i.dfs_path(seed: seed).find do |path|
+      def _loop_test(*outpot)
+        seed = Pot._dfs_next_seed
+        path_found = _inpot.map do |i|
+          i._dfs_path(seed: seed).find do |path|
             outpot.include?(path.last)
           end
         end.find(&:itself)
         raise "Pot loop detected:\n" + path_found.each_with_index.map { "#{_2 + 1}. #{_1.inspect}" }.join("\n") if path_found
       end
 
-      def >>(other)
-        return copy >> other if @connected
-
-        case other
-        when Pot
-          apply_outpot other
-        when Let
-          apply_outpot(*other.inpot)
-        when Array
-          apply_outpot(*other)
-        else raise "Invalid right side"
-        end
-        self
-      end
-
-      def unlock
-        @locked = false
-      end
-
-      def update
+      def _update
         raise DisconnectedLetUpdate if !@connected
 
-        outpot = self.outpot
-        oc = outpot.compact
+        outpot = self._outpot
+        oc = Array(outpot).compact
         if oc.empty?
-          disconnect
+          _disconnect
           return
         end
-        oc.each { _1.recent = true }
-        result = get.array
-        if outpot.size > 1
-          result.zip(outpot).each { |r, o| o&.__set r }
+        oc.each { _1._recent = true }
+        result = self.get
+        if outpot.is_a? Array
+          result.zip(outpot).each { |r, o| o&._set r }
         else
-          outpot[0].__set result[0]
+          outpot._set result
         end
         result
       end
 
-      def get
-        i = @inpot.map(&:get)
-        i = @inpot if !@collecting
-        if @function
-          @function.call(*i)
-        else
-          (i.size > 1) ? i : i[0]
-        end
-      end
-
-      def collecting?
-        @collecting
-      end
-
-      def disconnect
+      def _disconnect
         return if !@connected
-        @inpot.each { _1.delete_outlet(self) }
+        @inpot.each { _1._delete_outlet(self) }
         @connected = false
-        outpot.compact.each { _1.set_inlet(false) }
-        @outpot = []
+        Array(_outpot).compact.each { _1._set_inlet(false) }
+        @outpot = nil
       end
 
-      alias_method :cancel, :disconnect
-
-      def delete_outpot(to_delete)
-        @outpot = @outpot.map { (_1.nil? || !_1.weakref_alive? || _1.__getobj__ == to_delete) ? nil : _1 }
-        cancel if @outpot.compact.empty?
-      end
-
-      def pot
-        pt = BasicPot.new
-        self >> pt
-        pt
-      end
-
-      def pots(count)
-        Array.new(count) { BasicPot.new }.map do |pt|
-          self >> pt
-          pt
+      def _delete_outpot(to_delete)
+        if @outpot.is_a? Array
+          @outpot = @outpot.map { (_1.nil? || !_1.weakref_alive? || _1.__getobj__ == to_delete) ? nil : _1 }
+          _disconnect if @outpot.compact.empty?
+        else
+          @outpot = nil if @outpot.nil? || !@outpot.weakref_alive? || @outpot.__getobj__ == to_delete
+          _disconnect if @outpot.nil?
         end
+        return self
       end
 
-      def arrpot(&)
-        CommunicatingVesselSystem.arrpot { _1.map(&).compact.flatten } << self
-      end
-    end
-
-    class LetDebug < Let
-      def initialize(inpot, caller, &block)
-        @function = block
-        @inpot = inpot
-        @outpot = []
-        @caller = caller
-      end
-
-      attr_reader :caller
+      alias_method :cancel, :_disconnect
     end
 
     class Pot
@@ -294,59 +267,24 @@ module Ruby2D
 
       def self.debug = @@debug
 
-      def >>(other)
-        CommunicatingVesselSystem.let(self) >> other
-        self
+      def as(&)
+        Let.new([self], &)
       end
 
-      def <<(obj)
-        obj = CommunicatingVesselSystem.let(obj) unless obj.is_a? Let
-        obj >> self
-        self
+      def >>(target)
+        CommunicatingVesselSystem.let(self) >> target
+        return self
       end
 
-      def self.dfs_next_seed
-        @@dfs_seed = @@dfs_seed.next
-      end
-
-      @@dfs_seed = 0
-      def dfs(depth = 0, direction: :in, deeper_later: true, exclude_root: true, seed: nil)
-        if seed
-          return [] if @dfs_seed == seed
-
-          @dfs_seed = seed
+      def <<(source)
+        if source.is_a? Let
+          source >> self
+        elsif source.is_a? Pot
+          CommunicatingVesselSystem.let(source) >> self
         else
-          @dfs_seed = seed = Pot.dfs_next_seed
+          self.set source
         end
-        Enumerator.new do |e|
-          e.yield(self, depth) if deeper_later && !exclude_root
-          if direction == :in
-            inpot.each do |ip|
-              ip.dfs(depth + 1, direction:, deeper_later:, exclude_root: false, seed:).each do |id, dp|
-                e.yield(id, dp)
-              end
-            end
-          elsif direction == :out
-            outlet.each do |ol|
-              ol.outpot.compact.each do |op|
-                op.dfs(depth + 1, direction:, deeper_later:, exclude_root: false, seed:).each do |od, dp|
-                  e.yield(od, dp)
-                end
-              end
-            end
-          end
-          e.yield(self, depth) if !deeper_later && !exclude_root
-        end
-      end
-
-      def dfs_path(direction: :in, seed: nil)
-        path = []
-        Enumerator.new do |e|
-          dfs(direction:, exclude_root: false, seed:).each do |pt, d|
-            path[d] = pt
-            e.yield(path[..d])
-          end
-        end
+        return self
       end
 
       def affect(affected)
@@ -358,17 +296,65 @@ module Ruby2D
         else
           return false
         end
-        dfs(direction: :out, exclude_root: false).any?(&test)
+        return _dfs(direction: :out, exclude_root: false).any?(&test)
       end
 
-      def print_inpot_tree
-        dfs(direction: :in).map do |pt, d|
-          p (">" * d) + pt.inspect
+      def self.print_inpot_tree(pt)
+        pt._dfs(direction: :in).map do |pt1, d|
+          p (">" * d) + pt1.inspect
         end
       end
 
-      def arrpot(collecting: true, &b)
-        CommunicatingVesselSystem.arrpot(collecting: collecting) { _1.map(&b).compact.flatten } << self
+      def arrpot(&)
+        CommunicatingVesselSystem.arrpot { _1.map(&).compact.flatten } << self
+      end
+
+      def to_ary
+        return [self]
+      end
+
+      def self._dfs_next_seed
+        @@dfs_seed = @@dfs_seed.next
+      end
+
+      @@dfs_seed = 0
+      def _dfs(depth = 0, direction: :in, deeper_later: true, exclude_root: true, seed: nil)
+        if seed
+          return [] if @dfs_seed == seed
+
+          @dfs_seed = seed
+        else
+          @dfs_seed = seed = Pot._dfs_next_seed
+        end
+        Enumerator.new do |e|
+          e.yield(self, depth) if deeper_later && !exclude_root
+          if direction == :in
+            _inpot.each do |ip|
+              ip._dfs(depth + 1, direction:, deeper_later:, exclude_root: false, seed:).each do |id, dp|
+                e.yield(id, dp)
+              end
+            end
+          elsif direction == :out
+            _outlet.each do |ol|
+              Array(ol._outpot).compact.each do |op|
+                op._dfs(depth + 1, direction:, deeper_later:, exclude_root: false, seed:).each do |od, dp|
+                  e.yield(od, dp)
+                end
+              end
+            end
+          end
+          e.yield(self, depth) if !deeper_later && !exclude_root
+        end
+      end
+
+      def _dfs_path(direction: :in, seed: nil)
+        path = []
+        Enumerator.new do |e|
+          _dfs(direction:, exclude_root: false, seed:).each do |pt, d|
+            path[d] = pt
+            e.yield(path[..d])
+          end
+        end
       end
     end
 
@@ -383,55 +369,94 @@ module Ruby2D
         @location = location
       end
 
-      def inspect
-        if @location
-          "BasicPot:#{object_id} #{@location}"
-        else
-          "BasicPot:#{object_id} @recent=#{@recent} @value=#{@value.inspect} @inlet=#{
-            @inlet ? "Let:" + @inlet.object_id.to_s : "nil"} @outlet=#{@outlet.map { "Let:" + _1.object_id.to_s }}"
-        end
-      end
-
       def get
-        update unless @recent
-        @value
+        _update unless @recent
+        return @value
       end
 
-      attr_accessor :recent
-      alias_method :value, :get
+      alias_method :val, :get
 
-      def nopull
+      def set(value = nil, &mod)
+        value = mod.call(get, value) if mod
+        _set_inlet(nil)
+        od = _outdate
+        _set(value)
+        od.each(&:get)
+        return self
+      end
+
+      alias_method :val=, :set
+
+      def let(*v, &)
+        if block_given?
+          l = Let.new(v.map { _1.is_a?(Pot) ? _1 : BasicPot.new.let(_1) }, &)
+        elsif v[0].is_a? Let
+          l = v[0]._copy
+        elsif v[0].is_a? Pot
+          l = Let.new(v)
+        else
+          return set(v[0])
+        end
+        l._connect(self)
+        return self
+      end
+
+      def dependent?
+        !!@inlet
+      end
+
+      def stop_pull
         pull = @pull
         @pull = false
         yield
         @pull = pull
       end
 
-      def update
-        @recent = true
-        @inlet&.update
-      end
-
-      def outdate
-        if @recent
-          @recent = false
-          pull_down = outlet.map { |ol| ol.outpot.compact.map { _1.outdate }.reduce([], :+) }.reduce([], :+)
-          if pull_down && !pull_down.empty?
-            pull_down
-          else
-            @pull ? [self] : []
-          end
+      def inspect
+        if @location
+          "BasicPot:#{object_id}(#{@location})"
         else
-          []
+          "BasicPot:#{object_id}(" + 
+          "@recent=#{@recent} @value=#{@value.inspect} " + 
+          "@inlet=#{@inlet ? "Let:" + @inlet.object_id.to_s : "nil"} " +
+          "@outlet=#{@outlet.map { "Let:" + _1.object_id.to_s }}" +
+          ")"
         end
       end
 
-      def __set(value)
+      def _recent
+        @recent
+      end
+
+      def _recent=(r)
+        @recent = r
+      end
+
+      def _update
+        @recent = true
+        @inlet&._update
+      end
+
+      def _outdate
+        if @recent
+          @recent = false
+          pull_down = _outlet.map { |ol| Array(ol._outpot).compact.map { _1._outdate }.reduce([], :+) }.reduce([], :+)
+          if pull_down && !pull_down.empty?
+            return pull_down
+          else
+            return @pull ? [self] : []
+          end
+        else
+          return []
+        end
+      end
+
+      def _set(value)
         @value = value
         @recent = true
       end
 
-      def outlet
+      def _outlet
         o = []
         @outlet = @outlet.map do |wr|
           o << wr.__getobj__
@@ -439,58 +464,27 @@ module Ruby2D
         rescue
           nil
         end.compact
-        o
+        return o
       end
 
-      def set(value = nil, &mod)
-        value = mod.call(get, value) if mod
-        set_inlet(nil)
-        od = outdate
-        __set(value)
-        od.each(&:get)
-        self
-      end
-
-      def let(*v, &)
-        if block_given?
-          l = Let.new(v.map { _1.is_a?(Pot) ? _1 : BasicPot.new.let(_1) }, &)
-        elsif v[0].is_a? Let
-          l = v[0].copy
-        elsif v[0].is_a? Pot
-          l = Let.new(v)
-        else
-          return set(v[0])
-        end
-        l.apply_outpot(self)
-        self
-      end
-
-      def as(&)
-        Let.new([self], &)
-      end
-
-      alias_method :value=, :set
-
-      def set_inlet(inlet)
-        @inlet&.delete_outpot self
+      def _set_inlet(inlet)
+        @inlet&._delete_outpot self
         @inlet = inlet
       end
 
-      attr_reader :inlet
-
-      def dependent?
-        !!@inlet
+      def _inlet
+        @inlet
       end
 
-      def inpot
-        @inlet ? @inlet.inpot : []
+      def _inpot
+        @inlet ? @inlet._inpot : []
       end
 
-      def add_outlet(let)
-        @outlet.append(WeakRef.new(let)) unless outlet.include? let
+      def _add_outlet(let)
+        @outlet.append(WeakRef.new(let)) unless _outlet.include? let
       end
 
-      def delete_outlet(let)
+      def _delete_outlet(let)
         @outlet.delete_if { !_1.weakref_alive? or _1.__getobj__ == let }
       end
     end
@@ -503,100 +497,89 @@ module Ruby2D
         @location = location
       end
 
-      def inspect
-        if @location
-          "Compot:#{object_id} #{@location}"
-        else
-          "Compot:#{object_id} @inpot=#{@inpot.inspect} @outpot=#{@outpot.inspect}]"
-        end
-      end
-
       def get
         @outpot.get
       end
 
-      def value
-        @outpot.value
-      end
-
-      def outlet
-        @outpot.outlet
-      end
-
-      def update
-        @inpot.update
-      end
-
-      def outdate
-        @inpot.outdate
-      end
-
-      def recent=(recent)
-        @outpot.recent = recent
-      end
-
-      def recent
-        @outpot.recent
-      end
-
-      def __set(value)
-        @inpot.__set value
-      end
+      alias_method :val, :get
 
       def set(value = nil, &mod)
         value = mod.call(get, value) if mod
         @inpot.set value
-        self
+        return self
       end
+
+      alias_method :val=, :set
 
       def let(...)
         @inpot.let(...)
-        self
-      end
-
-      def as(&)
-        Let.new([self], &)
-      end
-
-      alias_method :value=, :set
-
-      def set_inlet(inlet)
-        @inpot.set_inlet inlet
-      end
-
-      def inlet
-        @inpot.inlet
+        return self
       end
 
       def dependent?
         @inpot.dependent?
       end
 
-      def inpot
-        @inpot.inlet ? @inpot.inlet.inpot : []
+      def inspect
+        if @location
+          "Compot:#{object_id}(#{@location})"
+        else
+          "Compot:#{object_id}(" + 
+          "@inpot=#{@inpot.inspect} " +
+          "@outpot=#{@outpot.inspect}" +
+          ")"
+        end
       end
 
-      def lock_inlet(lock = true)
-        @inpot.lock_inlet lock
+      def _outlet
+        @outpot._outlet
       end
 
-      def unlock_inlet
-        @inpot.unlock_inlet
+      def _update
+        @inpot._update
       end
 
-      def add_outlet(let)
-        @outpot.add_outlet(let)
+      def _outdate
+        @inpot._outdate
       end
 
-      def delete_outlet(let)
-        @outpot.delete_outlet(let)
+      def _recent
+        @outpot._recent
       end
 
-      def compot_inpot
+      def _recent=(recent)
+        @outpot._recent = recent
+      end
+
+      def _set(value)
+        @inpot._set value
+      end
+
+      def _set_inlet(inlet)
+        @inpot._set_inlet inlet
+      end
+
+      def _inlet
+        @inpot._inlet
+      end
+
+      def _inpot
+        @inpot._inlet ? @inpot._inlet._inpot : []
+      end
+
+      def _add_outlet(let)
+        @outpot._add_outlet(let)
+      end
+
+      def _delete_outlet(let)
+        @outpot._delete_outlet(let)
+      end
+
+      def _compot_inpot
         @inpot
       end
 
-      def compot_outpot
+      def _compot_outpot
         @outpot
       end
     end
@@ -607,41 +590,41 @@ module Ruby2D
         @drain = drainpot
       end
 
-      attr_reader :drain
-
-      def inspect
-        if @location
-          "Arrpot:#{object_id} #{@location}"
-        else
-          "Arrpot:#{object_id} @inpot=#{@inpot.inspect} @outpot=#{@outpot.inspect}]"
-        end
-      end
-
       def set(value = nil, &mod)
         value = mod.call(@drain.get, value) if mod
         @inpot.set value
-        self
+        return self
       end
 
-      def inpot
-        super + @outpot.inpot
+      def inspect
+        if @location
+          "Arrpot:#{object_id}(#{@location})"
+        else
+          "Arrpot:#{object_id}(" +
+          "@inpot=#{@inpot.inspect} " +
+          "@outpot=#{@outpot.inspect}" +
+          ")"
+        end
       end
 
-      def map(&)
-        arrpot << as { _1.map(&) }
-      end
-
-      def respond_to_missing?(m)
+      def respond_to_missing?(m, include_all)
         Array.method_defined?(m) || super
       end
 
-      # dla funkcji agregujących np. let(*xes).max,    let(a, b, c).max
       def method_missing(m, *a, &)
         if Array.method_defined? m
           as { _1.send(m, *a, &) }
         else
           super
         end
+      end
+
+      def _drain
+        @drain
+      end
+
+      def _inpot
+        super + @outpot._inpot
       end
     end
   end

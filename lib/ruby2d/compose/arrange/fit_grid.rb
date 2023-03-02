@@ -18,8 +18,8 @@ module Ruby2D
       object.plan(**align.map { [_1, sector.send(_1)] }.to_h)
 
       @object_sectors << ObjectSector.new(object, col, row)
-      let(*@object_sectors.map { _1.object.width }) { [fit(:cols, :width)] } >> @cols
-      let(*@object_sectors.map { _1.object.height }) { [fit(:rows, :height)] } >> @rows
+      let(*@object_sectors.map { _1.object.width }) { fit(:cols, :width) } >> @cols
+      let(*@object_sectors.map { _1.object.height }) { fit(:rows, :height) } >> @rows
     end
 
     def fit(dir, dim)

@@ -1,5 +1,6 @@
-def foo
-  return a if a = 5
+def foo(*a, &b)
+  b[a]
 end
 
-p foo
+a = [1,2,3]
+foo(*a){p _1}

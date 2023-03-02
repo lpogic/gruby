@@ -8,9 +8,9 @@ module Ruby2D
       @top = pot 100
       @width = pot 0
       @height = pot 0
-      @cols = arrpot.let cols
+      @cols = arrpot << cols
       @width << @cols.sum
-      @rows = arrpot.let rows
+      @rows = arrpot << rows
       @height << @rows.sum
 
       plan(**na)

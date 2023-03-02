@@ -72,41 +72,22 @@ module Ruby2D
       end
     end
 
-    def sector(col, row, fixed: true)
-      if fixed
-        left = case col
-        when Integer then let(*@cols.get[0...col], @left).sum
-        when Range then let(*@cols.get[0...col.min], @left).sum
-        end
-        width = case col
-        when Integer then @cols.get[col]
-        when Range then let(*@cols.get[col]).sum
-        end
-        top = case row
-        when Integer then let(*@rows.get[0...row], @top).sum
-        when Range then let(*@rows.get[0...row.min], @top).sum
-        end
-        height = case row
-        when Integer then @rows.get[row]
-        when Range then let(*@rows.get[row]).sum
-        end
-      else
-        left = case col
-        when Integer then let(@cols[...col].sum, @left).sum
-        when Range then let(@cols[...col.min], @left).sum
-        end
-        width = case col
-        when Integer then @cols[col]
-        when Range then @cols[col].sum
-        end
-        top = case row
-        when Integer then let(@rows[...row].sum, @top).sum
-        when Range then let(@rows[...row.min].sum, @top).sum
-        end
-        height = case row
-        when Integer then @rows[row]
-        when Range then @rows[row].sum
-        end
+    def sector(cols, rows)
+      left = case cols
+      when Integer then let(@cols[...cols].sum, @left).sum
+      when Range then let(@cols[...cols.min].sum, @left).sum
+      end
+      width = case cols
+      when Integer then @cols[cols]
+      when Range then @cols[cols].sum
+      end
+      top = case rows
+      when Integer then let(@rows[...rows].sum, @top).sum
+      when Range then let(@rows[...rows.min].sum, @top).sum
+      end
+      height = case rows
+      when Integer then @rows[rows]
+      when Range then @rows[rows].sum
       end
 
       Sector.new(left:, width:, top:, height:)

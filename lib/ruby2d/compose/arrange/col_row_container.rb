@@ -13,7 +13,7 @@ module Ruby2D
     end
 
     def append(element, **plan, &b)
-      gs = @grid.sector(@grid.cols.get.length - 2, @grid.rows.get.length - 2, fixed: false)
+      gs = @grid.sector(@grid.cols.get.length - 2, @grid.rows.get.length - 2)
       plan[:x] = gs.x unless Rectangle.x_dim? plan
       plan[:y] = gs.y unless Rectangle.y_dim? plan
       element.plan(**plan)

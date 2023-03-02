@@ -592,7 +592,13 @@ module Ruby2D
         @outpot.delete_outlet(let)
       end
 
-      attr_reader :compot_inpot, :compot_outpot
+      def compot_inpot
+        @inpot
+      end
+
+      def compot_outpot
+        @outpot
+      end
     end
 
     class Arrpot < Compot

@@ -40,10 +40,10 @@ module Ruby2D
       @x2 = pot x2
       @y2 = pot y2
       @thick = pot.let thick || 6
-      @round = compot{ FloatVector4.new _1 } << (round || 0)
+      @round = cpot { FloatVector4.new _1 } << (round || 0)
       @border = pot.let border || 0
-      @color = compot { Color.new _1 } << color
-      @border_color = compot { Color.new _1 } << border_color
+      @color = cpot { Color.new _1 } << color
+      @border_color = cpot { Color.new _1 } << border_color
     end
 
     cvs_reader :x1, :x2, :y1, :y2, :color, :border_color, :thick, :round, :border

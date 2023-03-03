@@ -5,7 +5,7 @@
 module Ruby2D
   # Base class for all renderable shapes
   module Renderable
-    include CommunicatingVesselSystem
+    include CVS
 
     # Add a contains method stub
     def contains?(x, y)

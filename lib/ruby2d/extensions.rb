@@ -47,12 +47,34 @@ class IO
 end
 
 class Class
-  def def_struct(*una, accessors: false, readers: false, to_h: true, breed: true, **na)
+  def def_struct(*una, accessors: false, readers: false, to_h: true, merge: true, **na)
       class_eval("def initialize(#{(una.map { _1.to_s + ': nil' } + na.map { |k, v| k.to_s + ':' + v.to_s }).join(',')}, **);" +
           "#{(una + na.keys).map { "@#{_1} = #{_1};" }.join}end")
       attr_accessor(*una) if accessors
       attr_reader(*una) if readers and !accessors
       class_eval("def to_hash; {#{(una + na.keys).map { "#{_1}: @#{_1}," }.join}} end") if to_h
-      class_eval("def breed(**params); self.class.new **self, **params end") if to_h && breed
+      class_eval("def merge(**params); self.class.new **self, **params end") if to_h && merge
+  end
+
+  def delegate(**na)
+    make_delegate = proc do |d, fn, nfn|
+      if %r{[=+-/*%]$}.match?(fn)
+        "def #{nfn}(a); @#{d}.#{fn}(a) end"
+      else
+        "def #{nfn}(*a, **na, &b); @#{d}.#{fn}(*a, **na, &b) end"
+      end
+    end
+
+    na.each do |k, v|
+      v.each do |n|
+        nx = n.split(":")
+        ns = nx[0].split("\\")
+        nfn = nx[1] || ns[0]
+        class_eval(make_delegate.call(k, ns[0], nfn))
+        ns[1..].each do |nn|
+          class_eval(make_delegate.call(k, ns[0] + nn, nfn + nn))
+        end
+      end
+    end
   end
 end

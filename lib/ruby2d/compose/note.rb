@@ -34,7 +34,7 @@ module Ruby2D
         super()
         @enabled = pot false
         @text = text
-        @position = compot(@text.text { _1.length }) { _1.clamp(0, _2) }.set 0
+        @position = cpot(@text.text { _1.length }) { _1.clamp(0, _2) }.set 0
         @rect = new_rectangle border: 0, round: 0, color: [0, 0, 0, 0.5],
           y: text.y, height: text.size, width: 2,
           left: let(@position, @text.left, @text.text) { |pos, l, t|
@@ -98,7 +98,7 @@ module Ruby2D
       @editable = pot true
       @width_pad = pot 20
       @box = new_rectangle(**narg)
-      @text_value = compot { _1.to_s.encode("utf-8") } << text
+      @text_value = cpot { _1.to_s.encode("utf-8") } << text
 
       @text = new_text "", left: let(@box.left, @width_pad) { _1 + (_2 / 2) }, y: @box.y
       @text_offset = pot 0
@@ -107,7 +107,7 @@ module Ruby2D
         t = tv[to..]
         t ? t[0, tf.measure(t, bw - wp)[:count]] : ""
       end
-      @pen_position = compot(@text_value.as { _1.length }) do |tvl, v|
+      @pen_position = cpot(@text_value.as { _1.length }) do |tvl, v|
         v.clamp(0, tvl)
       end << 0
       @pen = Pen.new self, @text

@@ -17,8 +17,8 @@ module Ruby2D
       @radius = pot 100
       @border = pot.let border || b || 0
       @sectors = sectors
-      @color = compot { Color.new _1 } << color
-      @border_color = compot { Color.new _1 } << border_color
+      @color = cpot { Color.new _1 } << color
+      @border_color = cpot { Color.new _1 } << border_color
       plan(**na) if plan
     end
 

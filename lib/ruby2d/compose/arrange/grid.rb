@@ -1,6 +1,6 @@
 module Ruby2D
   class Grid
-    include CommunicatingVesselSystem
+    include CVS
     include Planned
 
     def initialize(cols: [], rows: [], **na)

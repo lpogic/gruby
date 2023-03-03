@@ -1,4 +1,4 @@
-require_relative "./test_setup"
+require_relative "setup_dev"
 
 Person = Struct.new(:name, :surname, :age, :sex)
 @people = pot []

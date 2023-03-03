@@ -2,8 +2,8 @@
 
 # Ruby2D module and native extension loader
 unless RUBY_ENGINE == 'mruby'
-  require 'ruby2d/communicating_vessel_system'
-  include Ruby2D::CommunicatingVesselSystem
+  require 'ruby2d/cvs/cvs'
+  include Ruby2D::CVS
   require 'ruby2d/extensions'
   require 'ruby2d/utils'
   require 'ruby2d/planned'

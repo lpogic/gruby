@@ -1,6 +1,6 @@
 module Ruby2D
   class Outfit
-    include CommunicatingVesselSystem
+    include CVS
 
     def lay(seed = nil, **params)
       egg = self.class.new **self, **params

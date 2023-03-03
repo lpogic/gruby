@@ -8,14 +8,14 @@ module Ruby2D
     def init(text, size: 20, style: nil, font: nil, portions: nil, **na)
       @text = pot.let text
       @size = pot.let size
-      @font_path = compot { Font.path _1 }.let(font || Font.default)
+      @font_path = cpot { Font.path _1 }.let(font || Font.default)
       @font_style = pot.let style
       @font = pot(@font_path, @size, @font_style) { Font.load(_1, _2, _3) }
       @x = pot 100
       @y = pot 100
       @width = pot
       @height = pot
-      @parts = compot pull: true do |parts, s|
+      @parts = cpot pull: true do |parts, s|
         let(*parts.map { _1.text.width }).sum >> @width
         @height.let(parts.empty? ? 0 : parts[0].text.height)
         leave(*s.get.map { _1.text }) unless s.get.nil?

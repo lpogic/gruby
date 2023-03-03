@@ -14,12 +14,12 @@ module Ruby2D
     def initialize(text, size: 20, style: nil, font: nil, rotate: 0, color: nil, **na)
       @x = pot 0
       @y = pot 0
-      @text = compot { _1.to_s }.let(text)
+      @text = cpot { _1.to_s }.let(text)
       @size = pot.let size
       @rotate = rotate
-      @color = compot { Color.new _1 }.let(color || 'white')
+      @color = cpot { Color.new _1 }.let(color || 'white')
       @font_style = pot.let style
-      @font = compot(@size, @font_style) do 
+      @font = cpot(@size, @font_style) do 
         path = Font.path(_3)
         raise "Font #{_3} not found" if path.nil?
         Font.load(path, _1, _2)

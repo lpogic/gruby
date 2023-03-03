@@ -216,7 +216,7 @@ module Ruby2D
       @scroll.plan right: @box.right, width: 20, top: @options.top, height: @options.height
       @suggestions = arrpot
       @options_limit = pot 5
-      @offset = compot(@suggestions, @options_limit) { _3.clamp(0, [_1.size - _2, 0].max) } << 0
+      @offset = cpot(@suggestions, @options_limit) { _3.clamp(0, [_1.size - _2, 0].max) } << 0
       let(@suggestions, @offset, @options_limit) do |sg, off, ol|
         @options.set_options sg, [off, [sg.size - ol, 0].max].min, ol
         if sg.size > ol

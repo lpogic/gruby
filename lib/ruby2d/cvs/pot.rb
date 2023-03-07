@@ -3,12 +3,6 @@ require "weakref"
 module Ruby2D
   module CommunicatingVesselSystem
     class Pot
-      @@debug = false
-      def self.debug=(debug)
-        @@debug = debug
-      end
-
-      def self.debug = @@debug
 
       def as(&)
         Let.new([self], &)
@@ -42,17 +36,17 @@ module Ruby2D
         return _dfs(direction: :out, exclude_root: false).any?(&test)
       end
 
-      def self.print_inpot_tree(pt)
+      def self.inpot_tree(pt)
         pt._dfs(direction: :in).map do |pt1, d|
-          p (">" * d) + pt1.inspect
+          (">" * d) + pt1.inspect
         end
       end
 
       def arrpot(&)
-        CommunicatingVesselSystem.arrpot { _1.map(&).compact.flatten } << self
+        CommunicatingVesselSystem.array_pot { _1.map(&).compact.flatten } << self
       end
 
-      def to_ary
+      def to_a
         return [self]
       end
 
@@ -79,7 +73,7 @@ module Ruby2D
             end
           elsif direction == :out
             _outlet.each do |ol|
-              Array(ol._outpot).compact.each do |op|
+              ol._outpot.to_a.compact.each do |op|
                 op._dfs(depth + 1, direction:, deeper_later:, exclude_root: false, seed:).each do |od, dp|
                   e.yield(od, dp)
                 end

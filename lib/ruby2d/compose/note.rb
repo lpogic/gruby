@@ -422,6 +422,11 @@ module Ruby2D
       selection.empty? ? "" : @text_value.get[selection.range]
     end
 
+    def clear
+      select_all
+      paste ""
+    end
+
     def paste(str, type = false)
       return unless @editable.get
 

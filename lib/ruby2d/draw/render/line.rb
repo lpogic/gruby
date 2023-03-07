@@ -9,7 +9,7 @@ module Ruby2D
     include Planned
 
 
-    class FloatVector4
+    class RoundVector
 
       def initialize v
         @value = case v
@@ -21,7 +21,7 @@ module Ruby2D
           else
             raise "Invalid size of #{v}"
           end
-        when FloatVector4
+        when RoundVector
           v.value
         else
           raise "Invalid value #{v}" 
@@ -40,7 +40,7 @@ module Ruby2D
       @x2 = pot x2
       @y2 = pot y2
       @thick = pot.let thick || 6
-      @round = cpot { FloatVector4.new _1 } << (round || 0)
+      @round = cpot { RoundVector.new _1 } << (round || 0)
       @border = pot.let border || 0
       @color = cpot { Color.new _1 } << color
       @border_color = cpot { Color.new _1 } << border_color

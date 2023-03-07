@@ -72,22 +72,26 @@ module Ruby2D
       end
     end
 
-    def sector(cols, rows)
+    def sector(cols, rows, fixed: false)
+      pick = fixed ?
+        proc{|ap, i| ap.get[i]} :
+        proc{|ap, i| ap[i]}
+
       left = case cols
-      when Integer then let(@cols[...cols].sum, @left).sum
-      when Range then let(@cols[...cols.min].sum, @left).sum
+      when Integer then let(pick.(@cols, ...cols).sum, @left).sum
+      when Range then let(pick.(@cols, ...cols.min).sum, @left).sum
       end
       width = case cols
-      when Integer then @cols[cols]
-      when Range then @cols[cols].sum
+      when Integer then pick.(@cols, cols)
+      when Range then pick.(@cols, cols).sum
       end
       top = case rows
-      when Integer then let(@rows[...rows].sum, @top).sum
-      when Range then let(@rows[...rows.min].sum, @top).sum
+      when Integer then let(pick.(@rows, ...rows).sum, @top).sum
+      when Range then let(pick.(@rows, ...rows.min).sum, @top).sum
       end
       height = case rows
-      when Integer then @rows[rows]
-      when Range then @rows[rows].sum
+      when Integer then pick.(@rows, rows)
+      when Range then pick.(@rows, rows).sum
       end
 
       Sector.new(left:, width:, top:, height:)

@@ -199,7 +199,7 @@ module Ruby2D
     end
 
     def round(r = nil, round: nil)
-      r || round || 12
+      r || round || 0
     end
   end
 end

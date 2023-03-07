@@ -34,7 +34,7 @@ module Ruby2D
               unhover b if h
             end
             @grid.rows.set { (_1 || []) + [b.height] }
-            s = @grid.sector(-1, -1)
+            s = @grid.sector(-1, -1, fixed: true)
             b.plan left: s.left, y: s.y, width: @width
           end
           b.text << o

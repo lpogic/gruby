@@ -1,11 +1,11 @@
 module Ruby2D
   module CommunicatingVesselSystem
     class ConvertedPot < Pot
-      def initialize(inpot, outpot, location: nil)
+      def initialize(inpot, outpot, name: nil)
         super()
         @inpot = inpot
         @outpot = outpot
-        @location = location
+        @name = name
       end
 
       def get
@@ -32,8 +32,8 @@ module Ruby2D
       end
 
       def inspect
-        if @location
-          "ConvertedPot:#{object_id}(#{@location})"
+        if @name
+          "ConvertedPot:#{object_id}(#{@name})"
         else
           "ConvertedPot:#{object_id}(" + 
           "@inpot=#{@inpot.inspect} " +

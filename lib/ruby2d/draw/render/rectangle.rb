@@ -65,9 +65,9 @@ module Ruby2D
       elsif height
         @height << height
       elsif top
-        let(@height, top) { [_2 + _1 * 0.5] } >> @y
+        let(@height, top) { _2 + _1 * 0.5 } >> @y
       elsif bottom
-        let(@height, bottom) { [_2 - _1 * 0.5] } >> @y
+        let(@height, bottom) { _2 - _1 * 0.5 } >> @y
       end
     end
 

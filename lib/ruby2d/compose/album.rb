@@ -17,7 +17,7 @@ module Ruby2D
         if ns.subject != self
           ns.accept_subject self
           ns.suggestions << let(options, text) do |op, txt|
-            [op.filter(&filter.curry[txt])]
+            op.filter(&filter.curry[txt])
           end
           ns.on_option_selected do |o|
             select_all

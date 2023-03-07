@@ -1,8 +1,7 @@
 module Ruby2D
-  class Form < Cluster
-    include Arena
+  class Form < Arena
 
-    def init(margin: 8, **plan)
+    def init(margin: 6, **plan)
       @body = new_rectangle(**plan)
       @margin = pot << margin
       @nw = pot 80
@@ -18,8 +17,6 @@ module Ruby2D
     end
 
     def note_row(label, ruby: false)
-      cr = send_current(__method__, label, ruby: ruby)
-      return cr if cr
       a = nil
       cols gap: 5 do
         gap @margin
@@ -31,8 +28,6 @@ module Ruby2D
     end
 
     def album_row(label, options)
-      cr = send_current(__method__, label, options)
-      return cr if cr
       a = nil
       cols gap: 5 do
         gap @margin
@@ -44,8 +39,6 @@ module Ruby2D
     end
 
     def button_row(*labels)
-      cr = send_current(__method__, *labels)
-      return cr if cr
       btns = []
       cols gap: 5, right: self.right do
         gap @margin
@@ -54,5 +47,7 @@ module Ruby2D
       end
       btns
     end
+
+    builder_method :note_row, :album_row, :button_row
   end
 end

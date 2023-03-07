@@ -246,7 +246,7 @@ module Ruby2D
         @array = []
       end
 
-      def to_ary
+      def to_a
         @array
       end
 

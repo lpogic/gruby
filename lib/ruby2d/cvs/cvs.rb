@@ -4,20 +4,31 @@ module Ruby2D
   module CVS
     include CommunicatingVesselSystem
 
-    def pot(...)
-      CommunicatingVesselSystem.pot(...)
+    @@debug = false
+    def self.debug=(debug)
+      @@debug = debug
     end
 
-    def cpot(...)
-      CommunicatingVesselSystem.converted_pot(...)
+    def self.debug = @@debug
+
+    def pot(*a, **na, &b)
+      name = @@debug ? caller(1..1).first : nil
+      CommunicatingVesselSystem.pot(*a, **na, name: name, &b)
     end
 
-    def arrpot(...)
-      CommunicatingVesselSystem.array_pot(...)
+    def cpot(*a, **na, &b)
+      name = @@debug ? caller(1..1).first : nil
+      CommunicatingVesselSystem.converted_pot(*a, **na, name: name, &b)
     end
 
-    def let(...)
-      CommunicatingVesselSystem.let(...)
+    def arrpot(*a, **na, &b)
+      name = @@debug ? caller(1..1).first : nil
+      CommunicatingVesselSystem.array_pot(*a, **na, name: name, &b)
+    end
+
+    def let(*a, **na, &b)
+      name = @@debug ? caller(1..1).first : nil
+      CommunicatingVesselSystem.let(*a, **na, name: name, &b)
     end
 
     def let_if(a, b, c)

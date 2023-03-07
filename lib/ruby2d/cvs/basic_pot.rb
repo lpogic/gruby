@@ -3,14 +3,14 @@ require "weakref"
 module Ruby2D
   module CommunicatingVesselSystem
     class BasicPot < Pot
-      def initialize(value = nil, pull: true, recent: true, location: nil)
+      def initialize(value = nil, pull: true, recent: true, name: nil)
         super()
         @inlet = nil
         @outlet = []
         @value = value
         @recent = recent
         @pull = pull
-        @location = location
+        @name = name
       end
 
       def get
@@ -57,8 +57,8 @@ module Ruby2D
       end
 
       def inspect
-        if @location
-          "BasicPot:#{object_id}(#{@location})"
+        if @name
+          "BasicPot:#{object_id}(#{@name})"
         else
           "BasicPot:#{object_id}(" + 
           "@recent=#{@recent} @value=#{@value.inspect} " + 
@@ -84,7 +84,7 @@ module Ruby2D
       def _outdate
         if @recent
           @recent = false
-          pull_down = _outlet.map { |ol| Array(ol._outpot).compact.map { _1._outdate }.reduce([], :+) }.reduce([], :+)
+          pull_down = _outlet.map { |ol| ol._outpot.to_a.compact.map { _1._outdate }.reduce([], :+) }.reduce([], :+)
           if pull_down && !pull_down.empty?
             return pull_down
           else

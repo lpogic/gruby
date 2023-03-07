@@ -7,20 +7,26 @@ module Ruby2D
 
     ObjectSector = Struct.new(:object, :cols, :rows)
 
-    def arrange(object, col, row, *align)
+    def arrange(object, col, row, *align, finish: true)
       col = col..col unless col.is_a? Range
       row = row..row unless row.is_a? Range
       @cols << Array.new(col.max + 1, 0) if col.max > @cols.get.length - 1
       @rows << Array.new(row.max + 1, 0) if row.max > @rows.get.length - 1
-      sector = sector(col, row)
+      sector = sector(col, row, fixed: false)
       align << :x unless align.any_in? :x, :left, :right
       align << :y unless align.any_in? :y, :top, :bottom
       object.plan(**align.map { [_1, sector.send(_1)] }.to_h)
 
       @object_sectors << ObjectSector.new(object, col, row)
+      self.finish if finish
+    end
+
+    def finish
       let(*@object_sectors.map { _1.object.width }) { fit(:cols, :width) } >> @cols
       let(*@object_sectors.map { _1.object.height }) { fit(:rows, :height) } >> @rows
     end
+
+    private
 
     def fit(dir, dim)
       x = Array.new(send(dir).get.length, 0)

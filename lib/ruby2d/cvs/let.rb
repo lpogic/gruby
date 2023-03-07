@@ -9,10 +9,11 @@ module Ruby2D
       class DisconnectedLetUpdate < StandardError
       end
 
-      def initialize(inpot, &block)
+      def initialize(inpot, name: nil, &block)
         @function = block
         @inpot = inpot
         @connected = false
+        @name = name
       end
 
       def get
@@ -25,13 +26,13 @@ module Ruby2D
       end
 
       def >>(target)
-        return copy >> target if @connected
+        return _copy >> target if @connected
 
         case target
         when Pot
           _connect target
         when Let
-          _connect target.inpot # co z funkcją z jednym wejściem
+          _connect target.inpot # co z funkcją z jednym wejściem?
         when Array
           raise "Only Pot, Let or Array of Pots allowed as the right side" if not target.all?{_1.is_a? Pot}
           _connect target
@@ -57,7 +58,7 @@ module Ruby2D
       end
 
       def arrpot(&)
-        CommunicatingVesselSystem.arrpot { _1.map(&).compact.flatten } << self
+        CommunicatingVesselSystem.array_pot { _1.map(&).compact.flatten } << self
       end
 
       def inspect
@@ -113,7 +114,7 @@ module Ruby2D
       def _connect(outpot, pull: true)
         raise DuplicatedConnectionError if @connected
 
-        ao = Array(outpot)
+        ao = outpot.to_a
         _loop_test(*ao)
         to_pull = ao.map do
           _1._set_inlet self
@@ -167,7 +168,7 @@ module Ruby2D
         raise DisconnectedLetUpdate if !@connected
 
         outpot = self._outpot
-        oc = Array(outpot).compact
+        oc = outpot.to_a.compact
         if oc.empty?
           _disconnect
           return
@@ -186,7 +187,7 @@ module Ruby2D
         return if !@connected
         @inpot.each { _1._delete_outlet(self) }
         @connected = false
-        Array(_outpot).compact.each { _1._set_inlet(false) }
+        _outpot.to_a.compact.each { _1._set_inlet(false) }
         @outpot = nil
       end
 

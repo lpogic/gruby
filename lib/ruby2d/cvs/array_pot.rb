@@ -1,8 +1,8 @@
 module Ruby2D
   module CommunicatingVesselSystem
     class ArrayPot < ConvertedPot
-      def initialize(inpot, outpot, drainpot, location: nil)
-        super(inpot, outpot, location:)
+      def initialize(inpot, outpot, drainpot, name: nil)
+        super(inpot, outpot, name:)
         @drain = drainpot
       end
 
@@ -13,10 +13,10 @@ module Ruby2D
       end
 
       def inspect
-        if @location
-          "Arrpot:#{object_id}(#{@location})"
+        if @name
+          "ArrayPot:#{object_id}(#{@name})"
         else
-          "Arrpot:#{object_id}(" +
+          "ArrayPot:#{object_id}(" +
           "@inpot=#{@inpot.inspect} " +
           "@outpot=#{@outpot.inspect}" +
           ")"

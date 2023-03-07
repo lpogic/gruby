@@ -43,9 +43,9 @@ require 'ruby2d/core'
 include Ruby2D
 extend DSL
 
-set background: 'gray', resizable: true, title: ARGV[0] || 'PlatinumWindow'#, diagnostics: true
+set background: 'gray', resizable: true, title: ARGV[0] || 'platinum sketch'#, diagnostics: true
 on :key_down do |e|
   close confirm_required: true if e.key == 'escape'
 end
 window.enable_tab_callback
-# Pot.debug = true
+CVS.debug = true

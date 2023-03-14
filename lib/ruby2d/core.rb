@@ -5,6 +5,7 @@ unless RUBY_ENGINE == 'mruby'
   require 'ruby2d/cvs/cvs'
   include Ruby2D::CVS
   require 'ruby2d/extensions'
+  require 'ruby2d/block_scope'
   require 'ruby2d/utils'
   require 'ruby2d/planned'
   require 'ruby2d/cli/colorize'

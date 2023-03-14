@@ -5,10 +5,12 @@
 module Ruby2D
   # Text string drawn using the specified font and size
   class Text
+    extend BlockScope
     include Renderable
     include Planned
 
-    cvs_reader :left, :right, :top, :bottom, :x, :y, :text, :size, :color, :width, :height, :font
+    masking cvsa :left, :right, :top, :bottom, :x, :y, :text, :size, :color, :width, :height, :font
+
     attr_accessor :rotate
 
     def initialize(text, size: 20, style: nil, font: nil, rotate: 0, color: nil, **na)
@@ -90,15 +92,19 @@ module Ruby2D
       )
     end
 
-    def contains?(x, y)
-      (self.x.get - x).abs * 2 < width.get && (self.y.get - y).abs * 2 < height.get
-    end
+    masking do
 
+      def contains?(x, y)
+        (self.x.get - x).abs * 2 < width.get && (self.y.get - y).abs * 2 < height.get
+      end
+
+    end#masking
+    
     private
 
-      def create_texture(text, font, texture)
-        texture&.delete
-        Texture.new(*Text.ext_load_text(font.ttf_font, text))
-      end
+    def create_texture(text, font, texture)
+      texture&.delete
+      Texture.new(*Text.ext_load_text(font.ttf_font, text))
+    end
   end
 end

@@ -16,7 +16,7 @@ module Ruby2D
       plan(**na)
     end
 
-    cvs_reader :width, :height, :right, :bottom, :x, :y, :left, :top, :cols, :rows
+    cvsa :width, :height, :right, :bottom, :x, :y, :left, :top, :cols, :rows
 
     def default_plan(x: nil, y: nil, left: nil, right: nil, top: nil, bottom: nil)
       if x
@@ -72,26 +72,21 @@ module Ruby2D
       end
     end
 
-    def sector(cols, rows, fixed: false)
-      pick = fixed ?
-        proc{|ap, i| ap.get[i]} :
-        proc{|ap, i| ap[i]}
+    def sector(cols, rows)
+      cols = cols..cols if not cols.is_a? Range
+      rows = rows..rows if not rows.is_a? Range
 
-      left = case cols
-      when Integer then let(pick.(@cols, ...cols).sum, @left).sum
-      when Range then let(pick.(@cols, ...cols.min).sum, @left).sum
+      left = let @cols, cols, @left do |sc, c, l|
+        sc[...c.min].sum + l
       end
-      width = case cols
-      when Integer then pick.(@cols, cols)
-      when Range then pick.(@cols, cols).sum
+      width = let @cols, cols do |sc, c|
+        sc[c].sum
       end
-      top = case rows
-      when Integer then let(pick.(@rows, ...rows).sum, @top).sum
-      when Range then let(pick.(@rows, ...rows.min).sum, @top).sum
+      top = let @rows, rows, @top do |sr, r, t|
+        sr[...r.min].sum + t
       end
-      height = case rows
-      when Integer then pick.(@rows, rows)
-      when Range then pick.(@rows, rows).sum
+      height = let @rows, rows do |sr, r|
+        sr[r].sum
       end
 
       Sector.new(left:, width:, top:, height:)
@@ -100,11 +95,15 @@ module Ruby2D
     alias_method :[], :sector
 
     def col(index)
-      @cols.get[index]
+      let @cols, index do
+        _1[_2]
+      end
     end
 
     def row(index)
-      @rows.get[index]
+      let @rows, index do
+        _1[_2]
+      end
     end
   end
 end

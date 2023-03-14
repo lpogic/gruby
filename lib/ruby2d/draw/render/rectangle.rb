@@ -6,7 +6,8 @@ module Ruby2D
   # A rectangle
   class Rectangle < Line
 
-    cvs_reader :left, :right, :top, :bottom, :x, :y, :width, :height
+    masking cvsa :left, :right, :top, :bottom, :x, :y, :width, :height
+
     def initialize(r: nil, round: nil, b: nil, border: nil,
                    color: 'white', border_color: 'black', **na)
       super(round: round, border: border, color: color, border_color: border_color)
@@ -87,27 +88,17 @@ module Ruby2D
       let(@y, @height) { _1 + _2 * 0.5 }
     end
 
-    def self.draw(x:, y:, width:, height:, round:, border:, color:, border_color:)
-      d = (width.get - height.get) * 0.5
-      if d < 0
-        super(x1: x, y1: y - d,
-              x2: x, y2: y + d,
-              z: z, width: height, round: round, border: border, color: color, border_color: border_color)
-      else
-        super(x1: x - d, y1: y,
-              x2: x + d, y2: y,
-              z: z, width: width, round: round, border: border, color: color, border_color: border_color,)
+    masking do
+
+      def contains?(x, y)
+        (self.x.get - x).abs * 2 < width.get && (self.y.get - y).abs * 2 < height.get
       end
-    end
 
-    def contains?(x, y)
-      (self.x.get - x).abs * 2 < width.get && (self.y.get - y).abs * 2 < height.get
-    end
+      def fill(o)
+        plan x: o.x, y: o.y, width: o.width, height: o.height
+      end
 
-    def fill(o)
-      plan x: o.x, y: o.y, width: o.width, height: o.height
-    end
-
+    end#masking
 
     def self.x_dim?(plan)
       plan.any_in?(:x, :left, :right)

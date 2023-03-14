@@ -34,7 +34,7 @@ module Ruby2D
               unhover b if h
             end
             @grid.rows.set { (_1 || []) + [b.height] }
-            s = @grid.sector(-1, -1, fixed: true)
+            s = @grid.sector(-1, @grid.rows.get.length - 1)
             b.plan left: s.left, y: s.y, width: @width
           end
           b.text << o
@@ -54,11 +54,8 @@ module Ruby2D
         else
           btns = @objects.get
           if btns.size > 0
-            i = btns.index { _1.hovered.get }
-            if !i
-              btns[0].hovered << true
-              return true
-            elsif i < btns.size - 1
+            i = btns.index { _1.hovered.get } || 0
+            if i < btns.size - 1
               btns[i + 1].hovered << true
               return true
             end
@@ -73,11 +70,8 @@ module Ruby2D
         else
           btns = @objects.get
           if btns.size > 0
-            i = btns.index { _1.hovered.get }
-            if !i
-              btns[0].hovered << true
-              return true
-            elsif i > 0
+            i = btns.index { _1.hovered.get } || 0
+            if i > 0
               btns[i - 1].hovered << true
               return true
             end
@@ -109,7 +103,7 @@ module Ruby2D
       end
 
       delegate grid: %w[x y top bottom left right width]
-      cvs_reader :height
+      cvsa :height
 
       def cvs_height
         @objects.as { _1.map { |o| o.height.get }.sum }
@@ -169,11 +163,10 @@ module Ruby2D
           rh = @rail.height.get
           ch = @car.height.get
           oy = @car.contains?(e.x, e.y) ? e.y - @car.top.get : ch / 2
-          l = let(window.mouse_y) do |my|
+          l = let(window.mouse_y, sublet_enabled: true) do |my|
             t = (my - oy).clamp(rt, rt + rh - ch)
-            parent._offset_scroll (t - rt) / (rh - ch)
-            t
-          end >> @car.plan(:top)
+            [t, (t - rt) / (rh - ch)]
+          end >> @car.plan(:top) + [parent._scroll_box_mouse_offset]
           mu = window.on :mouse_up do
             set_bar_suppress false
             l.cancel
@@ -182,7 +175,7 @@ module Ruby2D
         end
       end
 
-      cvs_reader :enabled
+      cvsa :enabled
       delegate rail: %w[x y top bottom left right width height plan contains?]
 
       def render
@@ -216,8 +209,10 @@ module Ruby2D
       @scroll.plan right: @box.right, width: 20, top: @options.top, height: @options.height
       @suggestions = arrpot
       @options_limit = pot 5
-      @offset = cpot(@suggestions, @options_limit) { _3.clamp(0, [_1.size - _2, 0].max) } << 0
-      let(@suggestions, @offset, @options_limit) do |sg, off, ol|
+      @suggestions_offset = cpot(@suggestions, @options_limit) { _3.clamp(0, [_1.size - _2, 0].max) } << 0
+      @scroll_box_mouse_offset = cpot(@suggestions, @options_limit) { (_1.size - _2) * _3 } << 0
+      @offset = pot << let_recent(@suggestions_offset, @scroll_box_mouse_offset)
+      let(@suggestions, @offset, @options_limit, sublet_enabled: true) do |sg, off, ol|
         @options.set_options sg, [off, [sg.size - ol, 0].max].min, ol
         if sg.size > ol
           @scroll.set_bar sg.size, off, ol
@@ -233,21 +228,20 @@ module Ruby2D
       end
     end
 
-    cvs_reader :suggestions, :offset, :enabled
+    cvsa :suggestions, :offset, :enabled
     def options = @options
 
     def accept_subject(subject)
       leave @subject if @subject
       if subject
         care(@subject = subject, nanny: true)
-        subject.nanny = self
         @box.plan x: subject.x, width: subject.width
         let(@options.height, subject.y, subject.height, subject.round) do |obh, sy, sh, sr|
           r = [4, sr.to_a.max * 0.5].max
           [sy + sh * 0.5, sy + (obh + r) * 0.5, sh + obh + r]
         end >> @options.plan(:top) + @box.plan(:y, :height)
         @box.round << subject.round
-        @offset << 0
+        @suggestions_offset << 0
         @enabled.set true
       else
         @subject = nil
@@ -255,8 +249,8 @@ module Ruby2D
       end
     end
 
-    def _offset_scroll os
-      @offset << (@suggestions.get.size - @options_limit.get) * os
+    def _scroll_box_mouse_offset
+      @scroll_box_mouse_offset
     end
 
     def subject
@@ -277,13 +271,15 @@ module Ruby2D
 
     def hover_up
       if not @options.hover_up
-        @offset.set { _1 - 1 } if @offset.get > 0
+        off = @offset.get
+        @suggestions_offset.val = off - 1 if off > 0
       end
     end
 
     def hover_down
       if not @options.hover_down
-        @offset.set { _1 + 1 } if @offset.get + @options_limit.get < @suggestions.get.size
+        off = @offset.get
+        @suggestions_offset.val = off + 1 if off + @options_limit.get < @suggestions.get.size
       end
     end
 

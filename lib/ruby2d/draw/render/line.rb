@@ -5,10 +5,10 @@
 module Ruby2D
   # A line between two points.
   class Line
+    extend BlockScope
     include Renderable
     include Planned
-
-
+    
     class RoundVector
 
       def initialize v
@@ -46,12 +46,16 @@ module Ruby2D
       @border_color = cpot { Color.new _1 } << border_color
     end
 
-    cvs_reader :x1, :x2, :y1, :y2, :color, :border_color, :thick, :round, :border
+    masking do
 
-    # Return the length of the line
-    def length
-      points_distance(@x1.get, @y1.get, @x2.get, @y2.get) + @thick.get
-    end
+      cvsa :x1, :x2, :y1, :y2, :color, :border_color, :thick, :round, :border
+
+      # Return the length of the line
+      def length
+        points_distance(@x1.get, @y1.get, @x2.get, @y2.get) + @thick.get
+      end
+
+    end#masking
 
     # Line contains a point if the point is closer than the length of line from
     # both ends and if the distance from point to line is smaller than half of
@@ -69,13 +73,19 @@ module Ruby2D
     end
 
     def render
-      thick = @thick.get
-      r = @round.get.to_a.map{_1.clamp(0, thick.abs)}
-      b = @border.get.clamp(0, thick.abs / 2)
-      self.class.ext_draw([
-                            @x1.get, @y1.get, @x2.get, @y2.get, @thick.get, b, 
-                            *r, *@color.get, *@border_color.get
-                          ])
+      c = @color.get
+      bc = @border_color.get
+      if c.a > 0 || bc.a > 0
+        thick = @thick.get
+        r = @round.get.to_a.map{_1.clamp(0, thick.abs)}
+        b = @border.get.clamp(0, thick.abs / 2)
+        self.class.ext_draw(
+          [
+            @x1.get, @y1.get, @x2.get, @y2.get, thick, b, 
+            *r, *c, *bc
+          ]
+        )
+      end
     end
 
     private

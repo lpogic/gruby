@@ -15,7 +15,7 @@ module Ruby2D
       let(@size) { [_1, _1] } >> [@width, @height]
     end
 
-    cvs_reader :size
+    cvsa :size
 
     def self.draw(x:, y:, size:, round:, border:, color:)
       super(x: x, y: y,

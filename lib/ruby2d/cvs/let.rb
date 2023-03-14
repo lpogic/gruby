@@ -6,20 +6,33 @@ module Ruby2D
       class DuplicatedConnectionError < StandardError
       end
 
-      class DisconnectedLetUpdate < StandardError
+      class DisconnectedLetUpdateError < StandardError
       end
 
-      def initialize(inpot, name: nil, &block)
+      class SubletViolationError < StandardError
+      end
+
+      @@sublet_lock = false
+
+      def self.sublet_locked?
+        @@sublet_lock
+      end
+
+      def initialize(inpot, name: nil, sublet_enabled: false, &block)
         @function = block
         @inpot = inpot
         @connected = false
         @name = name
+        @sublet_enabled = sublet_enabled
       end
 
       def get
         i = @inpot.map(&:get)
         if @function
-          return @function.call(*i)
+          @@sublet_lock = true if !@sublet_enabled
+          r = @function.call(*i)
+          @@sublet_lock = false
+          return r
         else
           return i.size > 1 ? i : i[0]
         end
@@ -49,6 +62,10 @@ module Ruby2D
         else
           Let.new(@inpot, &b)
         end
+      end
+
+      def into(*pots)
+        self >> pots
       end
 
       def pot
@@ -113,12 +130,13 @@ module Ruby2D
 
       def _connect(outpot, pull: true)
         raise DuplicatedConnectionError if @connected
+        raise SubletViolationError if @@sublet_lock
 
         ao = outpot.to_a
         _loop_test(*ao)
         to_pull = ao.map do
           _1._set_inlet self
-          _1._outdate
+          _1._outdate if pull
         end.reduce(:+)
         @outpot = outpot.is_a?(Array) ? outpot.map { WeakRef.new _1 } : WeakRef.new(outpot)
         @inpot.each { _1._add_outlet(self) }
@@ -165,7 +183,7 @@ module Ruby2D
       end
 
       def _update
-        raise DisconnectedLetUpdate if !@connected
+        raise DisconnectedLetUpdateError if !@connected
 
         outpot = self._outpot
         oc = outpot.to_a.compact
@@ -176,7 +194,7 @@ module Ruby2D
         oc.each { _1._recent = true }
         result = self.get
         if outpot.is_a? Array
-          result.zip(outpot).each { |r, o| o&._set r }
+          Array(result).zip(outpot).each { |r, o| o&._set r }
         else
           outpot._set result
         end
@@ -187,7 +205,7 @@ module Ruby2D
         return if !@connected
         @inpot.each { _1._delete_outlet(self) }
         @connected = false
-        _outpot.to_a.compact.each { _1._set_inlet(false) }
+        _outpot.to_a.compact.each { _1._set_inlet(nil) }
         @outpot = nil
       end
 

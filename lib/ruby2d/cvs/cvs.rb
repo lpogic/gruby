@@ -11,23 +11,23 @@ module Ruby2D
 
     def self.debug = @@debug
 
-    def pot(*a, **na, &b)
-      name = @@debug ? caller(1..1).first : nil
+    def pot(*a, name: nil, **na, &b)
+      name = name ? name : @@debug ? caller(1..1).first : nil
       CommunicatingVesselSystem.pot(*a, **na, name: name, &b)
     end
 
-    def cpot(*a, **na, &b)
-      name = @@debug ? caller(1..1).first : nil
+    def cpot(*a, name: nil, **na, &b)
+      name = name ? name : @@debug ? caller(1..1).first : nil
       CommunicatingVesselSystem.converted_pot(*a, **na, name: name, &b)
     end
 
-    def arrpot(*a, **na, &b)
-      name = @@debug ? caller(1..1).first : nil
+    def arrpot(*a, name: nil, **na, &b)
+      name = name ? name : @@debug ? caller(1..1).first : nil
       CommunicatingVesselSystem.array_pot(*a, **na, name: name, &b)
     end
 
-    def let(*a, **na, &b)
-      name = @@debug ? caller(1..1).first : nil
+    def let(*a, name: nil, **na, &b)
+      name = name ? name : @@debug ? caller(1..1).first : nil
       CommunicatingVesselSystem.let(*a, **na, name: name, &b)
     end
 
@@ -36,24 +36,27 @@ module Ruby2D
         av ? bv : cv
       end
     end
+
+    def let_recent(*a)
+      let *a.map{_1.as{|v| [v, timems]}} do |*at|
+        at.max{_1[1] <=> _2[1]}[0]
+      end
+    end
   end
 end
 
 class Class
-  def cvs_reader(*a)
-    make_reader = proc do |n|
+  def cvsa(*a)
+    make_method = proc do |n|
       ns = n.split(":")
       ns[1] ||= ns[0]
       pt = "c = defined?(self.cvs_#{ns[0]}) ? self.cvs_#{ns[0]} : @#{ns[0]}"
       class_eval("def #{ns[1]}(&b); #{pt}; block_given? ? c.as(&b) : c;end", __FILE__, __LINE__)
     end
 
+    a = a.flatten
     a.each do |n|
-      if n.is_a? Array
-        n.each { make_reader.call(_1.to_s) }
-      else
-        make_reader.call(n.to_s)
-      end
+      make_method.call(n.to_s)
     end
   end
 end

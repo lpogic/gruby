@@ -1,5 +1,6 @@
 module Ruby2D
   class Widget < Cluster
+    
     def initialize(parent, *una, **na, &b)
       super
 
@@ -8,7 +9,7 @@ module Ruby2D
       end
     end
 
-    attr_reader :state
+    masking attr :state
 
     def pass_keyboard(*)
       return false if @accept_keyboard_disabled

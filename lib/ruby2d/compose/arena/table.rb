@@ -1,11 +1,11 @@
 module Ruby2D
   class Table < Arena
 
-    def init(margin: 6, **plan)
+    def init(gap: 6, **plan)
       plan[:color] ||= 0;
       @body = new_rectangle(**plan)
       care @body
-      @margin = pot << margin
+      @gap = pot << gap
       @fit_grid = FitGrid.new x: @body.x, y: @body.y
       @body.width << @fit_grid.width
       @body.height << @fit_grid.height
@@ -13,42 +13,72 @@ module Ruby2D
       @current_y = -1
     end
 
-    delegate body: %w[fill plan x y width height left right top bottom]
-    cvs_reader :margin
-
-    def build
-      super
-      @fit_grid.finish
+    def close!
+      @fit_grid.arrange
     end
 
-    def row
-      @current_y += 1
-      yield
-      @current_x = -1
-    end
+    masking do
 
-    builder_method :row
+      delegate body: %w[fill plan x y width height left right top bottom]
+      cvsa :gap
 
-    def append(element, **plan, &b)
-      if element.is_a? BoxContainer
-        @current_x += 1
-        @current_y = 0 if @current_y < 0
-        @fit_grid.arrange(element, @current_x, @current_y, finish: false)
-        r = new_rectangle color: '#444444', border: 1
-        r.fill @fit_grid[@current_x, @current_y]
-        care r
-        care element
-        if block_given? && element.is_a?(Arena)
-          self.class.push_build_stack element do
-            element.build(&b)
+      def row!
+        @current_y += 1
+        yield
+        @current_x = -1
+      end
+
+      def skip!(skipped_cols = 1)
+        @current_x += skipped_cols
+      end
+
+      def append(element, **plan, &b)
+        if element.is_a? BoxContainer
+          @current_x += 1
+          @current_y = 0 if @current_y < 0
+          @fit_grid.add(element, @current_x, @current_y, arrange: false)
+          # r = new_rectangle color: '#444444', border: 1
+          # r.fill @fit_grid[@current_x, @current_y]
+          # care r
+          care element
+          if block_given? && element.is_a?(Arena)
+            self.class.push_build_stack element do
+              element.build(&b)
+            end
+          end
+          return element
+        else
+          box! gap: @gap do |bx|
+            bx.append(element, **plan, &b)
           end
         end
-        return element
-      else
-        box gap: 3, **plan do |bx|
-          bx.append(element, &b)
+      end
+
+      def border=(border)
+        if border.is_a? Array
+          case border.size
+          when 1
+            @outer_border << border[0]
+            @horizontal_border << border[0]
+            @vertical_border << border[0]
+          when 2
+            @outer_border << border[0]
+            @horizontal_border << border[1]
+            @vertical_border << border[1]
+          when 3
+            @outer_border << border[0]
+            @horizontal_border << border[1]
+            @vertical_border << border[2]
+          else
+            raise "Invalid border array size #{border}"
+          end
+        else
+          @outer_border << 0
+          @horizontal_border << border
+          @vertical_border << 0
         end
       end
-    end
+      
+    end#masking
   end
 end

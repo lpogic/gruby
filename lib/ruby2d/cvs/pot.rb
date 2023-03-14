@@ -28,7 +28,7 @@ module Ruby2D
         if affected.is_a? Pot
           test = proc { _1 == affected }
         elsif affected.is_a? Let
-          inpot = affected.inpot
+          inpot = affected._inpot
           test = proc { inpot.include? _1 }
         else
           return false

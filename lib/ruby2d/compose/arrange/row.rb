@@ -9,29 +9,32 @@ module Ruby2D
       @body.width << @grid.width
     end
 
-    def append(element, **plan, &b)
-      if element.is_a? Gap
-        @grid.cols.set { |a| a[...-1] + [element.size, a[-1]] }
-        @last_gap = true
-      else
-        if @last_gap
-          @grid.cols.set { |a| a[...-1] + [element.width, a[-1]] }
+    masking do
+
+      def append(element, **plan, &b)
+        if element.is_a? Gap
+          @grid.cols.set { |a| a[...-1] + [element.size, a[-1]] }
+          @last_gap = true
         else
-          @grid.cols.set { |a| a[...-1] + [@gap, element.width, a[-1]] }
-        end
-        @last_gap = false
+          if @last_gap
+            @grid.cols.set { |a| a[...-1] + [element.width, a[-1]] }
+          else
+            @grid.cols.set { |a| a[...-1] + [@gap, element.width, a[-1]] }
+          end
+          @last_gap = false
 
-        if plan[:height] == false
-          plan.delete :height
-        elsif !height.affect(plan[:height])
-          @height_mix.val <<= element.height
-        end
+          if plan[:height] == false
+            plan.delete :height
+          elsif !height.affect(plan[:height])
+            @height_mix.val <<= element.height
+          end
 
-        super
+          super
+        end
+        return element
       end
-      return element
-    end
 
-    attr_reader :height_mix
+      attr_reader :height_mix
+    end#masking
   end
 end

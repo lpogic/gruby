@@ -1,12 +1,5 @@
 module Ruby2D
   class Button < Widget
-    cvs_reader :keyboard_pressed
-
-    alias_method :mouse_pressed, :pressed
-
-    def pressed
-      let(mouse_pressed, keyboard_pressed).or
-    end
 
     def init(text: nil, **na, &on_click)
       @keyboard_pressed = pot false
@@ -32,10 +25,22 @@ module Ruby2D
       end
     end
 
-    delegate box: %w[x y left top right bottom width height color border_color border round plan fill contains?]
-    delegate text: %w[text size:text_size color:text_color x:text_x font:text_font]
+    masking do
 
-    def text_object = @text
+      cvsa :keyboard_pressed
+
+      alias_method :mouse_pressed, :pressed
+
+      def pressed
+        let(mouse_pressed, keyboard_pressed).or
+      end
+
+      delegate box: %w[x y left top right bottom width height color border_color border round plan fill contains?]
+      delegate text: %w[text size:text_size color:text_color x:text_x font:text_font]
+
+      def text_object = @text
+
+    end#masking
   end
 
   class ButtonOutfit < Outfit

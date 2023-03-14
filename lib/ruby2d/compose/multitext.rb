@@ -3,7 +3,7 @@ module Ruby2D
     include Renderable
     TextPart = Struct.new(:text, :length)
 
-    cvs_reader :height, :width, :left, :right, :top, :bottom, :x, :y, :size, :text
+    cvsa :height, :width, :left, :right, :top, :bottom, :x, :y, :size, :text
 
     def init(text, size: 20, style: nil, font: nil, portions: nil, **na)
       @text = pot.let text

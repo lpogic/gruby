@@ -5,7 +5,7 @@ module Ruby2D
     end
   
     def self.cos(t, speed = 1, scale = 1, offset = 0, phase: 0)
-      sin(t, speed, scale, offset, Math::PI / 2 + phase)
+      sin(t, speed, scale, offset, phase: Math::PI / 2 + phase)
     end
   end
 end

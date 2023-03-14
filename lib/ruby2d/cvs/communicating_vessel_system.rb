@@ -14,27 +14,26 @@ require_relative "array_pot"
 
 module Ruby2D
   module CommunicatingVesselSystem
-    def self.pot(value = nil, unique: true, pull: true, name: nil)
+    def self.pot(value = nil, unique: true, pull: false, name: nil)
       return value if !unique && v.is_a?(Pot)
 
       BasicPot.new(pull:, name:).let value
     end
 
-    def self.converted_pot(*v, pull: true, name: nil, &block)
+    def self.converted_pot(*v, pull: false, name: nil, &block)
       p1 = CommunicatingVesselSystem.pot
       p2 = CommunicatingVesselSystem.pot(pull:)
       CommunicatingVesselSystem.let(*v, p1, BasicPot.new(p2), &block)._connect(p2, pull: false)
-      p2._recent = true
 
       ConvertedPot.new(p1, p2, name:)
     end
 
-    def self.array_pot(pull: true, name: nil, &block)
+    def self.array_pot(pull: false, name: nil, &block)
       p1 = CommunicatingVesselSystem.pot []
       p2 = CommunicatingVesselSystem.pot(pull:)
       p3 = CommunicatingVesselSystem.pot pull: true
       block ||= proc { _1 }
-      CommunicatingVesselSystem.let(p1) do |pots|
+      CommunicatingVesselSystem.let(p1, sublet_enabled: true) do |pots|
         pots = block.call(pots.to_a)
         CommunicatingVesselSystem.let(*pots){|*a| a} >> p2
         pots
@@ -43,7 +42,7 @@ module Ruby2D
       ArrayPot.new(p1, p2, p3, name:)
     end
 
-    def self.let(*inpot, name: nil, &b)
+    def self.let(*inpot, name: nil, sublet_enabled: false, &b)
       inpot = inpot.map do |i|
         case i
         when Pot then i
@@ -51,7 +50,7 @@ module Ruby2D
         else BasicPot.new.let(i)
         end
       end
-      Let.new(inpot, name:, &b)
+      Let.new(inpot, name:, sublet_enabled:, &b)
     end
   end
 end

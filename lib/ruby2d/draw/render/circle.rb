@@ -7,6 +7,7 @@ module Ruby2D
   # Create a circle using +Circle.new+
   #
   class Circle
+    extend BlockScope
     include Renderable
     include Planned
 
@@ -24,12 +25,16 @@ module Ruby2D
 
     attr_accessor :sectors
 
-    cvs_reader :x, :y, :color, :border_color, :radius, :border
+    masking do 
 
-    # Check if the circle contains the point at +(x, y)+
-    def contains?(x, y)
-      (x - @x.get)**2 + (y - @y.get)**2 <= @radius.get**2
-    end
+      cvsa :x, :y, :color, :border_color, :radius, :border
+
+      # Check if the circle contains the point at +(x, y)+
+      def contains?(x, y)
+        (x - @x.get)**2 + (y - @y.get)**2 <= @radius.get**2
+      end
+
+    end#masking
 
     def render
       self.class.ext_draw([

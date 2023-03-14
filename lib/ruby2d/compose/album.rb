@@ -61,7 +61,7 @@ module Ruby2D
       end
     end
 
-    cvs_reader :object
+    masking cvsa :object
   end
 
   class BasicAlbumOutfit < NoteOutfit

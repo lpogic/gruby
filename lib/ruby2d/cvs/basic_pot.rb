@@ -31,9 +31,9 @@ module Ruby2D
 
       alias_method :val=, :set
 
-      def let(*v, &)
+      def let(*v, pull: true, sublet_enabled: false, &b)
         if block_given?
-          l = Let.new(v.map { _1.is_a?(Pot) ? _1 : BasicPot.new.let(_1) }, &)
+          l = Let.new(v.map { _1.is_a?(Pot) ? _1 : BasicPot.new.let(_1) }, sublet_enabled:, &b)
         elsif v[0].is_a? Let
           l = v[0]._copy
         elsif v[0].is_a? Pot
@@ -41,7 +41,7 @@ module Ruby2D
         else
           return set(v[0])
         end
-        l._connect(self)
+        l._connect(self, pull:)
         return self
       end
 

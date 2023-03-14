@@ -9,9 +9,9 @@ module Ruby2D
     
     # Event structures
     ResizeEvent           = Struct.new(:width, :height)
-    MouseEvent            = Struct.new(:type, :button, :direction, :x, :y, :delta_x, :delta_y)
-    KeyEvent              = Struct.new(:type, :key)
-    TextEvent             = Struct.new(:type, :text)
+    MouseEvent            = Struct.new(:button, :direction, :x, :y, :delta_x, :delta_y)
+    KeyEvent              = Struct.new(:key)
+    TextEvent             = Struct.new(:text)
     ControllerEvent       = Struct.new(:which, :type, :axis, :value, :button)
     ControllerAxisEvent   = Struct.new(:which, :axis, :value)
     ControllerButtonEvent = Struct.new(:which, :button)
@@ -84,163 +84,167 @@ module Ruby2D
     # Track open window state in a class instance variable
     @open_window = false
 
-    # Class methods for convenient access to properties
-    class << self
-      def current
-        get(:window)
-      end
+    # # Class methods for convenient access to properties
+    # class << self
+    #   def current
+    #     get(:window)
+    #   end
 
-      def window
-        get :window
-      end
+    #   def window
+    #     get :window
+    #   end
 
-      def title
-        get(:title)
-      end
+    #   def title
+    #     get(:title)
+    #   end
 
-      def background
-        get(:background)
-      end
+    #   def background
+    #     get(:background)
+    #   end
 
-      def width
-        get(:width)
-      end
+    #   def width
+    #     get(:width)
+    #   end
 
-      def height
-        get(:height)
-      end
+    #   def height
+    #     get(:height)
+    #   end
 
-      def viewport_width
-        get(:viewport_width)
-      end
+    #   def viewport_width
+    #     get(:viewport_width)
+    #   end
 
-      def viewport_height
-        get(:viewport_height)
-      end
+    #   def viewport_height
+    #     get(:viewport_height)
+    #   end
 
-      def display_width
-        get(:display_width)
-      end
+    #   def display_width
+    #     get(:display_width)
+    #   end
 
-      def display_height
-        get(:display_height)
-      end
+    #   def display_height
+    #     get(:display_height)
+    #   end
 
-      def resizable
-        get(:resizable)
-      end
+    #   def resizable
+    #     get(:resizable)
+    #   end
 
-      def borderless
-        get(:borderless)
-      end
+    #   def borderless
+    #     get(:borderless)
+    #   end
 
-      def fullscreen
-        get(:fullscreen)
-      end
+    #   def fullscreen
+    #     get(:fullscreen)
+    #   end
 
-      def highdpi
-        get(:highdpi)
-      end
+    #   def highdpi
+    #     get(:highdpi)
+    #   end
 
-      def frames
-        get(:frames)
-      end
+    #   def frames
+    #     get(:frames)
+    #   end
 
-      def fps
-        get(:fps)
-      end
+    #   def fps
+    #     get(:fps)
+    #   end
 
-      def fps_cap
-        get(:fps_cap)
-      end
+    #   def fps_cap
+    #     get(:fps_cap)
+    #   end
 
-      def mouse_x
-        get(:mouse_x)
-      end
+    #   def mouse_x
+    #     get(:mouse_x)
+    #   end
 
-      def mouse_y
-        get(:mouse_y)
-      end
+    #   def mouse_y
+    #     get(:mouse_y)
+    #   end
 
-      def diagnostics
-        get(:diagnostics)
-      end
+    #   def diagnostics
+    #     get(:diagnostics)
+    #   end
 
-      def screenshot(opts = nil)
-        get(:screenshot, opts)
-      end
+    #   def screenshot(opts = nil)
+    #     get(:screenshot, opts)
+    #   end
 
-      def get(sym, opts = nil)
-        DSL.window.get(sym, opts)
-      end
+    #   def get(sym, opts = nil)
+    #     DSL.window.get(sym, opts)
+    #   end
 
-      def set(opts)
-        DSL.window.set(opts)
-      end
+    #   def set(opts)
+    #     DSL.window.set(opts)
+    #   end
 
-      def on(event, &proc)
-        DSL.window.on(event, &proc)
-      end
+    #   def on(event, &proc)
+    #     DSL.window.on(event, &proc)
+    #   end
 
-      def off(event_descriptor)
-        DSL.window.off(event_descriptor)
-      end
+    #   def off(event_descriptor)
+    #     DSL.window.off(event_descriptor)
+    #   end
 
-      def add(object)
-        DSL.window.add(object)
-      end
+    #   def add(object)
+    #     DSL.window.add(object)
+    #   end
 
-      def remove(object)
-        DSL.window.remove(object)
-      end
+    #   def remove(object)
+    #     DSL.window.remove(object)
+    #   end
 
-      def clear
-        DSL.window.clear
-      end
+    #   def clear
+    #     DSL.window.clear
+    #   end
 
-      def update(&proc)
-        DSL.window.update(&proc)
-      end
+    #   def update(&proc)
+    #     DSL.window.update(&proc)
+    #   end
 
-      def render(&proc)
-        DSL.window.render(&proc)
-      end
+    #   def render(&proc)
+    #     DSL.window.render(&proc)
+    #   end
 
-      def show
-        DSL.window.show
-      end
+    #   def show
+    #     DSL.window.show
+    #   end
 
-      def close
-        DSL.window.close
-      end
+    #   def close
+    #     DSL.window.close
+    #   end
 
-      def button(*a, **na)
-        DSL.window.button(*a, **na)
-      end
+    #   def button(*a, **na)
+    #     DSL.window.button(*a, **na)
+    #   end
 
-      def render_ready_check
-        return if opened?
+    #   def render_ready_check
+    #     return if opened?
 
-        raise Error,
-              'Attempting to draw before the window is ready. Please put calls to draw() inside of a render block.'
-      end
+    #     raise Error,
+    #           'Attempting to draw before the window is ready. Please put calls to draw() inside of a render block.'
+    #   end
 
-      def opened?
-        @open_window
-      end
+    #   def opened?
+    #     @open_window
+    #   end
 
-      private
+    #   private
 
-        def opened!
-          @open_window = true
-        end
+    #     def opened!
+    #       @open_window = true
+    #     end
+    # end
+
+    def opened?
+      @open_window
     end
 
     def contains?(x, y)
       (0..@width.get).include?(x) && (0..@height.get).include?(y)
     end
 
-    def window = self
+    def window = host
     def lineage = [self]
 
     def outfit(*path)
@@ -251,7 +255,7 @@ module Ruby2D
       end
     end
 
-    cvs_reader :x, :y, :left, :top, :mouse_x, :mouse_y, :timepot, :width, :height, %w(width:right height:bottom)
+    cvsa :x, :y, :left, :top, :mouse_x, :mouse_y, :timepot, :width, :height, %w(width:right height:bottom)
 
     def cvs_left
       @left ||= locked_pot 0
@@ -267,6 +271,14 @@ module Ruby2D
 
     def cvs_y
       self.height { _1 / 2 }
+    end
+
+    def append(element, **plan, &b)
+      plan[:x] = x unless Rectangle.x_dim? plan
+      plan[:y] = y unless Rectangle.y_dim? plan
+      element.plan(**plan)
+      care element
+      element
     end
 
     def keyboard_current_object=(new_keyboard_current)
@@ -313,7 +325,7 @@ module Ruby2D
     end
 
     def mouse_current
-      @mouse_current
+      @mouse_current || self
     end
 
     def replace_mouse_owner(new_owner)
@@ -422,21 +434,18 @@ module Ruby2D
       @key_modifiers = mod if type == :down || type == :up
       key = key.downcase
 
-      # All key events
-      emit :key, KeyEvent.new(type, key)
-
       case type
       # When key is pressed, fired once
       when :down
-        _handle_key_down type, key
+        _handle_key_down key
       # When key is being held down, fired every frame
       when :held
-        _handle_key_held type, key
+        _handle_key_held key
       # When key released, fired once
       when :up
-        _handle_key_up type, key
+        _handle_key_up key
       when :text
-        _handle_key_text type, key
+        _handle_key_text key
       end
     end
 
@@ -494,22 +503,17 @@ module Ruby2D
 
     # Mouse callback method, called by the native and web extentions
     def mouse_callback(type, button, direction, x, y, delta_x, delta_y)
-      # All mouse events
-      emit :mouse, MouseEvent.new(type, button, direction, x, y, delta_x, delta_y)
 
       case type
-      # When mouse button pressed
       when :down
-        _handle_mouse_down type, button, x, y
-      # When mouse button released
+        _handle_mouse_down button, x, y
       when :up
-        _handle_mouse_up type, button, x, y
-      # When mouse motion / movement
+        _handle_mouse_up button, x, y
       when :scroll
-        _handle_mouse_scroll type, direction, delta_x, delta_y
-      # When mouse scrolling, wheel or trackpad
+        _handle_mouse_scroll direction, delta_x, delta_y
       when :move
-        _handle_mouse_move type, x, y, delta_x, delta_y
+        _handle_mouse_move x, y, delta_x, delta_y
+        @mouse_move_called = true
       end
     end
 
@@ -562,9 +566,13 @@ module Ruby2D
     def update_callback
       @timepot.set timems
 
-      update unless @using_dsl
+      if @mouse_move_called
+        @mouse_move_called = false
+      else
+        _mouse_refresh
+      end
 
-      update
+      emit :update
 
       # Accept and eval commands if in console mode
       _handle_console_input if @console && $stdin.ready?
@@ -606,9 +614,9 @@ module Ruby2D
 
     # Show the window
     def show
-      raise Error, 'Window#show called multiple times, Ruby2D only supports a single open window' if Window.opened?
+      raise Error, 'Window#show called multiple times, Ruby2D only supports a single open window' if opened?
 
-      Window.send(:opened!)
+      @open_window = true
       ext_show
     end
 
@@ -652,12 +660,12 @@ module Ruby2D
         @highdpi         = opts[:highdpi] unless opts[:highdpi].nil?
       end
 
-      def _handle_key_down(type, key)
+      def _handle_key_down(key)
         # For class pattern
         @keys_down << key if !@using_dsl && !(@keys_down.include? key)
 
         # Call event handler
-        e = KeyEvent.new(type, key)
+        e = KeyEvent.new(key)
         c = @keyboard_current_object
         while c
           c.emit :key_down, e
@@ -665,12 +673,12 @@ module Ruby2D
         end
       end
 
-      def _handle_key_held(type, key)
+      def _handle_key_held(key)
         # For class pattern
         @keys_down << key if !@using_dsl && !(@keys_down.include? key)
 
         # Call event handler
-        e = KeyEvent.new(type, key)
+        e = KeyEvent.new(key)
         c = @keyboard_current_object
         while c
           c.emit :key_held, e
@@ -685,12 +693,12 @@ module Ruby2D
         end
       end
 
-      def _handle_key_up(type, key)
+      def _handle_key_up(key)
         # For class pattern
         @keys_down.delete(key) if !@using_dsl && (@keys_down.include? key)
 
         # Call event handler
-        e = KeyEvent.new(type, key)
+        e = KeyEvent.new(key)
         c = @keyboard_current_object
         while c
           c.emit :key_up, e
@@ -699,9 +707,9 @@ module Ruby2D
         @key_typer.up key
       end
 
-      def _handle_key_text(type, text)
+      def _handle_key_text(text)
         # Call event handler
-        e = TextEvent.new(type, text.force_encoding('utf-8'))
+        e = TextEvent.new(text.force_encoding('utf-8'))
         c = @keyboard_current_object
         while c
           c.emit :key_text, e
@@ -736,25 +744,25 @@ module Ruby2D
         end
       end
 
-      def _handle_mouse_down(type, button, x, y)
+      def _handle_mouse_down(button, x, y)
         # For class pattern
         @mouse_buttons_down << button if !@using_dsl && !(@mouse_buttons_down.include? button)
 
         # Call event handler
-        e = MouseEvent.new(type, button, nil, x, y, nil, nil)
-        @mouse_current.lineage.each { _1.emit :mouse_down, e }
+        e = MouseEvent.new(button, nil, x, y, nil, nil)
+        mouse_current.lineage.each { _1.emit :mouse_down, e }
       end
 
-      def _handle_mouse_up(type, button, x, y)
+      def _handle_mouse_up(button, x, y)
         # For class pattern
         @mouse_buttons_up << button if !@using_dsl && !(@mouse_buttons_up.include? button)
 
         # Call event handler
-        e = MouseEvent.new(type, button, nil, x, y, nil, nil)
-        @mouse_current.lineage.each { _1.emit :mouse_up, e }
+        e = MouseEvent.new(button, nil, x, y, nil, nil)
+        mouse_current.lineage.each { _1.emit :mouse_up, e }
       end
 
-      def _handle_mouse_scroll(type, direction, delta_x, delta_y)
+      def _handle_mouse_scroll(direction, delta_x, delta_y)
         # For class pattern
         unless @using_dsl
           @mouse_scroll_event     = true
@@ -764,11 +772,11 @@ module Ruby2D
         end
 
         # Call event handler
-        e = MouseEvent.new(type, nil, direction, nil, nil, delta_x, delta_y)
-        @mouse_current.lineage.each { _1.emit :mouse_scroll, e }
+        e = MouseEvent.new(nil, direction, nil, nil, delta_x, delta_y)
+        mouse_current.lineage.each { _1.emit :mouse_scroll, e }
       end
 
-      def _handle_mouse_move(type, x, y, delta_x, delta_y)
+      def _handle_mouse_move(x, y, delta_x, delta_y)
         # For class pattern
         unless @using_dsl
           @mouse_move_event   = true
@@ -777,7 +785,7 @@ module Ruby2D
         end
 
         # Call event handler
-        e = MouseEvent.new(type, nil, nil, x, y, delta_x, delta_y)
+        e = MouseEvent.new(nil, nil, x, y, delta_x, delta_y)
         if @mouse_owner.contains?(x, y)
           new_mouse_current = @mouse_owner.accept_mouse(e, nil)
           if @mouse_current.nil?
@@ -793,6 +801,26 @@ module Ruby2D
             @mouse_current = new_mouse_current
           else
             @mouse_current.lineage.each { _1.emit :mouse_move, e }
+          end
+        end
+      end
+
+      def _mouse_refresh
+        x = @mouse_x.get
+        y = @mouse_y.get
+        e = MouseEvent.new(nil, nil, x, y, 0, 0)
+        if @mouse_owner.contains?(x, y)
+          new_mouse_current = @mouse_owner.accept_mouse(e, nil)
+          if @mouse_current.nil?
+            new_mouse_current.lineage.each { _1.emit :mouse_in, e }
+            @mouse_current = new_mouse_current
+          elsif new_mouse_current != @mouse_current
+            mc_lineage = @mouse_current.lineage
+            nmc_lineage = new_mouse_current.lineage
+            i = mc_lineage.zip(nmc_lineage).index { |a, b| a != b }
+            mc_lineage[i..].reverse.each { _1.emit :mouse_out, e }
+            nmc_lineage[i..].each { _1.emit :mouse_in, e }
+            @mouse_current = new_mouse_current
           end
         end
       end

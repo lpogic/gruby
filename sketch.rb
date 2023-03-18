@@ -1,8 +1,12 @@
 require_relative "sketch_setup"
 require 'benchmark'
 
-album! %w[1 2 3] do
-  x << host.mouse_x
+button! "1" do
+  a = 1
+  on :click do
+    b = text.val.to_i
+    a, text.val = b, b + a
+  end
 end
 
 show

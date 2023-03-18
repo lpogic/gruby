@@ -61,7 +61,7 @@ module Ruby2D
       end
     end
 
-    masking cvsa :object
+    cvsa :object
   end
 
   class BasicAlbumOutfit < NoteOutfit

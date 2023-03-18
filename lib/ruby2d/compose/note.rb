@@ -302,149 +302,139 @@ module Ruby2D
       "#{self.class} text:\"#{@text_value.get}\""
     end
 
-    masking do
+    delegate box: %w[fill plan x y left top right bottom width height color border_color border round]
+    delegate text: %w[text:text_visible font:text_font size:text_size color:text_color]
+    cvsa %w[text_value:text width_pad pen_position editable text_offset keyboard_current]
 
-      delegate box: %w[fill plan x y left top right bottom width height color border_color border round]
-      delegate text: %w[text:text_visible font:text_font size:text_size color:text_color]
-      cvsa %w[text_value:text width_pad pen_position editable text_offset keyboard_current]
+    def text_object = @text
 
-      def text_object = @text
+    def contains?(x, y)
+      @box.contains?(x, y)
+    end
 
-      def contains?(x, y)
-        @box.contains?(x, y)
+    def pass_keyboard(current, reverse: false)
+      return false unless @editable.get
+
+      super
+    end
+
+    def pen_at(position, selection = false)
+      pp = @pen_position.get
+      if pp < position
+        pen_right(selection, position - pp)
+      elsif pp > position
+        pen_left(selection, pp - position)
+      elsif !selection
+        @selection.set(Selection.new(pp))
       end
+    end
 
-      def pass_keyboard(current, reverse: false)
-        return false unless @editable.get
-
-        super
+    def pen_left(selection = false, step = :character)
+      pp = @pen_position.get
+      st = case step
+      when Integer then step
+      when :character then 1
+      when :class then class_step_left(@text_value.get, pp - 1) + 1
+      when :word then word_step_left(@text_value.get, pp - 1) + 1
       end
-
-      def pen_at(position, selection = false)
-        pp = @pen_position.get
-        if pp < position
-          pen_right(selection, position - pp)
-        elsif pp > position
-          pen_left(selection, pp - position)
-        elsif !selection
-          @selection.set(Selection.new(pp))
-        end
-      end
-
-      def pen_left(selection = false, step = :character)
-        pp = @pen_position.get
-        st = case step
-        when Integer then step
-        when :character then 1
-        when :class then class_step_left(@text_value.get, pp - 1) + 1
-        when :word then word_step_left(@text_value.get, pp - 1) + 1
-        end
-        if selection
-          if pp > 0
-            s = @selection.get
-            if s.length > 0
-              if pp == s.start
-                @selection.set(s.move(-st, st))
-              elsif pp == s.end
-                if st <= s.length
-                  @selection.set(s.move(0, -st))
-                else
-                  @selection.set(Selection.new(s.end - st, st - s.length))
-                end
+      if selection
+        if pp > 0
+          s = @selection.get
+          if s.length > 0
+            if pp == s.start
+              @selection.set(s.move(-st, st))
+            elsif pp == s.end
+              if st <= s.length
+                @selection.set(s.move(0, -st))
               else
-                @selection.set(Selection.new(pp - st, st))
+                @selection.set(Selection.new(s.end - st, st - s.length))
               end
             else
               @selection.set(Selection.new(pp - st, st))
             end
+          else
+            @selection.set(Selection.new(pp - st, st))
           end
-        else
-          @selection.set(Selection.new)
         end
-
-        @pen_position.set(pp - st)
+      else
+        @selection.set(Selection.new)
       end
 
-      def pen_right(selection = false, step = :character)
-        pp = @pen_position.get
-        st = case step
-        when Integer then step
-        when :character then 1
-        when :class then class_step_right(@text_value.get, pp) + 1
-        when :word then word_step_right(@text_value.get, pp) + 1
-        end
-        if selection
-          if pp < @text_value.get.length
-            s = @selection.get
-            if s.length > 0
-              if pp == s.start
-                if st <= s.length
-                  @selection.set(s.move(st, -st))
-                else
-                  @selection.set(Selection.new(s.end, st - s.length))
-                end
-              elsif pp == s.end
-                @selection.set(s.move(0, st))
+      @pen_position.set(pp - st)
+    end
+
+    def pen_right(selection = false, step = :character)
+      pp = @pen_position.get
+      st = case step
+      when Integer then step
+      when :character then 1
+      when :class then class_step_right(@text_value.get, pp) + 1
+      when :word then word_step_right(@text_value.get, pp) + 1
+      end
+      if selection
+        if pp < @text_value.get.length
+          s = @selection.get
+          if s.length > 0
+            if pp == s.start
+              if st <= s.length
+                @selection.set(s.move(st, -st))
               else
-                @selection.set(Selection.new(pp, st))
+                @selection.set(Selection.new(s.end, st - s.length))
               end
+            elsif pp == s.end
+              @selection.set(s.move(0, st))
             else
               @selection.set(Selection.new(pp, st))
             end
-          end
-        else
-          @selection.set(Selection.new)
-        end
-
-        @pen_position.set(pp + st)
-      end
-
-      def pen_erase(direction = :right)
-        pp = @pen_position.get
-        tv = @text_value.get
-        if direction == :right
-          @text_value.set(tv[0, pp] + tv[pp + 1..]) if pp < tv.length
-        elsif pp > 0
-          @text_value.set(tv[0, pp - 1] + tv[pp..])
-          @pen_position.set(pp - 1)
-        end
-      end
-
-      def select_all
-        tvl = @text_value.get.length
-        @selection.set(Selection.new(0, tvl))
-        @pen_position.set tvl
-      end
-
-      def get_selected
-        selection = @selection.get
-        selection.empty? ? "" : @text_value.get[selection.range]
-      end
-
-      def clear
-        select_all
-        paste ""
-      end
-
-      def paste(str, type = false)
-        return unless @editable.get
-
-        selection = @selection.get
-        tv = @text_value.get
-        if type
-          if @type_story
-            if (@type_story[:start] + @type_story[:length] == @pen_position.get) && selection.empty?
-              @type_story[:length] += 1
-            else
-              close_type_story
-              @type_story = {
-                start: selection.start,
-                length: 1,
-                text: tv,
-                start_selection: selection
-              }
-            end
           else
+            @selection.set(Selection.new(pp, st))
+          end
+        end
+      else
+        @selection.set(Selection.new)
+      end
+
+      @pen_position.set(pp + st)
+    end
+
+    def pen_erase(direction = :right)
+      pp = @pen_position.get
+      tv = @text_value.get
+      if direction == :right
+        @text_value.set(tv[0, pp] + tv[pp + 1..]) if pp < tv.length
+      elsif pp > 0
+        @text_value.set(tv[0, pp - 1] + tv[pp..])
+        @pen_position.set(pp - 1)
+      end
+    end
+
+    def select_all
+      tvl = @text_value.get.length
+      @selection.set(Selection.new(0, tvl))
+      @pen_position.set tvl
+    end
+
+    def get_selected
+      selection = @selection.get
+      selection.empty? ? "" : @text_value.get[selection.range]
+    end
+
+    def clear
+      select_all
+      paste ""
+    end
+
+    def paste(str, type = false)
+      return unless @editable.get
+
+      selection = @selection.get
+      tv = @text_value.get
+      if type
+        if @type_story
+          if (@type_story[:start] + @type_story[:length] == @pen_position.get) && selection.empty?
+            @type_story[:length] += 1
+          else
+            close_type_story
             @type_story = {
               start: selection.start,
               length: 1,
@@ -452,175 +442,181 @@ module Ruby2D
               start_selection: selection
             }
           end
-        elsif @type_story
-          close_type_story
-        end
-        if selection.empty?
-          pp = @pen_position.get
-          @text_value.set(tv[...pp] + str + tv[pp..])
-          @pen_position.set(pp + str.length)
         else
-          ntv = tv[...selection.start] + str + tv[selection.end..]
-          @text_value.set(ntv)
-          @pen_position.set(0)
-          pen_at selection.start + str.length
-          @selection.set(Selection.new(@pen_position.get))
+          @type_story = {
+            start: selection.start,
+            length: 1,
+            text: tv,
+            start_selection: selection
+          }
         end
-        story_push(selection, tv, Selection.new(selection.start)) if !type && @text_value != tv
+      elsif @type_story
+        close_type_story
+      end
+      if selection.empty?
+        pp = @pen_position.get
+        @text_value.set(tv[...pp] + str + tv[pp..])
+        @pen_position.set(pp + str.length)
+      else
+        ntv = tv[...selection.start] + str + tv[selection.end..]
+        @text_value.set(ntv)
+        @pen_position.set(0)
+        pen_at selection.start + str.length
+        @selection.set(Selection.new(@pen_position.get))
+      end
+      story_push(selection, tv, Selection.new(selection.start)) if !type && @text_value != tv
+    end
+
+    class PasteStoryEntry
+      def initialize(back_select, text, front_select)
+        @back_select = back_select
+        @text = text
+        @front_select = front_select
       end
 
-      class PasteStoryEntry
-        def initialize(back_select, text, front_select)
-          @back_select = back_select
-          @text = text
-          @front_select = front_select
-        end
+      attr_accessor :front_select, :back_select
 
-        attr_accessor :front_select, :back_select
-
-        def back(text, selection, pen_position)
-          if selection.get == @back_select || (@back_select.empty? && pen_position.get == front_select.end)
-            text.set @text
-            selection.set Selection.new
-            pen_position.set @front_select.end
-            true
-          else
-            selection.set @back_select
-            pen_position.set @back_select.end
-            false
-          end
-        end
-
-        def front(text, selection, pen_position, prev_entry)
-          front_select = prev_entry.front_select
-          back_select = prev_entry.back_select
-          if selection.get == front_select || (front_select.empty? && pen_position.get == front_select.end)
-            text.set @text
-            selection.set Selection.new
-            pen_position.set back_select.end
-            true
-          else
-            selection.set front_select
-            pen_position.set front_select.end
-            false
-          end
-        end
-      end
-
-      def close_type_story
-        story_push(Selection.new(@type_story[:start], @type_story[:length]), @type_story[:text],
-          @type_story[:start_selection])
-        @type_story = nil
-      end
-
-      def story_push(selection_in_new_text, old_text, selection_in_old_text)
-        @story.pop(@story.size - @story_index) if @story.size > @story_index
-        @story.push(PasteStoryEntry.new(selection_in_new_text, old_text, selection_in_old_text))
-        @story_index = @story.size
-      end
-
-      def story_back
-        close_type_story if @type_story
-        return unless @story_index > 0
-
-        if @story.size == @story_index
-          @story.push(PasteStoryEntry.new(@selection.get, @text_value.get,
-            Selection.new))
-        end
-        return unless @story[@story_index - 1].back(@text_value, @selection, @pen_position)
-
-        @story_index -= 1
-      end
-
-      def story_front
-        if @story_index + 1 < @story.size && @story[@story_index + 1].front(@text_value, @selection, @pen_position,
-          @story[@story_index])
-          @story_index += 1
+      def back(text, selection, pen_position)
+        if selection.get == @back_select || (@back_select.empty? && pen_position.get == front_select.end)
+          text.set @text
+          selection.set Selection.new
+          pen_position.set @front_select.end
+          true
+        else
+          selection.set @back_select
+          pen_position.set @back_select.end
+          false
         end
       end
 
-      class SupportPack
-        def initialize(note, options, filter)
-          @events = []
-          show_option_buttons_box = proc do
-            ns = note.window.note_support
-            if ns.subject != note
-              ns.accept_subject note
-              ns.suggestions << let(options, note.text) do |op, txt|
-                [op.filter(&filter.curry[txt])]
-              end
-              ns.on_option_selected do |o|
-                note.select_all
-                note.paste o.to_s
-                note.select_all
-                ns.accept_subject nil
-              end
+      def front(text, selection, pen_position, prev_entry)
+        front_select = prev_entry.front_select
+        back_select = prev_entry.back_select
+        if selection.get == front_select || (front_select.empty? && pen_position.get == front_select.end)
+          text.set @text
+          selection.set Selection.new
+          pen_position.set back_select.end
+          true
+        else
+          selection.set front_select
+          pen_position.set front_select.end
+          false
+        end
+      end
+    end
+
+    def close_type_story
+      story_push(Selection.new(@type_story[:start], @type_story[:length]), @type_story[:text],
+        @type_story[:start_selection])
+      @type_story = nil
+    end
+
+    def story_push(selection_in_new_text, old_text, selection_in_old_text)
+      @story.pop(@story.size - @story_index) if @story.size > @story_index
+      @story.push(PasteStoryEntry.new(selection_in_new_text, old_text, selection_in_old_text))
+      @story_index = @story.size
+    end
+
+    def story_back
+      close_type_story if @type_story
+      return unless @story_index > 0
+
+      if @story.size == @story_index
+        @story.push(PasteStoryEntry.new(@selection.get, @text_value.get,
+          Selection.new))
+      end
+      return unless @story[@story_index - 1].back(@text_value, @selection, @pen_position)
+
+      @story_index -= 1
+    end
+
+    def story_front
+      if @story_index + 1 < @story.size && @story[@story_index + 1].front(@text_value, @selection, @pen_position,
+        @story[@story_index])
+        @story_index += 1
+      end
+    end
+
+    class SupportPack
+      def initialize(note, options, filter)
+        @events = []
+        show_option_buttons_box = proc do
+          ns = note.window.note_support
+          if ns.subject != note
+            ns.accept_subject note
+            ns.suggestions << let(options, note.text) do |op, txt|
+              [op.filter(&filter.curry[txt])]
             end
-          end
-          @events << note.on(note.keyboard_current) do |kc|
-            note.window.note_support.accept_subject nil unless kc
-          end
-          @events << note.on(:click) do
-            show_option_buttons_box.call
-          end
-          @events << note.on(:double_click) do
-            show_option_buttons_box.call
-            if note.get_selected == ""
+            ns.on_option_selected do |o|
               note.select_all
-              note.paste ""
+              note.paste o.to_s
+              note.select_all
+              ns.accept_subject nil
             end
-          end
-          @events << note.on_key do |e|
-            if e.key == "down" || e.key == "up"
-              show_option_buttons_box.call
-              ns = note.window.note_support
-              ns.hover_down if e.key == "down"
-              ns.hover_up if e.key == "up"
-            end
-          end
-          @events << note.on(:key_down) do |e|
-            ns = note.window.note_support
-            ns.press_hovered if e.key == "return" && (ns.subject == note)
-          end
-          @events << note.on(:key_up) do |e|
-            ns = note.window.note_support
-            ns.release_pressed if e.key == "return" && (ns.subject == note)
           end
         end
-
-        def cancel
-          @events.each { _1.cancel }
-          @events = []
+        @events << note.on(note.keyboard_current) do |kc|
+          note.window.note_support.accept_subject nil unless kc
+        end
+        @events << note.on(:click) do
+          show_option_buttons_box.call
+        end
+        @events << note.on(:double_click) do
+          show_option_buttons_box.call
+          if note.get_selected == ""
+            note.select_all
+            note.paste ""
+          end
+        end
+        @events << note.on_key do |e|
+          if e.key == "down" || e.key == "up"
+            show_option_buttons_box.call
+            ns = note.window.note_support
+            ns.hover_down if e.key == "down"
+            ns.hover_up if e.key == "up"
+          end
+        end
+        @events << note.on(:key_down) do |e|
+          ns = note.window.note_support
+          ns.press_hovered if e.key == "return" && (ns.subject == note)
+        end
+        @events << note.on(:key_up) do |e|
+          ns = note.window.note_support
+          ns.release_pressed if e.key == "return" && (ns.subject == note)
         end
       end
 
-      def support(options, filter: :default)
-        @support&.cancel
-        filter = case filter
-        when :include_nocase
-          proc { |txt, item| item.to_s.downcase.include? txt.downcase }
-        when :include
-          proc { |txt, item| item.to_s.include? txt }
-        when :start_with_nocase
-          proc { |txt, item| item.to_s.downcase.start_with? txt.downcase }
-        when :match, :regexp
-          proc { |txt, item| item.to_s.match? txt }
-        when :include_nocase_match, :default
-          proc do |txt, item|
-            str = item.to_s
-            begin
-              str.downcase.include? txt.downcase or str.match? txt
-            rescue RegexpError
-              false
-            end
-          end
-        else
-          filter.to_proc
-        end
-        @support = SupportPack.new self, options, filter
+      def cancel
+        @events.each { _1.cancel }
+        @events = []
       end
+    end
 
-    end#masking
+    def support(options, filter: :default)
+      @support&.cancel
+      filter = case filter
+      when :include_nocase
+        proc { |txt, item| item.to_s.downcase.include? txt.downcase }
+      when :include
+        proc { |txt, item| item.to_s.include? txt }
+      when :start_with_nocase
+        proc { |txt, item| item.to_s.downcase.start_with? txt.downcase }
+      when :match, :regexp
+        proc { |txt, item| item.to_s.match? txt }
+      when :include_nocase_match, :default
+        proc do |txt, item|
+          str = item.to_s
+          begin
+            str.downcase.include? txt.downcase or str.match? txt
+          rescue RegexpError
+            false
+          end
+        end
+      else
+        filter.to_proc
+      end
+      @support = SupportPack.new self, options, filter
+    end
 
     private
 

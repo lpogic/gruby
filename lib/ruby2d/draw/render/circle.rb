@@ -25,16 +25,12 @@ module Ruby2D
 
     attr_accessor :sectors
 
-    masking do 
+    cvsa :x, :y, :color, :border_color, :radius, :border
 
-      cvsa :x, :y, :color, :border_color, :radius, :border
-
-      # Check if the circle contains the point at +(x, y)+
-      def contains?(x, y)
-        (x - @x.get)**2 + (y - @y.get)**2 <= @radius.get**2
-      end
-
-    end#masking
+    # Check if the circle contains the point at +(x, y)+
+    def contains?(x, y)
+      (x - @x.get)**2 + (y - @y.get)**2 <= @radius.get**2
+    end
 
     def render
       self.class.ext_draw([

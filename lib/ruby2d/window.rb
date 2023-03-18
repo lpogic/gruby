@@ -244,7 +244,7 @@ module Ruby2D
       (0..@width.get).include?(x) && (0..@height.get).include?(y)
     end
 
-    def window = host
+    def window = self
     def lineage = [self]
 
     def outfit(*path)

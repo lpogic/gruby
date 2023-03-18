@@ -9,7 +9,7 @@ module Ruby2D
       end
     end
 
-    masking attr :state
+    attr :state
 
     def pass_keyboard(*)
       return false if @accept_keyboard_disabled

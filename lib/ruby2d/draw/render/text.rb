@@ -9,7 +9,7 @@ module Ruby2D
     include Renderable
     include Planned
 
-    masking cvsa :left, :right, :top, :bottom, :x, :y, :text, :size, :color, :width, :height, :font
+    cvsa :left, :right, :top, :bottom, :x, :y, :text, :size, :color, :width, :height, :font
 
     attr_accessor :rotate
 
@@ -92,13 +92,9 @@ module Ruby2D
       )
     end
 
-    masking do
-
-      def contains?(x, y)
-        (self.x.get - x).abs * 2 < width.get && (self.y.get - y).abs * 2 < height.get
-      end
-
-    end#masking
+    def contains?(x, y)
+      (self.x.get - x).abs * 2 < width.get && (self.y.get - y).abs * 2 < height.get
+    end
     
     private
 

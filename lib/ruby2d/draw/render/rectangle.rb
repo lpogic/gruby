@@ -6,7 +6,7 @@ module Ruby2D
   # A rectangle
   class Rectangle < Line
 
-    masking cvsa :left, :right, :top, :bottom, :x, :y, :width, :height
+    cvsa :left, :right, :top, :bottom, :x, :y, :width, :height
 
     def initialize(r: nil, round: nil, b: nil, border: nil,
                    color: 'white', border_color: 'black', **na)
@@ -88,17 +88,13 @@ module Ruby2D
       let(@y, @height) { _1 + _2 * 0.5 }
     end
 
-    masking do
+    def contains?(x, y)
+      (self.x.get - x).abs * 2 < width.get && (self.y.get - y).abs * 2 < height.get
+    end
 
-      def contains?(x, y)
-        (self.x.get - x).abs * 2 < width.get && (self.y.get - y).abs * 2 < height.get
-      end
-
-      def fill(o)
-        plan x: o.x, y: o.y, width: o.width, height: o.height
-      end
-
-    end#masking
+    def fill(o)
+      plan x: o.x, y: o.y, width: o.width, height: o.height
+    end
 
     def self.x_dim?(plan)
       plan.any_in?(:x, :left, :right)

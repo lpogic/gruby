@@ -46,16 +46,12 @@ module Ruby2D
       @border_color = cpot { Color.new _1 } << border_color
     end
 
-    masking do
+    cvsa :x1, :x2, :y1, :y2, :color, :border_color, :thick, :round, :border
 
-      cvsa :x1, :x2, :y1, :y2, :color, :border_color, :thick, :round, :border
-
-      # Return the length of the line
-      def length
-        points_distance(@x1.get, @y1.get, @x2.get, @y2.get) + @thick.get
-      end
-
-    end#masking
+    # Return the length of the line
+    def length
+      points_distance(@x1.get, @y1.get, @x2.get, @y2.get) + @thick.get
+    end
 
     # Line contains a point if the point is closer than the length of line from
     # both ends and if the distance from point to line is smaller than half of

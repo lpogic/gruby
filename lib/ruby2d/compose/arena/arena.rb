@@ -37,32 +37,44 @@ module Ruby2D
       append(new_album(options: options, **na.except(:x, :y, :width, :height)), **na)
     end
 
-    def button!(t = "Button", **na, &b)
-      BlockScope.top append(new_button(text: t, **na.except(:x, :y, :width, :height)), **na), &b
+    def button!(t = "Button", scope: true, **na, &b)
+      a = append(new_button(text: t, **na.except(:x, :y, :width, :height)), **na)
+      scope ? a.scoped(&b) : b.call if block_given?
+      a
     end
 
-    def cols!(height = nil, **na)
+    def cols!(height = nil, scope: true, **na, &b)
       na[:height] = height if height
-      append(Row.new(self, **na), **na)
+      a = append(Row.new(self, **na), **na)
+      scope ? a.scoped(&b) : b.call if block_given?
+      a
     end
 
-    def rows!(width = nil, **na)
+    def rows!(width = nil, scope: true, **na, &b)
       na[:width] = width if width
-      append(Col.new(self, **na), **na)
+      a = append(Col.new(self, **na), **na)
+      scope ? a.scoped(&b) : b.call if block_given?
+      a
     end
 
-    def box!(width = nil, height = nil, **na)
+    def box!(width = nil, height = nil, scope: true, **na, &b)
       na[:width] = width if width
       na[:height] = height if height
-      append(BoxContainer.new(self, **na), **na)
+      a = append(BoxContainer.new(self, **na), **na)
+      scope ? a.scoped(&b) : b.call if block_given?
+      a
     end
 
-    def form!(**na)
-      append(Form.new(self, **na), **na)
+    def form!(scope: true, **na, &b)
+      a = append(Form.new(self, **na), **na)
+      scope ? a.scoped(&b) : b.call if block_given?
+      a
     end
 
-    def table!(**na)
-      append(Table.new(self, **na), **na)
+    def table!(scope: true, **na)
+      a = append(Table.new(self, **na), **na)
+      scope ? a.scoped(&b) : b.call if block_given?
+      a
     end
   end
 end

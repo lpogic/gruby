@@ -7,6 +7,10 @@ class Object
   def array
     is_a?(Array) ? self : [self]
   end
+
+  def behalf origin, &todo
+    origin.instance_exec self, &todo
+  end
 end
 
 class Array

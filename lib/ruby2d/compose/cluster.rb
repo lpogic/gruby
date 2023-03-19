@@ -1,6 +1,6 @@
 module Ruby2D
   class Cluster
-    extend BlockScope
+    include BlockScope
     include Entity
 
     attr_reader :objects, :rendered
@@ -122,29 +122,22 @@ module Ruby2D
     def on(*events, &b)
       r = []
       return r if !b
-
       events.each do |event|
         if event.is_a? Symbol
           ed = EventDescriptor.new(event, self)
-          (@event_handlers[event] ||= {})[ed] = proc do |ev, evh|
-            BlockScope.top self do
-              b.call ev, evh
-            end
-          end
+          (@event_handlers[event] ||= {})[ed] = b
           r << ed
         elsif event.is_a? Pot
           prev = pot pull: true
           l = let(event, sublet_enabled: true) do |v|
-            BlockScope.top self do
-              b.call(v, prev.get)
-            end
+            b.call v, prev.get
             v
           end
           prev.let(l, pull: false)
           r << l
           @pot_handlers << prev
         else
-          raise "Only Symbols/Pots allowed"
+          raise "Only Symbols/Pots allowed, #{event} given"
         end
       end
       (r.length > 1) ? r : r[0]
@@ -164,6 +157,10 @@ module Ruby2D
     def off(event_descriptor)
       handlers = @event_handlers[event_descriptor.type]
       handlers&.delete(event_descriptor)
+    end
+
+    def scoped &b
+      stack_exec &b
     end
 
     def new_square(**args)

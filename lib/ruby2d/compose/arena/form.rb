@@ -4,56 +4,55 @@ module Ruby2D
     def init(margin: 6, **plan)
       @body = new_rectangle(**plan)
       @margin = pot << margin
-      @nw = pot 11
+      @note_col_width = pot 80
     end
 
     def scoped
-      rows! color: 'green', round: 10, gap: [@margin] do
-        yield self
-      end
+      @rows = rows! color: 'green', round: 10, gap: [@margin]
+      super
     end
 
     delegate body: %w[fill plan x y width height left right top bottom]
-    cvsa :margin
+    cvsa :margin, :note_col_width
       
     def note_row!(label, ruby: false)
       a = nil
-      cols! gap: 5 do
-        # gap! @margin
-        # box! width: @nw, color: 'yellow' do 
-          text! label#, right: right 
-        # end
-        box! width: 10 do
-        end
-        a = ruby ? ruby_note! : button!("XDXDXDXDXDX") do |b|
-          on :click do
-            text.val += "XD"
+      behalf @rows do
+        cols! gap: 5 do
+          gap! up(Form).margin
+          box! width: up(Form).note_col_width do 
+            text! label, right: right 
           end
+          a = ruby ? ruby_note! : note!
+          gap! up(Form).margin
         end
-        # gap! @margin
       end
       a
     end
 
     def album_row!(label, options)
       a = nil
-      cols! gap: 5 do
-        gap! @margin
-        rows! width: @nw do 
-          text! label, right: right 
+      behalf @rows do
+        cols! gap: 5 do
+          gap! up(Form).margin
+          rows! width: up(Form).note_col_width do 
+            text! label, right: right 
+          end
+          a = album! options
+          gap! up(Form).margin
         end
-        a = album! options
-        gap! @margin
       end
       a
     end
 
     def button_row!(*labels)
       btns = []
-      cols! gap: 5, right: self.right do
-        gap! @margin
-        btns = labels.map { button! _1 }
-        gap! @margin
+      behalf @rows do
+        cols! gap: 5, right: right do
+          gap! up(Form).margin
+          btns = labels.map { button! _1 }
+          gap! up(Form).margin
+        end
       end
       btns
     end

@@ -23,5 +23,12 @@ module Ruby2D
     end
 
     def window = parent.window
+
+    def up(selector = nil)
+      case selector
+      when Class
+        parent.is_a?(selector) ? parent : parent.up(selector)
+      end
+    end
   end
 end

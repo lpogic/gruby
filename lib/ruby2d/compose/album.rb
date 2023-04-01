@@ -62,86 +62,36 @@ module Ruby2D
     end
 
     cvsa :object
-  end
 
-  class BasicAlbumOutfit < NoteOutfit
-    def_struct(
-      :background_color,
-      :background_color_hovered,
-      :text_color,
-      :text_color_pressed,
-      :text_color_object_absent,
-      :text_color_pressed_object_absent,
-      :text_font,
-      :text_font_object_absent,
-      :text_size,
-      :border_color,
-      :border_color_keyboard_current,
-      accessors: true
-    )
-
-    def color(c = nil, hc = nil, color: @background_color, hovered: @background_color_hovered)
-      c = c || color || "#3c3c3f"
-      ch = ch || hovered || "#4c4c4f"
-      let_if @seed.hovered, ch, c
+    def val
+      object.get
     end
 
-    def text_color(c = nil, cp = nil, coa = nil, cpoa = nil, color: @text_color, pressed: @text_color_pressed,
-      object_absent: @text_color_object_absent, pressed_object_absent: @text_color_pressed_object_absent)
-      c = c || color || "white"
-      cp = cp || pressed || "#DFDFDF"
-      coa = coa || object_absent || "#AAAA11"
-      cpoa = cpoa || pressed_object_absent || "#9A9A11"
-      let(@seed.pressed, @seed.object, c, cp, coa, cpoa) do
-        if _1
-          _2 ? _4 : _6
+    def text_color_plan(text_color_rest: nil, text_color_pressed: nil, text_color_pressed_object_absent: nil,
+      text_color_rest_object_absent: nil, **)
+
+      if text_color_pressed and text_color_rest
+        if text_color_pressed_object_absent and text_color_rest_object_absent
+          text_color << let(pressed, object, text_color_rest, text_color_pressed, text_color_pressed_object_absent, text_color_rest_object_absent) do
+            if _1
+              _2 ? _4 : _6
+            else
+              _2 ? _3 : _5
+            end
+          end
         else
-          _2 ? _3 : _5
+          text_color << case_let(pressed, text_color_pressed, text_color_rest)
         end
       end
     end
 
-    def border_color(c = nil, ckc = nil, color: @border_color, keyboard_current: @border_color_keyboard_current)
-      c = c || color || 0
-      ckc = ckc || keyboard_current || "#7b00ae"
-      let_if @seed.keyboard_current, ckc, c
-    end
-
-    def border(b = nil, border: nil)
-      b || border || let_if(@seed.keyboard_current, 1, 0)
-    end
-
-    def text_font(f = nil, foa = nil, font: @text_font, object_absent: @text_font_object_absent)
-      f = f || font || "consola"
-      foa = foa || object_absent || "consolai"
-      let_if @seed.object, f, foa
-    end
-
-    def text_size(ts = nil, text_size: @text_size)
-      ts || text_size || 16
-    end
-
-    def height(h = nil, height: nil)
-      h || height || @seed.text_object.height { _1 + 10 }
-    end
-
-    def width(w = nil, width: nil)
-      w || width || 200
-    end
-
-    def round(r = nil, round: nil)
-      r || round || 12
-    end
-
-    def width_pad(wp = nil, width_pad: nil)
-      wp || width_pad || 20
-    end
-
-    def editable(e = nil, editable: nil)
-      if e.nil?
-        editable.nil? ? true : editable
-      else
-        e
+    def text_font_plan(text_font: nil, text_font_object_absent: nil, **)
+      if text_font
+        if text_font_object_absent
+          self.text_font << case_let(object, text_font, text_font_object_absent)
+        else
+          self.text_font << text_font
+        end
       end
     end
   end

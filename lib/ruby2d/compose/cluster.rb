@@ -1,6 +1,6 @@
 module Ruby2D
   class Cluster
-    include BlockScope
+    extend Builder
     include Entity
 
     attr_reader :objects, :rendered
@@ -20,12 +20,12 @@ module Ruby2D
 
     cvsa :hovered, :pressed
 
-    def initialize(parent, *una, club: nil, **na, &b)
+    def initialize(parent, *una, name: nil, **na)
       @objects = pot []
       @parent = parent
       @event_handlers = {}
       @pot_handlers = []
-      @club = club
+      self.name name
 
       @keyboard_current = pot false
       @hovered = pot false
@@ -48,7 +48,8 @@ module Ruby2D
         @pressed.set false
       end
 
-      init(*una, **na, &b)
+      init(*una, **na)
+      dress **na
     end
 
     def handle_mouse_down e
@@ -60,8 +61,33 @@ module Ruby2D
     def init(*)
     end
 
+    def dress(*)
+    end
+
     def inspect
       "#{self.class}:id:#{object_id}"
+    end
+
+    def des(filter = nil, &b)
+      if filter.is_a? Array
+        r = filter.map{ des _1 }.reduce(:union)
+        return r
+      else
+        o = @objects.get
+        o0 = case filter
+        when nil then o
+        when Class then o.select{ _1.is_a? filter }
+        when Symbol then o.select{ _1.names.include? filter }
+        else o.select{ filter.to_proc.call _1 }
+        end
+        o0 = o0.filter(&b) if block_given?
+        r = o.map{ _1.des filter, &b }.reduce o0, :+
+        return r
+      end
+    end
+
+    def [](*names, &b)
+      des(names).proxy self, &b
     end
 
     def update
@@ -159,74 +185,117 @@ module Ruby2D
       handlers&.delete(event_descriptor)
     end
 
-    def scoped &b
-      stack_exec &b
+    builder :rect do |**na|
+      Rectangle.new(**na)
     end
 
-    def new_square(**args)
-      Square.new(**args)
+    builder :line do |**na|
+      Line.new(**na)
     end
 
-    def new_rectangle(**args)
-      Rectangle.new(**args)
+    builder :raw_text do |text, **na|
+      Text.new(text, **na)
     end
 
-    def new_circle(**args)
-      Circle.new(**args)
-    end
-
-    def new_line(**args)
-      Line.new(**args)
-    end
-
-    def new_text(text, **args)
-      Text.new(text, **args)
-    end
-
-    def new_button(text: "Button", outfit: "default", club: nil, text_size: nil, text_color: nil, round: nil,
-      r: nil, color: nil, border: nil, b: nil, border_color: nil, **plan, &on_click)
-
-      btn = Button.new self, text: text, club: club, &on_click
-      outfit = btn.dress outfit, **plan
+    builder :text do |t = nil, plan_dim: true, **plan|
+      e = TextNote.new self, text: t || plan[:text] || "", name: plan[:name]
+      plan[:color] ||= [0,0,0,0]
+      plan[:border_color] ||= [0,0,0,0]
+      plan[:text_color] ||= "white"
+      plan[:border] ||= 0
+      plan[:round] ||= 0
+      plan[:text_size] ||= 14
+      plan[:text_font] ||= "rubik-regular"
+      if plan_dim
       plan[:x] = 200 if !Rectangle.x_dim? plan
       plan[:y] = 100 if !Rectangle.y_dim? plan
-      plan[:width] = outfit.width if !Rectangle.w_dim? plan
-      plan[:height] = outfit.height if !Rectangle.h_dim? plan
-      btn.plan(**plan)
-      btn
+      end
+      plan[:width] = let(e.text_font, e.text) { _1.size(_2)[:width] + 1 } if !Rectangle.w_dim? plan
+      plan[:width_pad] = 0
+      plan[:height] = e.raw_text.height { _1 + 3 } if !Rectangle.h_dim? plan
+      e.plan **plan
+      return e
     end
 
-    def new_note(text: "", outfit: "default", club: nil, **plan, &on_click)
-      note = Note.new self, text: text, club: club, &on_click
-      outfit = note.dress outfit, **plan
-      plan[:width] = outfit.width if !Rectangle.w_dim? plan
-      plan[:height] = outfit.height if !Rectangle.h_dim? plan
+    def _button_plan e, plan_dim: true, **plan
+      plan[:color_rest] ||= "#2c2c8f"
+      plan[:color_hovered] ||= "#4c4c4f"
+      plan[:color_pressed] ||= "#5c5c5f"
+      plan[:border_color_rest] ||= plan[:border_color] || "blue"
+      plan[:border_color_keyboard_current] ||= "#7b00ae"
+      plan[:text_color_rest] ||= "white"
+      plan[:text_color_pressed] ||= "#DFDFDF"
+      plan[:border] ||= 1
+      plan[:round] ||= 12
+      plan[:text_size] ||= 16
+      plan[:text_font] ||= "consola"
       plan[:x] = 200 if !Rectangle.x_dim? plan
       plan[:y] = 100 if !Rectangle.y_dim? plan
-      note.plan(**plan)
-      note
+      plan[:width] = e.raw_text.width { _1 + 20 } if !Rectangle.w_dim? plan
+      plan[:height] = e.raw_text.height{ _1 + 10 } if !Rectangle.h_dim? plan
+      return plan
     end
 
-    def new_ruby_note(text: "", outfit: "default", club: nil, **plan, &on_click)
-      note = RubyNote.new self, text: text, club: club, &on_click
-      outfit = note.dress outfit, **plan
-      plan[:width] = outfit.width if !Rectangle.w_dim? plan
-      plan[:height] = outfit.height if !Rectangle.h_dim? plan
-      plan[:x] = 200 if !Rectangle.x_dim? plan
-      plan[:y] = 100 if !Rectangle.y_dim? plan
-      note.plan(**plan)
-      note
+    builder :button do |n = nil, t = nil, plan_dim: true, **plan|
+      e = Button.new self, text: t || plan[:text] || n || plan[:name] || "Button", name: n || plan[:name]
+      plan = _button_plan e, **plan
+      e.plan **plan
+      return e
     end
 
-    def new_album(options: [], outfit: "default", club: nil, **plan, &on_click)
-      album = Album.new self, options: options, club: club, &on_click
-      outfit = album.dress outfit, **plan
-      plan[:width] = outfit.width if !Rectangle.w_dim? plan
-      plan[:height] = outfit.height if !Rectangle.h_dim? plan
+    builder :option_button do |n = nil, t = nil, plan_dim: true, **plan|
+      e = OptionButton.new self, text: t || plan[:text] || n || plan[:name] || "Button", name: n || plan[:name]
+      plan[:round] ||= 0
+      plan[:border_color] ||= [0,0,0,0]
+      plan[:color_rest] ||= "#2c2c2f"
+      plan[:color_hovered] ||= "#4c4c4f"
+      plan[:color_pressed] ||= "#5c5c5f"
+      plan = _button_plan e, **plan
+      e.plan **plan
+      return e
+    end
+
+    def _note_plan e, plan_dim: true, **plan
+      plan[:color_rest] ||= "#3c3c3f"
+      plan[:color_hovered] ||= "#4c4c4f"
+      plan[:border_color_rest] ||= plan[:border_color] || "blue"
+      plan[:border_color_keyboard_current] ||= "#7b00ae"
+      plan[:text_color_rest] ||= "white"
+      plan[:text_color_pressed] ||= "#DFDFDF"
+      plan[:border] ||= case_let e.keyboard_current, 1, 0
+      plan[:round] ||= 12
+      plan[:text_size] ||= 16
+      plan[:text_font] ||= "consola"
       plan[:x] = 200 if !Rectangle.x_dim? plan
       plan[:y] = 100 if !Rectangle.y_dim? plan
-      album.plan(**plan)
-      album
+      plan[:width] = 200 if !Rectangle.w_dim? plan
+      plan[:width_pad] ||= 20
+      plan[:height] = e.raw_text.height{ _1 + 10 } if !Rectangle.h_dim? plan
+      return plan
+    end
+
+    builder :note do |n = nil, t = nil, **plan|
+      e = Note.new self, text: t || plan[:text] || "", name: n || plan[:name]
+      plan = _note_plan e, **plan
+      e.plan **plan
+      return e
+    end
+
+    builder :ruby_note do |n = nil, t = nil, **plan|
+      e = RubyNote.new self, text: t || plan[:text] || "", name: n || plan[:name]
+      plan = _note_plan e, **plan
+      e.plan **plan
+      return e
+    end
+
+    builder :album do |o = nil, **plan|
+      e = Album.new self, options: o || options || [], name: plan[:name]
+      plan = _note_plan e, **plan
+      plan[:text_color_object_absent] ||= "AAAA11"
+      plan[:text_color_pressed_object_absent] ||= "9A9A11"
+      plan[:text_font_object_absent] ||= "consolai"
+      e.plan **plan
+      return e
     end
 
     def emit(type, event = nil)
@@ -248,51 +317,6 @@ module Ruby2D
       end
       ehh = @event_handlers[type]
       ehh&.each { |eh, pro| pro.call(event, eh) }
-    end
-
-    class Club
-      def initialize
-        @array = []
-      end
-
-      def to_a
-        @array
-      end
-
-      def append(e)
-        @array.append e
-      end
-
-      def <<(e)
-        @array << e
-      end
-
-      def method_missing(m, *una, **na, &b)
-        @array.each{
-          _1.send(m, *una, **na, &b)
-        }
-        return self
-      end
-
-      def method_missing_respond?(m)
-        @array.all{_1.method_missing_respond?(m)}
-      end
-    end
-
-    def get_club
-      @club
-    end
-
-    def club(club_name, club_instance: nil)
-      club_instance ||= Club.new
-      clubbers = @objects.get.filter{ _1.is_a? Cluster }
-      clubbers.each do |c|
-        club_instance << c if c.get_club == club_name
-      end
-      clubbers.each do |c|
-        c.club club_name, club_instance: club_instance
-      end
-      club_instance
     end
 
     def contains?(x, y)

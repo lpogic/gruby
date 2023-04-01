@@ -34,7 +34,7 @@ module Ruby2D
         super()
         @enabled = pot false
         @position = cpot(text.text { _1.length }) { _1.clamp(0, _2) }.set 0
-        @rect = new_rectangle border: 0, round: 0, color: [0, 0, 0, 0.5],
+        @rect = new_rect border: 0, round: 0, color: [0, 0, 0, 0.5],
           y: text.y, height: text.size, width: 2,
           left: let(@position, text.left, text.text, text.font) { |pos, l, t, f| (pos <= 0) ? l : l + f.size(t[0, pos])[:width] }
       end
@@ -51,7 +51,7 @@ module Ruby2D
         super()
         @enabled = pot false
         @coordinates = pot Selection.new
-        @rect = new_rectangle border: 0, round: 0, color: "#16720b", y: text.y, height: text.size
+        @rect = new_rect border: 0, round: 0, color: "#16720b", y: text.y, height: text.size
         let(@coordinates, text.left, text.text, text.font) do |c, tl, t, f|
           if c.start < 0
             s = 0
@@ -92,10 +92,10 @@ module Ruby2D
       super()
       @editable = pot true
       @width_pad = pot 20
-      @box = new_rectangle(**narg)
+      @box = new_rect(**narg)
       @text_value = cpot { _1.to_s.encode("utf-8") } << text
 
-      @text = new_text "", left: let(@box.left, @width_pad) { _1 + (_2 / 2) }, y: @box.y
+      @text = new_raw_text "", left: let(@box.left, @width_pad) { _1 + (_2 / 2) }, y: @box.y
       @text_offset = pot 0
       @text.text << let(@text_value, @box.width, @text_offset, @width_pad, @text.font) do |tv, bw, to, wp, tf|
         t = tv[to..]
@@ -302,11 +302,82 @@ module Ruby2D
       "#{self.class} text:\"#{@text_value.get}\""
     end
 
-    delegate box: %w[fill plan x y left top right bottom width height color border_color border round]
+    delegate box: %w[fill x y left top right bottom width height color border_color border round]
     delegate text: %w[text:text_visible font:text_font size:text_size color:text_color]
     cvsa %w[text_value:text width_pad pen_position editable text_offset keyboard_current]
 
-    def text_object = @text
+    def color_plan(color_rest: nil, color_hovered: nil, **)
+      if color_hovered and color_rest
+        color << case_let(hovered, color_hovered, color_rest)
+      end
+    end
+
+    def border_color_plan(border_color_rest: nil, border_color_keyboard_current: nil, **)
+      if border_color_keyboard_current and border_color_rest
+        border_color << case_let(keyboard_current, border_color_keyboard_current, border_color_rest)
+      end
+    end
+
+    def text_color_plan(text_color_rest: nil, text_color_pressed: nil, **)
+      if text_color_pressed and text_color_rest
+        text_color << case_let(pressed, text_color_pressed, text_color_rest)
+      end
+    end
+
+    def border_plan(border: nil, **)
+      if border
+        self.border << border
+      end
+    end
+
+    def round_plan(round: nil, **)
+      if round
+        self.round << round
+      end
+    end
+
+    def text_size_plan(text_size: nil, **)
+      if text_size
+        self.text_size << text_size
+      end
+    end
+
+    def text_font_plan(text_font: nil, **)
+      if text_font
+        self.text_font << text_font
+      end
+    end
+
+    def editable_plan(editable: nil, **)
+      if editable.o?
+        self.editable << editable
+      end
+    end
+
+    def width_pad_plan(width_pad: nil, **)
+      if width_pad
+        self.width_pad << width_pad
+      end
+    end
+
+    def default_plan(**na)
+      color_plan **na
+      border_color_plan **na
+      text_color_plan **na
+      border_plan **na
+      round_plan **na
+      text_size_plan **na
+      text_font_plan **na
+      editable_plan **na
+      width_pad_plan **na
+      @box.plan **na.slice(:x, :y, :width, :height, :right, :left, :top, :bottom)
+    end
+
+    def val
+      text.get
+    end
+
+    def raw_text = @text
 
     def contains?(x, y)
       @box.contains?(x, y)
@@ -668,149 +739,6 @@ module Ruby2D
       when /\p{Nd}/ then :digit
       when /\p{Blank}/ then :blank
       else :other
-      end
-    end
-  end
-
-  class NoteOutfit < Outfit
-    def hatch
-      if @seed
-        @seed.color << color
-        @seed.border_color << border_color
-        @seed.text_color << text_color
-        @seed.border << border
-        @seed.round << round
-        @seed.width_pad << width_pad
-        @seed.text_size << text_size
-        @seed.text_font << text_font
-        @seed.editable << editable
-        @seed
-      end
-    end
-  end
-
-  class BasicNoteOutfit < NoteOutfit
-    def_struct(
-      :background_color,
-      :background_color_hovered,
-      :text_color,
-      :text_color_pressed,
-      :text_font,
-      :text_size,
-      :border_color,
-      :border_color_keyboard_current,
-      accessors: true
-    )
-
-    def color(c = nil, hc = nil, color: @background_color, hovered: @background_color_hovered)
-      c = c || color || "#3c3c3f"
-      ch = ch || hovered || "#4c4c4f"
-      let_if @seed.hovered, ch, c
-    end
-
-    def text_color(c = nil, cp = nil, color: @text_color, pressed: @text_color_pressed)
-      c = c || color || "white"
-      cp = cp || pressed || "#DFDFDF"
-      let_if @seed.pressed, cp, c
-    end
-
-    def border_color(c = nil, ckc = nil, color: @border_color, keyboard_current: @border_color_keyboard_current)
-      c = c || color || 0
-      ckc = ckc || keyboard_current || "#7b00ae"
-      let_if @seed.keyboard_current, ckc, c
-    end
-
-    def border(b = nil, border: nil)
-      b || border || let_if(@seed.keyboard_current, 1, 0)
-    end
-
-    def text_font(tf = nil, text_font: @text_font)
-      tf || text_font || "consola"
-    end
-
-    def text_size(ts = nil, text_size: @text_size)
-      ts || text_size || 16
-    end
-
-    def height(h = nil, height: nil)
-      h || height || @seed.text_object.height { _1 + 10 }
-    end
-
-    def width(w = nil, width: nil)
-      w || width || 200
-    end
-
-    def round(r = nil, round: nil)
-      r || round || 12
-    end
-
-    def width_pad(wp = nil, width_pad: nil)
-      wp || width_pad || 20
-    end
-
-    def editable(e = nil, editable: nil)
-      if e.nil?
-        editable.nil? ? true : editable
-      else
-        e
-      end
-    end
-  end
-
-  class TextNoteOutfit < NoteOutfit
-    def_struct(
-      :background_color,
-      :text_color,
-      :text_font,
-      :text_size,
-      accessors: true
-    )
-
-    def color(c = nil, color: @background_color)
-      c || color || [0, 0, 0, 0]
-    end
-
-    def text_color(c = nil, color: @text_color)
-      c || color || "white"
-    end
-
-    def border_color(c = nil, color: @border_color)
-      c || color || [0, 0, 0, 0]
-    end
-
-    def border(b = nil, border: nil)
-      b || border || 0
-    end
-
-    def text_font(tf = nil, text_font: @text_font)
-      tf || text_font || "rubik-regular"
-    end
-
-    def text_size(ts = nil, text_size: @text_size)
-      ts || text_size || 14
-    end
-
-    def height(h = nil, height: nil)
-      h || height || @seed.text_object.height { _1 + 3 }
-    end
-
-    def width(w = nil, width: nil)
-      w || width || let(@seed.text_font, @seed.text) { _1.size(_2)[:width] + 1 }
-    end
-
-    def round(r = nil, round: nil)
-      r || round || 0
-    end
-
-    def width_pad(wp = nil, width_pad: nil)
-      wp || width_pad || 0
-    end
-
-    def editable(e = nil, editable: nil)
-      if e.nil?
-        editable.nil? ? false : editable
-      else
-        e
       end
     end
   end

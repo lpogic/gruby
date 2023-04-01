@@ -2,10 +2,12 @@ module Ruby2D
   module Planned
     include CVS
 
-    def plan(*upr, **pr, &linker)
+    def plan(*upr, linker: nil, **pr, &blinker)
       upr.each { pr[_1] ||= pot(send(_1).get) }
-      if block_given?
-        linker.call(self, **pr)
+      if linker
+        linker.call(**pr)
+      elsif block_given?
+        blinker.call(self, **pr)
       else
         default_plan(**pr)
       end

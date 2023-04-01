@@ -7,7 +7,6 @@ module Ruby2D
   # Create a circle using +Circle.new+
   #
   class Circle
-    extend BlockScope
     include Renderable
     include Planned
 

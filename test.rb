@@ -1,13 +1,15 @@
 class Foo
-  def foo
-    p self
+  def foo(a: nil, **)
+    p a
   end
 end
 
-class Bar
-  def bar
-    p self
+class Foo1 < Foo
+  def foo(b: nil, **)
+    p b
+    super
   end
 end
 
-p Foo.class
+f = Foo1.new
+f.foo a: :D, b: :P

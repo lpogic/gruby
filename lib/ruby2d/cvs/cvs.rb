@@ -31,6 +31,12 @@ module Ruby2D
       CommunicatingVesselSystem.let(*a, **na, name: name, &b)
     end
 
+    def case_let(*a)
+      let *a do |*av|
+        av.each_slice(2).find{ _1.size == 2 && _1[0] }&.at(1) || av.last
+      end
+    end
+
     def let_if(a, b, c)
       let a, b, c do |av, bv, cv|
         av ? bv : cv

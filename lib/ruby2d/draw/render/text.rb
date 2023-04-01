@@ -5,7 +5,6 @@
 module Ruby2D
   # Text string drawn using the specified font and size
   class Text
-    extend BlockScope
     include Renderable
     include Planned
 

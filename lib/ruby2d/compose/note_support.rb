@@ -25,7 +25,7 @@ module Ruby2D
           if @buttons[i]
             b = @buttons[i]
           else
-            b = @buttons[i] = new_button(outfit: 'option')
+            b = @buttons[i] = new_option_button
             b.disable :accept_keyboard
             b.on :click do
               emit :option_selected, OpitonSelectedEvent.new(i, b)
@@ -150,8 +150,8 @@ module Ruby2D
 
     class ScrollBox < Cluster
       def init
-        @car = new_rectangle color: '#66666688'
-        @rail = new_rectangle color: '#00000033'
+        @car = new_rect color: '#66666688'
+        @rail = new_rect color: '#00000033'
         @car.plan width: @rail.width, x: @rail.x, top: @rail.top
         care @rail, @car
         @enabled = pot true
@@ -201,7 +201,7 @@ module Ruby2D
     end
 
     def init
-      @box = new_rectangle color: Color.new('#2c2c2f')
+      @box = new_rect color: Color.new('#2c2c2f')
       @subject = nil
       @options = OptionButtonBox.new self
       @options.plan x: @box.x, width: @box.width

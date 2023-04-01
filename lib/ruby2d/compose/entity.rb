@@ -5,7 +5,33 @@
 module Ruby2D
   module Entity
     include CVS
+    include Planned
     attr_accessor :parent, :nanny
+
+    def anc(filter = nil)
+      case filter
+      when nil then @parent
+      when Class then @parent.is_a?(filter) ? @parent : @parent.anc(filter)
+      when Symbol then @parent.names.include?(filter) ? @parent : @parent.anc(filter)
+      else filter.to_proc.call(@parent) ? @parent : @parent.anc(filter)
+      end
+    end
+
+    def names
+      @names ||= []
+    end
+
+    def name(n)
+      if n.is_a? Enumerable
+        n.each { name _1 }
+      elsif n.is_a? Symbol
+        names << n
+      end
+    end
+
+    def desc(filter = nil)
+      []
+    end
 
     def emit(type, event = nil)
     end
@@ -19,16 +45,11 @@ module Ruby2D
     end
 
     def lineage
-      @parent.lineage + [self]
+      l = [self]
+      l = @parent.lineage + l if @parent
+      return l
     end
 
     def window = parent.window
-
-    def up(selector = nil)
-      case selector
-      when Class
-        parent.is_a?(selector) ? parent : parent.up(selector)
-      end
-    end
   end
 end

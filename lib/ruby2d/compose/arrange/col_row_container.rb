@@ -3,7 +3,7 @@ module Ruby2D
 
     def init(gap: 0, **ona)
       ona[:color] ||= 0
-      care @body = new_rectangle(**ona)
+      care @body = new_rect(**ona)
       @start_gap = pot
       @gap = pot
       @end_gap = pot

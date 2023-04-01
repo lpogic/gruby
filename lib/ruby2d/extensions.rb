@@ -8,8 +8,31 @@ class Object
     is_a?(Array) ? self : [self]
   end
 
-  def behalf origin, &todo
-    origin.instance_exec self, &todo
+  def you me = nil, &b
+    instance_exec me, &b
+  end
+
+  def behalf it, &b
+    it.you self, &b
+  end
+
+  def o?()
+    return !self.nil?
+  end
+end
+
+class ArrayProxy < BasicObject
+  def initialize e, force_array
+    @e = e
+    @force_array = force_array
+  end
+
+  def method_missing m, *a, **na, &b
+    if @force_array || @e.size > 1
+      @e.map{ _1.send(m, *a, **na, &b) }
+    else
+      @e.first.send(m, *a, **na, &b)
+    end
   end
 end
 
@@ -24,6 +47,14 @@ class Array
 
   alias or any?
   alias and all?
+
+  def proxy(me = self, array: false, &b)
+    if block_given?
+      map{ me.behalf _1, &b }
+    else
+      ArrayProxy.new self, array
+    end
+  end
 end
 
 class Hash
@@ -33,6 +64,10 @@ class Hash
 
   def any_in?(*o)
     o.any? { has_key? _1 }
+  end
+
+  def |(oth)
+    merge(oth)
   end
 end
 

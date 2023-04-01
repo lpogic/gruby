@@ -50,15 +50,15 @@ module Ruby2D
         return [self]
       end
 
+      @@dfs_seed = 0
+
       def self._dfs_next_seed
         @@dfs_seed = @@dfs_seed.next
       end
 
-      @@dfs_seed = 0
       def _dfs(depth = 0, direction: :in, deeper_later: true, exclude_root: true, seed: nil)
         if seed
           return [] if @dfs_seed == seed
-
           @dfs_seed = seed
         else
           @dfs_seed = seed = Pot._dfs_next_seed

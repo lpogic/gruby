@@ -1,7 +1,7 @@
 module Ruby2D
   class Widget < Cluster
     
-    def initialize(parent, *una, **na, &b)
+    def init
       super
 
       @tab_pass_keyboard = on :key_down do |e|
@@ -16,15 +16,6 @@ module Ruby2D
 
       window.keyboard_current_object = self
       true
-    end
-
-    def dress(outfit, **params)
-      outfit = self.outfit self.class, *outfit if not outfit.is_a? Outfit
-      @outfit = outfit.lay self, **params
-    end
-
-    def outfit(*path)
-      path.empty? ? @outfit : parent.outfit(*path)
     end
   end
 end

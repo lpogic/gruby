@@ -70,7 +70,7 @@ module Ruby2D
       parts = portions.map do |prt|
         range = prt[:range]
         color = prt[:color]
-        text = new_text(let(@text, range) do
+        text = self.text(let(@text, range) do
                           _1[_2]
                         end, size: @size, style: @font_style, font: @font_path, color:, y: @y)
         text.plan :left

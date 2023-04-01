@@ -5,7 +5,6 @@
 module Ruby2D
   # A line between two points.
   class Line
-    extend BlockScope
     include Renderable
     include Planned
     

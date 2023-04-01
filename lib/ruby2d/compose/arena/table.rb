@@ -3,7 +3,7 @@ module Ruby2D
 
     def init(gap: 6, **plan)
       plan[:color] ||= 0;
-      @body = new_rectangle(**plan)
+      @body = new_rect(**plan)
       care @body
       @gap = pot << gap
       @fit_grid = FitGrid.new x: @body.x, y: @body.y

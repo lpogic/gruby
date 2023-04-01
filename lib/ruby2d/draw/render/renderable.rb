@@ -11,5 +11,13 @@ module Ruby2D
     def contains?(x, y)
       false
     end
+
+    def names
+      []
+    end
+
+    def des(filter)
+      []
+    end
   end
 end

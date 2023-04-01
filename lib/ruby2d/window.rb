@@ -247,14 +247,6 @@ module Ruby2D
     def window = self
     def lineage = [self]
 
-    def outfit(*path)
-      if path.empty?
-        @outfit
-      else
-        @outfit._dig(*path) || raise("#{path} outfit not found!")
-      end
-    end
-
     cvsa :x, :y, :left, :top, :mouse_x, :mouse_y, :timepot, :width, :height, %w(width:right height:bottom)
 
     def cvs_left
@@ -925,8 +917,6 @@ module Ruby2D
         # Size of the computer's display
         @display_width = nil
         @display_height = nil
-
-        @outfit = OutfitRoot.new(eval(File.read(Ruby2D.assets 'outfit.rb')))
       end
 
       def _init_event_stores
